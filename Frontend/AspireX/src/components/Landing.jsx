@@ -1,6 +1,8 @@
 import React from "react";
 import { useState } from "react";
-import images from  "../assets/";
+
+import "./Landing.css";
+import Navone from "./Navone";
 function Landing() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -10,24 +12,7 @@ function Landing() {
 
   return (
     <>
-      <div className="land-nav">
-        <div className="land-nav-logo">Aspire X</div>
-        <ul className="land-nav-ul">
-          <li className="land-nav-li">Log in</li>
-          <li className="land-nav-li">Sign up</li>
-          <li className="land-nav-li">Become a mentor</li>
-        </ul>
-          <div className="hamburger" onClick={toggleNav}>☰</div>
-      </div>
-      <div className="land-nav-sprtor"></div>
-      <div className={`side-nav ${isOpen ? "open" : ""}`}>
-        <button className="close-btn" onClick={toggleNav}>×</button>
-        <ul>
-          <li><a href="#">Log in</a></li>
-          <li><a href="#">Sign up</a></li>
-          <li><a href="#">Become a mentor</a></li>
-        </ul>
-      </div>
+      <Navone/>
       <div className="land-hero">
               <div className="land-text-part">
                 <div className="land-text1">Hi, there!</div>
@@ -46,7 +31,7 @@ function Landing() {
           <div className="image-container">
             <div className="background-square"></div>
             <div className="image-wrapper">
-              <img src="/1stimg-removebg-preview.png" alt="Smiling person" />
+            <img src="/1stimg-removebg-preview.png" alt="Smiling person" />
             </div>
           </div>
         </div>

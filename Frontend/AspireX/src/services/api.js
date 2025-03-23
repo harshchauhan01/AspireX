@@ -13,3 +13,11 @@ export const fetchMentors = async () => {
         throw error;
     }
 };
+
+export const loginuser =async (credentials)=>{
+    return axios.post(`${API_URL}login/`,credentials);
+}
+
+export const registeruser= async (userdata)=>{
+    return axios.post(`${API_URL}register/`,userdata);
+}

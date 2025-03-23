@@ -1,128 +1,124 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import styled from "styled-components";
+import React, { useState, useEffect } from "react";
+import './Login.css'; 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowTrendUp } from '@fortawesome/free-solid-svg-icons';
+import { faGoogle, faApple, faTwitter } from '@fortawesome/free-brands-svg-icons';
+import signinImg from '../assets/signinimg.svg';
+import Navone from "./Navone";
+import {loginuser} from "../services/api"
+import { Link,useNavigate } from 'react-router-dom';
 
-const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [authTokens, setAuthTokens] = useState(null);
-  const navigate = useNavigate(); // Use useNavigate for redirection
+const Typewriter = ({ text, speed = 10 }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [index, setIndex] = useState(0); // Track index as state
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    if (index < text.length) {
+      const interval = setTimeout(() => {
+        setDisplayedText((prev) => prev + text[index]);
+        setIndex(index + 1);
+      }, speed);
+
+      return () => clearTimeout(interval);
+    }
+  }, [index, text, speed]); // Dependency array includes index
+
+  return <span>{displayedText}</span>;
+};
+
+
+const SigninPage = () => {
+
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [error, seterror] = useState(null);
+const navigate = useNavigate();
+
+const handleEmailChange=(e)=>{
+  setEmail(e.target.value);
+}
+const handlePasswordChange=(e)=>{
+  setPassword(e.target.value);
+}
+const handleSubmit= async(e)=>{
     e.preventDefault();
-    const credentials = { username, password };
-
-    try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/users/login/",
-        credentials,
-        { headers: { "Content-Type": "application/json" } }
-      );
-      setAuthTokens(response.data);
-
-      console.log("Login successful:", response.data);
-      
-      // Redirect to home page after login
-      navigate("/home");
-    } catch (error) {
-      console.error(
-        "Login failed:",
-        error.response ? error.response.data : error.message
-      );
+    try{
+      const res = await loginuser({ username, password }); 
+            localStorage.setItem("token", res.data.access); 
+            alert("Logged in Successfully!");
+            navigate("/Landing");
+    }catch(err){
+        console.log(error);
+        alert("Login failed! Check credentials.");
     }
   };
-
   return (
-    <StyledWrapper>
-      <form className="form" onSubmit={handleSubmit}>
-        <div className="flex-column">
-          <label>Username </label>
+    <div>
+      <Navone/>
+      <div id="Middle">
+        <div className="heading">
+          <h2 id="Perfect"> <Typewriter text="Want the Perfect Guidance ?" speed={100} /></h2>
+          <div className="wantimg">
+            <img src={signinImg} alt="" id="img1" />
+          </div>
+          <div>
+          </div>
         </div>
-        <div className="inputForm">
-          <input
-            placeholder="Enter your Username"
-            className="input"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
+        {/* Sign-in Form */}
+        <div className="Signinbutton">
+          <div className="container">
+            <div className="heading">Sign In</div>
+            <form onSubmit={handleSubmit} className="form">
+              <input
+                required
+                className="input"
+                type="email"
+                name="email"
+                id="email"
+                placeholder="E-mail"
+                value={email}
+                onChange={handleEmailChange}
+              />
+              <input
+                required
+                className="input"
+                type="password"
+                name="password"
+                id="password"
+                placeholder="Password"
+                value={password}
+                onChange={handlePasswordChange}
+              />
+               {error && <span className="error-message">{error}</span>}
+              <span className="forgot-password">
+                <a href="#">Forgot Password ?</a>
+              </span>
+              <input className="login-button" type="submit" value="Sign In" />
+            </form>
+
+            {/* Social Media Sign-In */}
+            <div className="social-account-container">
+              <span className="title">Or Sign in with</span>
+              <div className="social-accounts">
+                <button className="social-button google">
+                  <FontAwesomeIcon icon={faGoogle} />
+                </button>
+                <button className="social-button apple">
+                  <FontAwesomeIcon icon={faApple} />
+                </button>
+                <button className="social-button twitter">
+                  <FontAwesomeIcon icon={faTwitter} />
+                </button>
+              </div>
+            </div>
+            <span className="agreement">
+              <a href="#">Learn user licence agreement</a>
+            </span>
+          </div>
         </div>
-        <div className="flex-column">
-          <label>Password </label>
-        </div>
-        <div className="inputForm">
-          <input
-            placeholder="Enter your Password"
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button className="button-submit" type="submit">
-          Sign In
-        </button>
-        {authTokens && <p className="success-message">Logged in successfully!</p>}
-      </form>
-    </StyledWrapper>
+      </div>
+    </div>
   );
 };
 
-const StyledWrapper = styled.div`
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    background-color: #ffffff;
-    padding: 30px;
-    width: 450px;
-    border-radius: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  }
-
-  .flex-column > label {
-    color: #151717;
-    font-weight: 600;
-  }
-
-  .inputForm {
-    border: 1.5px solid #ecedec;
-    border-radius: 10px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    padding-left: 10px;
-    transition: 0.2s ease-in-out;
-  }
-
-  .input {
-    margin-left: 10px;
-    border-radius: 10px;
-    border: none;
-    width: 100%;
-    height: 100%;
-  }
-
-  .input:focus {
-    outline: none;
-  }
-
-  .button-submit {
-    background-color: #007bff;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-  }
-
-  .success-message {
-    color: green;
-    font-weight: bold;
-  }
-`;
-
-export default Login;
+export default SigninPage;
