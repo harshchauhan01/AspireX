@@ -1,0 +1,283 @@
+
+#main-content {
+  margin-top: 3rem;
+  padding: 0 2rem;  
+}
+  #wel-heading{
+    font-size: 1.8rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+    padding: 2rem;
+    line-height: 40px;
+    height: 7rem;
+    box-sizing: border-box;
+  }
+  #wel-heading2{
+     color: #89CFF0;
+     font-weight: 600;
+  }
+  .subtitle {
+    font-size: 28px; 
+    color: #666; 
+    font-weight: 400; 
+    letter-spacing: 0.5px;
+    margin-top: -10px;
+  }
+  #wel-search{
+    padding-left: 2rem;
+    padding-top: 1rem;
+    height: 4rem;
+    /* width: 100%; */
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    line-height: 2rem;
+   
+  }
+  /* From Uiverse.io by TimTrayler */ 
+  .searchbar {
+    font-size: 14px;
+    font-family: arial, sans-serif;
+    color: #202124;
+    display: flex;
+    z-index: 3;
+    height: 44px;
+    background: white;
+    border: 1px solid #dfe1e5;
+    box-shadow: none;
+    border-radius: 24px;
+   margin-left: 4rem;
+    width: 30%;
+    
+  }
+  
+  .searchbar:hover {
+    box-shadow: 0 1px 6px rgb(32 33 36 / 28%);
+    border-color: rgba(223,225,229,0);
+  }
+  
+  .searchbar-wrapper {
+    flex: 1;
+    display: flex;
+    padding: 5px 8px 0 14px;
+  }
+  
+  .searchbar-left {
+    font-size: 14px;
+    font-family: arial, sans-serif;
+    color: #202124;
+    display: flex;
+    align-items: center;
+    padding-right: 13px;
+    margin-top: -5px;
+  }
+  
+  .search-icon-wrapper {
+    margin: auto;
+  }
+  
+  .search-icon {
+    margin-top: 3px;
+    color: #9aa0a6;
+    height: 20px;
+    line-height: 20px;
+    width: 20px;
+  }
+  
+  .searchbar-icon {
+    display: inline-block;
+    fill: currentColor;
+    height: 24px;
+    line-height: 24px;
+    position: relative;
+    width: 24px;
+  }
+  
+  .searchbar-center {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    
+  }
+  
+  .searchbar-input-spacer {
+    color: transparent;
+    flex: 100%;
+    white-space: pre;
+    height: 34px;
+    font-size: 16px;
+  }
+  
+  .searchbar-input {
+    background-color: transparent;
+    border: none;
+    margin: 0;
+    padding: 0;
+    color: rgba(0, 0, 0, .87);
+    word-wrap: break-word;
+    outline: none;
+    display: flex;
+    flex: 100%;
+    margin-top: -37px;
+    height: 34px;
+    font-size: 16px;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .searchbar-right {
+    display: flex;
+    flex: 0 0 auto;
+    margin-top: -5px;
+    align-items: stretch;
+    flex-direction: row
+  }
+  
+  .searchbar-clear-icon {
+    margin-right: 12px
+  }
+  #button-inside{
+    width: 8rem;
+    height: 3rem;
+    border-radius: 1rem;
+    margin-left: 2rem;
+    border: none;
+    color: white;
+    background-color: #808080;
+    font-weight: 400;
+  }
+  #button-inside:hover{
+    background-color: #666;
+  }
+  #feature-mentor h2{
+    padding-left: 2rem;
+    color: #808080;
+    font-weight: 600;
+    font-size: 2rem;
+    height: 2rem;
+  }
+  .wel-card{
+      background-color: 	#D3D3D3;
+      height: 15rem;
+      width: 25rem;
+      border-radius: 7%;
+  }
+  #Outer-card-box{
+    box-sizing: border-box;
+    width: 100%;
+    height: 100vh;
+    padding-left: 2rem;
+    display: flex;
+    gap: 4rem;
+  }
+  .flip-card {
+    background-color: transparent;
+    width: 400px;
+    height: 300px;
+    perspective: 1000px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  .flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+  
+  .flip-card-front, .flip-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 5px;
+    border-radius: 2em;
+    backface-visibility: hidden;
+    /* Glassy background */
+    background: rgba(211, 211, 211, 0.2); /* Semi-transparent light grey */
+    background: linear-gradient(135deg, rgba(211, 211, 211, 0.3), rgba(255, 255, 255, 0.1)); /* Gradient for depth */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Subtle base shadow */
+    border: none; /* Removed border */
+  }
+  
+  .flip-card-front {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .flip-card-back {
+    transform: rotateY(180deg);
+    padding: 11px;
+  }
+  
+  /* Hover effect for premium look */
+  .flip-card:hover .flip-card-front,
+  .flip-card:hover .flip-card-back {
+    box-shadow: 0 8px 16px rgba(108, 180, 238, 0.4); /* Blue shadow matching #6CB4EE */
+  }
+  
+  .profile-image {
+    background-color: transparent;
+    border: none;
+    border-radius: 5em;
+    width: 120px;
+    height: 120px;
+  }
+  
+  .pfp {
+    border-radius: 35em;
+    fill: #6CB4EE;
+  }
+  
+  .name {
+    font-size: 27px;
+    color: #6CB4EE;
+    font-weight: bold;
+    margin: 10px 0 5px 0;
+  }
+  
+  .profession {
+    font-size: 18px;
+    color: #808080;
+    font-weight: 400;
+  }
+  
+  .description {
+    margin-top: 10px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #333;
+  }
+  
+  .socialbar {
+    background-color: transparent;
+    border-radius: 3em;
+    width: 90%;
+    padding: 14px;
+    margin-top: 11px;
+    margin-left: 10px;
+    word-spacing: 24px;
+    color: #6CB4EE;
+  }
+  
+  .socialbar svg {
+    transition: 0.4s;
+    width: 20px;
+    height: 20px;
+    color: #6CB4EE;
+  }
+  
+  .socialbar svg:hover {
+    color: #89CFF0;
+  }
+  
+  .flip-card:hover .flip-card-inner {
+    transform: rotateY(180deg);
+  }

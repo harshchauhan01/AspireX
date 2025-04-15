@@ -1,0 +1,181 @@
+
+
+/* Hero Section */
+.hero-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero-content {
+  max-width: 50%;
+}
+
+.hero-content h3 {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.hero-content h1 {
+  font-size: 2.5rem;
+  margin: 10px 0;
+}
+
+.hero-content p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.hero-image {
+  max-width: 40%;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 300px;
+}
+
+/* Why Join Section */
+.why-join {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.why-content {
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+.why-content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.why-content li {
+  margin: 10px 0;
+  font-size: 1.1rem;
+}
+
+/* Quotes Section */
+.quotes {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.quote-container {
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+.quote-container p {
+  margin: 15px 0;
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+/* Forms Section */
+.auth-forms {
+  padding: 40px 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.form-toggle button {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.form-toggle button.active {
+  background-color: #00B8E6;
+}
+
+.form-slider {
+  overflow: hidden;
+  position: relative;
+}
+
+.form-container {
+  display: flex;
+  width: 200%;
+  transition: transform 0.5s ease-in-out;
+}
+
+.form-container.slide-left {
+  transform: translateX(0);
+}
+
+.form-container.slide-right {
+  transform: translateX(-50%);
+}
+
+.form-box {
+  width: 50%;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-box h3 {
+  color: #00B8E6;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.form-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-box input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.form-box button {
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+  font-size: 1rem;
+}
+
+.form-box button:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .hero-image {
+    max-width: 80%;
+    margin-top: 20px;
+  }
+}
+
+

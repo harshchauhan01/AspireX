@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import './Register.css'; 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowTrendUp } from '@fortawesome/free-solid-svg-icons';
-import { faGoogle, faApple, faTwitter } from '@fortawesome/free-brands-svg-icons';
 import RegisterImg from '../assets/RegisterImg.svg';
 import Navone from "./Navone";
+import {registeruser} from "../services/api";
+import axios from 'axios';
+import { Link,useNavigate } from 'react-router-dom';
 
 const Typewriter2 = ({ text, speed = 10 }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [index, setIndex] = useState(0); // Track index as state
+  
 
   useEffect(() => {
     if (index < text.length) {
@@ -24,7 +25,38 @@ const Typewriter2 = ({ text, speed = 10 }) => {
   return <span>{displayedText}</span>;
 };
 
-const Register = () => {
+
+
+
+function Register() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const user = { username, password, email };
+
+    try {
+      const response = await axios.post('http://127.0.0.1:8000/api/users/register/', user, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      console.log('Registration successful:', response.data);
+      alert("Registraion Successfull");
+      navigate("/login");
+
+    } catch (error) {
+        if (error.response) {
+          console.error('Error registering:', error.response.data);
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+        } else {
+          console.error('Error:', error.message);
+        }
+      }
+  };
   return (
     <>
       <Navone/>
@@ -39,7 +71,7 @@ const Register = () => {
           {/* From Uiverse.io by Smit-Prajapati */}
           <div className="container">
             <div className="heading">Sign Up</div>
-            <form className="form">
+            <form className="form" onSubmit={handleSubmit}>
               <div id="talk">
                 <input
                   required
@@ -47,6 +79,7 @@ const Register = () => {
                   type="text"
                   name="First"
                   id="FirstName"
+                  value={username} onChange={(e) => setUsername(e.target.value)}
                   placeholder="First Name"
                 />
                 <input
@@ -55,6 +88,7 @@ const Register = () => {
                   type="text"
                   name="Last"
                   id="lastName"
+                  
                   placeholder="Last Name"
                 />
               </div>
@@ -64,6 +98,7 @@ const Register = () => {
                 type="email"
                 name="email"
                 id="email"
+                
                 placeholder="E-mail"
               />
               <input
@@ -72,6 +107,7 @@ const Register = () => {
                 type="password"
                 name="password"
                 id="password"
+                value={password} onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
               />
               <input
