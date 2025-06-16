@@ -1,0 +1,181 @@
+.sessions-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.filters-panel {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: var(--dark-gray);
+}
+
+.filter-group input, .filter-group select {
+  padding: 8px 12px;
+  border: 1px solid var(--medium-gray);
+  border-radius: 5px;
+}
+
+.date-inputs {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.filter-button {
+  background: none;
+  border: 1px solid var(--medium-gray);
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-button.active {
+  background-color: var(--light-gray);
+}
+
+.sessions-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--medium-gray);
+  margin-bottom: 20px;
+}
+
+.sessions-tabs button {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--dark-gray);
+  position: relative;
+}
+
+.sessions-tabs button.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.sessions-tabs button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 3px 3px 0 0;
+}
+
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.session-card {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.session-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.mentee-avatar {
+  width: 50px;
+  height: 50px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.session-details h3 {
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.session-details p {
+  color: var(--dark-gray);
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+
+.session-time {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--dark-gray);
+}
+
+.session-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.primary-button.small, .secondary-button.small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.session-feedback {
+  text-align: right;
+}
+
+.rating {
+  color: #ffc107;
+  font-size: 1.1rem;
+}
+
+.rating .filled {
+  color: #ffc107;
+}
+
+.feedback-text {
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+  margin-top: 5px;
+  max-width: 300px;
+}
+
+.no-sessions {
+  text-align: center;
+  padding: 50px;
+  color: var(--dark-gray);
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
