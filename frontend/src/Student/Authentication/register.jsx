@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import API from '../../BackendConn/api';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
-function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+function SRegister() {
+  const [form, setForm] = useState({ email: '',name: '', password: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('')
   const [token, setToken] = useState(null)
@@ -15,51 +16,26 @@ function Register() {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
+        console.log("Sending form data:", form);
+
+      const res = await API.post('/api/student/register/', form);
+      console.log(res);
       
-      const res = await API.post('/api/mentor/register/', form);
       localStorage.setItem('token', res.data.token);
-      alert('Registration successful! \nYour Mentor ID : ' + res.data.mentor.mentor_id);
+      alert('Registration successful! \nYour Student ID : ' + res.data.student.student_id);
       console.log(res.data);
+      navigate('/student/login');
       
       
     } catch (err) {
-      setError('Error during registration');
+      console.error("Error response:", err.response?.data);
+        setError(err.response?.data?.detail || 'Error during registration');
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      {/* <h2 className="text-xl font-semibold mb-4">Mentor Registration</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          className="border p-2"
-          name="name"
-          type="text"
-          placeholder="Name"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="email"
-          type="email"
-          placeholder="Email"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="password"
-          type="password"
-          placeholder="Password"
-          onChange={handleChange}
-          required
-        />
-        <button className="bg-green-500 text-white p-2 rounded hover:bg-green-600">
-          Register
-        </button>
-      </form> */}
+
 
       <StyledWrapper>
         <div className="container">
@@ -99,7 +75,7 @@ function Register() {
   );
 }
 
-export default Register;
+export default SRegister;
 
 
 

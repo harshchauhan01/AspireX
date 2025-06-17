@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import API from '../../BackendConn/api';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
-function Register() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+function SLogin() {
+  const [form, setForm] = useState({ student_id: '', password: '' });
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('')
-  const [token, setToken] = useState(null)
+  const navigate = useNavigate();
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,59 +15,30 @@ function Register() {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
+      const res = await API.post('/api/student/login/', form);
+      // console.log(res.data);
       
-      const res = await API.post('/api/mentor/register/', form);
       localStorage.setItem('token', res.data.token);
-      alert('Registration successful! \nYour Mentor ID : ' + res.data.mentor.mentor_id);
-      console.log(res.data);
-      
-      
+      alert('Login successful!');
+      navigate('/student/dashboard');
+      // redirect or update state
     } catch (err) {
-      setError('Error during registration');
+        console.log(err);
+        
+      setError('Invalid credentials');
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      {/* <h2 className="text-xl font-semibold mb-4">Mentor Registration</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          className="border p-2"
-          name="name"
-          type="text"
-          placeholder="Name"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="email"
-          type="email"
-          placeholder="Email"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="password"
-          type="password"
-          placeholder="Password"
-          onChange={handleChange}
-          required
-        />
-        <button className="bg-green-500 text-white p-2 rounded hover:bg-green-600">
-          Register
-        </button>
-      </form> */}
+      
 
       <StyledWrapper>
         <div className="container">
           <div className="heading">Sign In</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" action onSubmit={handleSubmit}>
-            <input placeholder="Name" id="text" name="name" type="text" className="input" onChange={handleChange} required />
-            <input placeholder="Email" id="email" name="email" type="email" className="input" onChange={handleChange} required />
+            <input placeholder="Student ID" id="text" name="student_id" type="text" className="input" onChange={handleChange} required />
             <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required />
             <span className="forgot-password"><a href="#">Forgot Password ?</a></span>
             <input defaultValue="Sign In" type="submit" className="login-button" />
@@ -99,7 +70,9 @@ function Register() {
   );
 }
 
-export default Register;
+export default SLogin;
+
+
 
 
 

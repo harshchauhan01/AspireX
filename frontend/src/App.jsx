@@ -4,11 +4,20 @@ import Login from './Mentor/Authentication/Login';
 import Register from './Mentor/Authentication/Register';
 import Dashboard from './Mentor/Pages/Dashboard';
 import DashboardLayout from './components/DashboardLayout';
+import Home from './components/Home';
+import SLogin from './Student/Authentication/login';
+import SRegister from './Student/Authentication/register';
+import SDashboard from './Student/pages/Dashboard';
+
 
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="" element={<Home />} />
+        <Route path="/student/login" element={<SLogin />} />
+        <Route path="/student/signup" element={<SRegister />} />
+        <Route path="/student/dashboard" element={<SDashboard />} />
         <Route path="/mentor/login" element={<Login />} />
         <Route path="/mentor/signup" element={<Register />} />
         <Route path="/mentor/dashboard" element={<Dashboard />} />

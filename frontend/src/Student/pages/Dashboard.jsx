@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
 
-const Dashboard = () => {
+const SDashboard = () => {
   const [activeTab, setActiveTab] = useState('mentors');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,4 +158,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default SDashboard;
