@@ -18,8 +18,8 @@ const Navone = () => {
          <div className="land-nav">
         <div className="land-nav-logo"><a onClick={() => handleNavigation("/")}>Aspire X</a></div>
         <ul className="land-nav-ul">
-            <li className='land-nav-li'><a onClick={() => handleNavigation("/Students/Authentication/Slogin")}>Log in</a></li>
-            <li className='land-nav-li'><a onClick={() => handleNavigation("/Students/Authentication/Sreg")}>Sign up</a></li>
+            <li className='land-nav-li'><a onClick={() => handleNavigation("/student/login")}>Log in</a></li>
+            <li className='land-nav-li'><a onClick={() => handleNavigation("/student/signup")}>Sign up</a></li>
             <li className='land-nav-li'><a onClick={() => handleNavigation("/mentor/signup")}>Become a mentor</a></li>
         </ul>
           <div className="hamburger" onClick={toggleNav}>☰</div>
@@ -28,8 +28,8 @@ const Navone = () => {
       <div className={`side-nav ${isOpen ? "open" : ""}`}>
         <button className="close-btn" onClick={toggleNav}>×</button>
         <ul>
-            <li><a onClick={() => handleNavigation("/Students/Authentication/Slogin")}>Log in</a></li>
-            <li><a onClick={() => handleNavigation("/Students/Authentication/Sreg")}>Sign up</a></li>
+            <li><a onClick={() => handleNavigation("/student/login")}>Log in</a></li>
+            <li><a onClick={() => handleNavigation("/student/signup")}>Sign up</a></li>
             <li><a onClick={() => handleNavigation("/mentor/signup")}>Become a mentor</a></li>
         </ul>
       </div>
