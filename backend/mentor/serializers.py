@@ -52,6 +52,14 @@ class SkillSerializer(serializers.ModelSerializer):
     class Meta:
         model = Skill
         fields = ('name',)
+    
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            name = data.get('name')
+        else:
+            name = data
+        skill, _ = Skill.objects.get_or_create(name=name)
+        return skill
 
 # Serializer for Profession
 class ProfessionSerializer(serializers.ModelSerializer):
@@ -59,12 +67,20 @@ class ProfessionSerializer(serializers.ModelSerializer):
         model = Profession
         fields = ('title',)
 
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            title = data.get('title')
+        else:
+            title = data
+        profession, _ = Profession.objects.get_or_create(title=title)
+        return profession
+
 
 
 # Serializer for MentorDetail
 class MentorDetailSerializer(serializers.ModelSerializer):
-    skills = SkillSerializer(many=True, read_only=True)
-    professions = ProfessionSerializer(many=True, read_only=True)
+    skills = SkillSerializer(many=True)
+    professions = ProfessionSerializer(many=True)
 
     class Meta:
         model = MentorDetail
@@ -110,9 +126,11 @@ class MeetingSerializer(serializers.ModelSerializer):
             'meeting_link', 'status', 'notes', 'created_at', 'updated_at', 'student'
         )
 
+
+
 # Main Mentor Serializer
 class MentorSerializer(serializers.ModelSerializer):
-    details = MentorDetailSerializer(read_only=True)
+    details = MentorDetailSerializer()
     auth_token = MentorTokenSerializer(read_only=True)
     earnings = EarningSerializer(many=True, read_only=True)
     messages = MentorMessageSerializer(many=True, read_only=True)
@@ -125,6 +143,45 @@ class MentorSerializer(serializers.ModelSerializer):
             'details', 'auth_token', 'earnings', 'messages', 'meetings'
         )
 
+    def update(self, instance, validated_data):
+        details_data = validated_data.pop('details', {})
+
+        # Update mentor fields (name, email, etc.)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update MentorDetails fields
+        mentor_details = instance.details
+        skills_data = details_data.pop('skills', [])
+        professions_data = details_data.pop('professions', [])
+
+        # Update simple fields
+        for attr, value in details_data.items():
+            setattr(mentor_details, attr, value)
+        mentor_details.save()
+
+        # Update ManyToMany: skills and professions
+        if skills_data:
+            skill_objs = []
+            for skill in skills_data:
+                if isinstance(skill, Skill):
+                    obj = skill
+                else:
+                    obj, _ = Skill.objects.get_or_create(name=skill.get('name'))
+                skill_objs.append(obj)
+            mentor_details.skills.set(skill_objs)
 
 
+        if professions_data:
+            profession_objs = []
+            for prof in professions_data:
+                if isinstance(prof, Profession):
+                    obj = prof
+                else:
+                    obj, _ = Profession.objects.get_or_create(title=prof.get('title'))
+                profession_objs.append(obj)
+            mentor_details.professions.set(profession_objs)
 
+
+        return instance

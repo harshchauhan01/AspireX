@@ -147,18 +147,18 @@ class MentorDetail(models.Model):
     )
     
     # Add Details     
-    first_name = models.CharField(max_length=100, default="John")
-    last_name = models.CharField(max_length=100, default="Doe")
-    dob = models.DateField(default="2000-01-01")
-    age = models.PositiveIntegerField(default=25)
+    first_name = models.CharField(max_length=100, default="NULL")
+    last_name = models.CharField(max_length=100, default="NULL")
+    dob = models.DateField(default="NULL")
+    age = models.PositiveIntegerField(default=0)
     GENDER_CHOICES = (
         ('male', 'Male'),
         ('female', 'Female'),
         ('other', 'Other'),
     )
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='Male')
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, unique=True, default="0000000000")
+    phone_number = models.CharField(max_length=15, unique=False, default="0000000000")
 
     college = models.CharField(max_length=200, default="Unknown College")
     cgpa = models.FloatField(default=0.0)

@@ -115,3 +115,64 @@
   margin-right: 5px;
   font-weight: 500;
 }
+
+/* CV Upload Section Styles */
+.cv-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cv-link {
+  color: #2c83eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cv-link:hover {
+  text-decoration: underline;
+}
+
+.cv-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.file-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-upload-label {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-upload-label:hover {
+  background-color: #e0e0e0;
+}
+
+.small-button {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.file-upload-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 5px;
+}

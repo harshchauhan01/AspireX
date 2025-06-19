@@ -42,9 +42,9 @@ class MentorProfileAPIView(APIView):
     
     def get(self, request):
         mentor = request.user
-        print("User:", request.user)
+        # print("User:", request.user)
         serializer = MentorSerializer(mentor)
-        print(serializer.data)
+        # print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -103,3 +103,68 @@ class PublicMentorListView(generics.ListAPIView):
         
 
 
+
+
+# Add to your views.py
+class MentorProfileUpdateAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def put(self, request):
+        print("Received data:", request.data)
+        mentor = request.user
+        serializer = MentorSerializer(mentor, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            print("Valid data, saving...")
+            serializer.save()
+            print("After save:", MentorSerializer(mentor).data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        print("Validation errors:", serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MentorCVUpdateAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def put(self, request):
+        mentor = request.user
+        cv_file = request.FILES.get('cv')
+        
+        if not cv_file:
+            return Response(
+                {"error": "No file provided"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Validate file type
+        valid_extensions = ['.pdf', '.doc', '.docx']
+        if not any(cv_file.name.lower().endswith(ext) for ext in valid_extensions):
+            return Response(
+                {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        if mentor.details.cv:
+            mentor.details.cv.delete()
+            
+        mentor.details.cv = cv_file
+        mentor.details.save()
+        
+        return Response(
+            {"cv_url": mentor.details.cv.url},
+            status=status.HTTP_200_OK
+        )
+    
+    def delete(self, request):
+        mentor = request.user
+        if mentor.details.cv:
+            mentor.details.cv.delete()
+            mentor.details.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"error": "No CV to delete"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    
