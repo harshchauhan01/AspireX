@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState,useEffect,useRef } from 'react';
 import axios from 'axios';
 import './CSS/PageStyles.css';
 import './CSS/Profile.css';
@@ -8,22 +8,22 @@ const ProfilePage = ({ mentorProfile }) => {
   const [profileData, setProfileData] = useState({
     name: mentorProfile.name,
     email: mentorProfile.email,
-    expertise: mentorProfile?.details?.professions?.[0]?.title || '#NA',
-    bio: mentorProfile?.details?.about || '#NA',
-    location: mentorProfile?.details?.location || '#NA',
+    expertise: mentorProfile?.details?.professions?.[0]?.title || '',
+    bio: mentorProfile?.details?.about || '',
+    location: mentorProfile?.details?.location || '',
     hourlyRate: mentorProfile?.details?.fees || 0,
-    availability: mentorProfile?.details?.availability_timings || '#NA',
-    phone: mentorProfile?.details?.phone_number || '#NA',
-    college: mentorProfile?.details?.college || '#NA',
-    cgpa: mentorProfile?.details?.cgpa || '#NA',
-    batch: mentorProfile?.details?.batch || '#NA',
-    gender: mentorProfile?.details?.gender || '#NA',
-    age: mentorProfile?.details?.age || '#NA',
-    dob:mentorProfile?.details?.dob || '#NA',
+    availability: mentorProfile?.details?.availability_timings || '',
+    phone: mentorProfile?.details?.phone_number || '',
+    college: mentorProfile?.details?.college || '',
+    cgpa: mentorProfile?.details?.cgpa || '',
+    batch: mentorProfile?.details?.batch || '',
+    gender: mentorProfile?.details?.gender || '',
+    age: mentorProfile?.details?.age || '',
+    dob:mentorProfile?.details?.dob || '',
     yearsOfExperience: mentorProfile?.details?.years_of_experience || 0,
-    linkedin: mentorProfile?.details?.linkedin_url || '#NA',
-    github: mentorProfile?.details?.github_url || '#NA',
-    portfolio: mentorProfile?.details?.portfolio_url || '#NA',
+    linkedin: mentorProfile?.details?.linkedin_url || '',
+    github: mentorProfile?.details?.github_url || '',
+    portfolio: mentorProfile?.details?.portfolio_url || '',
     skills: mentorProfile?.details?.skills?.map(skill => skill.name).join(', ') || '',
     cv: mentorProfile?.details?.cv || null,
   });
@@ -33,7 +33,23 @@ const ProfilePage = ({ mentorProfile }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(mentorProfile?.details?.profile_photo || null);
+
   const fileInputRef = React.useRef(null);
+  const photoInputRef = useRef(null);
+
+  useEffect(() => {
+    if (mentorProfile?.details?.profile_photo) {
+      setPhotoPreview(mentorProfile.details.profile_photo);
+    }
+  }, [mentorProfile]);
+  
+  console.log(photoPreview);
+  
+
+
 
 
   const getAuthToken = () => {
@@ -206,6 +222,76 @@ const ProfilePage = ({ mentorProfile }) => {
   };
 
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePhoto(file);
+      // Create a preview URL for the selected image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!profilePhoto) return;
+    
+    setPhotoUploading(true);
+    setSaveError(null);
+    try {
+      const formData = new FormData();
+      formData.append('profile_photo', profilePhoto);
+
+      const response = await axios.put(
+        'http://127.0.0.1:8000/api/mentor/profile/cv/', // Update this URL
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Token ${getAuthToken()}`
+          }
+        }
+      );
+
+      // Update the photo preview with the new URL from the server
+      setPhotoPreview(response.data.profile_photo_url);
+      setProfilePhoto(null);
+      
+      // Reset file input
+      if (photoInputRef.current) {
+        photoInputRef.current.value = null;
+      }
+    } catch (error) {
+      console.error("Photo upload failed:", error);
+      setSaveError(error.response?.data?.message || "Failed to upload photo");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    try {
+      await axios.delete(
+        'http://127.0.0.1:8000/api/mentor/profile/cv/', // Update this URL
+        {
+          data: { type: 'profile_photo' },
+          headers: {
+            'Authorization': `Token ${getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      setPhotoPreview(null);
+    } catch (error) {
+      console.error("Error removing photo:", error);
+      setSaveError(error.response?.data?.message || "Failed to remove photo");
+    }
+  };
+
+
 
 
 
@@ -267,10 +353,55 @@ const ProfilePage = ({ mentorProfile }) => {
       
       <div className="profile-content">
         <div className="profile-header">
-          <div className="profile-avatar">
-            {profileData.name.split(' ').map(n => n[0]).join('')}
+          <div className="profile-avatar-container">
+            {photoPreview ? (
+              <img 
+                src={`http://127.0.0.1:8000${photoPreview}`} 
+                alt="Profile" 
+                className="profile-avatar-image"
+              />
+            ) : (
+              <div className="profile-avatar">
+                {profileData.name.split(' ').map(n => n[0]).join('')}
+              </div>
+            )}
             {editMode && (
-              <button className="avatar-edit-button">✏️</button>
+              <div className="avatar-edit-actions">
+                <input
+                  type="file"
+                  id="photo-upload"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  ref={photoInputRef}
+                  style={{ display: 'none' }}
+                />
+                <label 
+                  htmlFor="photo-upload" 
+                  className="avatar-edit-button"
+                  title="Change photo"
+                >
+                  ✏️
+                </label>
+                {photoPreview && (
+                  <button 
+                    className="avatar-remove-button"
+                    onClick={handleRemovePhoto}
+                    title="Remove photo"
+                    disabled={photoUploading}
+                  >
+                    🗑️
+                  </button>
+                )}
+                {profilePhoto && (
+                  <button 
+                    className="avatar-upload-button"
+                    onClick={handlePhotoUpload}
+                    disabled={photoUploading}
+                  >
+                    {photoUploading ? 'Uploading...' : 'Save Photo'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
           <div className="profile-info">
@@ -288,7 +419,7 @@ const ProfilePage = ({ mentorProfile }) => {
             <p className="profile-email">{profileData.email}</p>
             <div className="profile-stats">
               <span>⭐ {mentorProfile?.details?.average_rating || 0} Rating</span>
-              <span>🎯 {mentorProfile?.details?.total_students || 0} Sessions</span>
+              <span>🎯 {mentorProfile?.details?.total_sessions || 0} Sessions</span>
               <span>⏳ {profileData.yearsOfExperience} years experience</span>
             </div>
           </div>

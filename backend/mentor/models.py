@@ -170,7 +170,7 @@ class MentorDetail(models.Model):
     fees = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     about = models.TextField(default="#NA")
     availability_timings = models.CharField(max_length=50, default="#NA")
-    profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True, default=None)
+    profile_photo = models.ImageField(upload_to='mentors/profile_photos/', null=True, blank=True, default=None)
     cv = models.FileField(upload_to='cvs/', max_length=100, null=True, blank=True, default=None)
 
     is_approved = models.BooleanField(default=False)

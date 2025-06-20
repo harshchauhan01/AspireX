@@ -168,3 +168,78 @@ class MentorCVUpdateAPIView(APIView):
         )
     
     
+
+
+# Update your MentorCVUpdateAPIView to MentorFileUploadAPIView
+class MentorFileUploadAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def put(self, request):
+        mentor = request.user
+        cv_file = request.FILES.get('cv')
+        profile_photo = request.FILES.get('profile_photo')
+        
+        if cv_file:
+            # Handle CV upload
+            valid_extensions = ['.pdf', '.doc', '.docx']
+            if not any(cv_file.name.lower().endswith(ext) for ext in valid_extensions):
+                return Response(
+                    {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            if mentor.details.cv:
+                mentor.details.cv.delete()
+                
+            mentor.details.cv = cv_file
+            mentor.details.save()
+            
+            return Response(
+                {"cv_url": mentor.details.cv.url},
+                status=status.HTTP_200_OK
+            )
+            
+        elif profile_photo:
+            # Handle profile photo upload
+            valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
+            if not any(profile_photo.name.lower().endswith(ext) for ext in valid_extensions):
+                return Response(
+                    {"error": "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            if mentor.details.profile_photo:
+                mentor.details.profile_photo.delete()
+                
+            mentor.details.profile_photo = profile_photo
+            mentor.details.save()
+            
+            return Response(
+                {"profile_photo_url": mentor.details.profile_photo.url},
+                status=status.HTTP_200_OK
+            )
+            
+        return Response(
+            {"error": "No file provided"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    def delete(self, request):
+        mentor = request.user
+        file_type = request.data.get('type')  # 'cv' or 'profile_photo'
+        
+        if file_type == 'cv' and mentor.details.cv:
+            mentor.details.cv.delete()
+            mentor.details.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+            
+        elif file_type == 'profile_photo' and mentor.details.profile_photo:
+            mentor.details.profile_photo.delete()
+            mentor.details.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+            
+        return Response(
+            {"error": f"No {file_type} to delete"},
+            status=status.HTTP_400_BAD_REQUEST
+        )

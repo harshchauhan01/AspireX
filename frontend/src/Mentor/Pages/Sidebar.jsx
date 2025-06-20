@@ -3,6 +3,8 @@ import './CSS/Dashboard.css';
 
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile, mentor }) => {
   const isVerified = mentor?.details?.is_approved || false;
+  const profilePhoto = mentor?.details?.profile_photo || '';
+  console.log(profilePhoto);
   
   return (
     <div className="sidebar">
@@ -16,9 +18,20 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
       {/* Profile Section */}
       <div className="profile-section">
         <div className="profile-photo-container">
-          <div className="profile-photo">
+          {profilePhoto ? (
+            <img 
+              src={`http://127.0.0.1:8000${profilePhoto}`} 
+              alt="Profile" 
+              className="profile-photo"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'flex';
+              }}
+            />
+          ) : <div className="profile-photo">
             {mentor?.name.split(' ').map(n => n[0]).join('') || mentorProfile.name.split(' ').map(n => n[0]).join('')}
-          </div>
+          </div>}
+          
           <div className={`verification-badge ${isVerified ? 'verified' : 'not-verified'}`}>
             {isVerified ? '✓' : '✗'}
           </div>
