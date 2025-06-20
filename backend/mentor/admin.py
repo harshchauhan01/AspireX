@@ -35,7 +35,7 @@ class MentorDetailAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Statistics', {
-            'fields': ('total_students', 'average_rating'),
+            'fields': ('total_students', 'average_rating','total_sessions'),
             'classes': ('collapse',)
         }),
         ('Approval Status', {

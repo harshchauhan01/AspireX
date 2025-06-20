@@ -158,9 +158,9 @@ class MentorDetail(models.Model):
     )
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='Male')
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, unique=False, default="0000000000")
+    phone_number = models.CharField(max_length=15, unique=False, default="#NA")
 
-    college = models.CharField(max_length=200, default="Unknown College")
+    college = models.CharField(max_length=200, default="#NA")
     cgpa = models.FloatField(default=0.0)
     batch = models.PositiveIntegerField(default=2024)
     
@@ -168,14 +168,15 @@ class MentorDetail(models.Model):
     skills = models.ManyToManyField(Skill, related_name='mentors', blank=True)
 
     fees = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    about = models.TextField(default="No information provided.")
-    availability_timings = models.CharField(max_length=50, default="9 AM - 5 PM")
+    about = models.TextField(default="#NA")
+    availability_timings = models.CharField(max_length=50, default="#NA")
     profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True, default=None)
     cv = models.FileField(upload_to='cvs/', max_length=100, null=True, blank=True, default=None)
 
     is_approved = models.BooleanField(default=False)
 
     total_students = models.PositiveIntegerField(default=0)
+    total_sessions = models.PositiveIntegerField(default=0)
     average_rating = models.FloatField(default=0.0)
     years_of_experience = models.PositiveIntegerField(default=0)
 

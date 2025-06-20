@@ -29,33 +29,14 @@ function Login() {
     }
   };
 
+  const handleNavigation = (path) => {
+      // alert("clicked");
+        navigate(path);
+      };
+
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      {/* <h2 className="text-xl font-semibold mb-4">Mentor Login</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          className="border p-2"
-          name="mentor_id"
-          type="text"
-          placeholder="Email"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="password"
-          type="password"
-          placeholder="Password"
-          onChange={handleChange}
-          autoComplete="current-password"
-          required
-        />
-        <button className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-          Login
-        </button>
-      </form> */}
-
+      
       <StyledWrapper>
         <div className="container">
           <div className="heading">Sign In</div>
@@ -86,7 +67,7 @@ function Login() {
               </button>
             </div>
           </div>
-          <span className="agreement"><a href="#">Learn user licence agreement</a></span>
+          <span className="agreement"><a href="/mentor/signup" onClick={() => handleNavigation("/mentor/signup")}>New Here ? Sign Up</a></span>
         </div>
       </StyledWrapper>
     </div>

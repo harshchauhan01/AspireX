@@ -89,7 +89,7 @@ class MentorDetailSerializer(serializers.ModelSerializer):
             'college', 'cgpa', 'batch', 'professions', 'skills', 'fees', 'about',
             'availability_timings', 'profile_photo', 'cv', 'is_approved',
             'total_students', 'average_rating', 'years_of_experience',
-            'linkedin_url', 'github_url', 'portfolio_url','total_students'
+            'linkedin_url', 'github_url', 'portfolio_url','total_students','total_sessions'
         )
 
 # Serializer for MentorToken

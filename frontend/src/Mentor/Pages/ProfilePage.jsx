@@ -8,22 +8,22 @@ const ProfilePage = ({ mentorProfile }) => {
   const [profileData, setProfileData] = useState({
     name: mentorProfile.name,
     email: mentorProfile.email,
-    expertise: mentorProfile?.details?.professions?.[0]?.title || '',
-    bio: mentorProfile?.details?.about || 'No information provided.',
-    location: mentorProfile?.details?.location || 'Not specified',
+    expertise: mentorProfile?.details?.professions?.[0]?.title || '#NA',
+    bio: mentorProfile?.details?.about || '#NA',
+    location: mentorProfile?.details?.location || '#NA',
     hourlyRate: mentorProfile?.details?.fees || 0,
-    availability: mentorProfile?.details?.availability_timings || 'Not specified',
-    phone: mentorProfile?.details?.phone_number || '',
-    college: mentorProfile?.details?.college || '',
-    cgpa: mentorProfile?.details?.cgpa || '',
-    batch: mentorProfile?.details?.batch || '',
-    gender: mentorProfile?.details?.gender || '',
-    age: mentorProfile?.details?.age || '',
-    dob:mentorProfile?.details?.dob || '',
+    availability: mentorProfile?.details?.availability_timings || '#NA',
+    phone: mentorProfile?.details?.phone_number || '#NA',
+    college: mentorProfile?.details?.college || '#NA',
+    cgpa: mentorProfile?.details?.cgpa || '#NA',
+    batch: mentorProfile?.details?.batch || '#NA',
+    gender: mentorProfile?.details?.gender || '#NA',
+    age: mentorProfile?.details?.age || '#NA',
+    dob:mentorProfile?.details?.dob || '#NA',
     yearsOfExperience: mentorProfile?.details?.years_of_experience || 0,
-    linkedin: mentorProfile?.details?.linkedin_url || '',
-    github: mentorProfile?.details?.github_url || '',
-    portfolio: mentorProfile?.details?.portfolio_url || '',
+    linkedin: mentorProfile?.details?.linkedin_url || '#NA',
+    github: mentorProfile?.details?.github_url || '#NA',
+    portfolio: mentorProfile?.details?.portfolio_url || '#NA',
     skills: mentorProfile?.details?.skills?.map(skill => skill.name).join(', ') || '',
     cv: mentorProfile?.details?.cv || null,
   });
@@ -171,6 +171,42 @@ const ProfilePage = ({ mentorProfile }) => {
   };
 
 
+  const calculateProfileCompletion = () => {
+    const requiredFields = [
+      profileData.name,
+      profileData.email,
+      profileData.expertise,
+      profileData.bio,
+      profileData.skills,
+      profileData.location,
+      profileData.phone,
+      profileData.college,
+      profileData.cgpa,
+      profileData.batch,
+      profileData.gender,
+      profileData.age,
+      profileData.dob,
+      profileData.yearsOfExperience,
+      profileData.linkedin,
+      profileData.github,
+      profileData.portfolio,
+      profileData.cv
+    ];
+
+    const filledFields = requiredFields.filter(value => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim().toLowerCase();
+        return trimmed !== '' && trimmed !== '#na' && trimmed !== 'n/a' && trimmed !== 'na';
+      }
+      return value !== null && value !== undefined;
+    });
+
+    const percentage = Math.round((filledFields.length / requiredFields.length) * 100);
+    return percentage;
+  };
+
+
+
 
 
   return (
@@ -188,6 +224,16 @@ const ProfilePage = ({ mentorProfile }) => {
 
       <header className="page-header">
         <h1>Profile</h1>
+        <div className="profile-completion-bar">
+          <label>Profile Completion: {calculateProfileCompletion()}%</label>
+          <div className="progress-bar">
+            <div
+              className="progress"
+              style={{ width: `${calculateProfileCompletion()}%` }}
+            ></div>
+          </div>
+        </div>
+
         <div className="page-actions">
           {editMode ? (
             <>
@@ -214,6 +260,9 @@ const ProfilePage = ({ mentorProfile }) => {
             </button>
           )}
         </div>
+
+        
+
       </header>
       
       <div className="profile-content">

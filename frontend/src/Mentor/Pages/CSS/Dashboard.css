@@ -783,3 +783,67 @@ header {
     font-size: 0.8rem;
   }
 }
+
+
+/* Add these styles to your existing Dashboard.css */
+
+.profile-photo-container {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto 15px;
+}
+
+.profile-photo {
+  position: relative; /* Add this to contain the badge */
+  width: 60px;
+  height: 60px;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0 auto;
+}
+
+.verification-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 2px solid var(--white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.verification-badge.verified {
+  background-color: #4CAF50;
+  color: var(--white);
+}
+
+.verification-badge.not-verified {
+  background-color: #F44336;
+  color: var(--white);
+}
+
+/* Adjust for collapsed sidebar */
+.mentor-dashboard.sidebar-collapsed .profile-photo {
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+}
+
+.mentor-dashboard.sidebar-collapsed .verification-badge {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  bottom: -3px;
+  right: -3px;
+}

@@ -1,8 +1,8 @@
 import React from 'react';
 import './CSS/Dashboard.css';
 
-const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile ,mentor}) => {
-  // console.log(mentor.name);
+const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile, mentor }) => {
+  const isVerified = mentor?.details?.is_approved || false;
   
   return (
     <div className="sidebar">
@@ -15,8 +15,13 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
       
       {/* Profile Section */}
       <div className="profile-section">
-        <div className="profile-photo">
-          {mentorProfile.name.split(' ').map(n => n[0]).join('')}
+        <div className="profile-photo-container">
+          <div className="profile-photo">
+            {mentor?.name.split(' ').map(n => n[0]).join('') || mentorProfile.name.split(' ').map(n => n[0]).join('')}
+          </div>
+          <div className={`verification-badge ${isVerified ? 'verified' : 'not-verified'}`}>
+            {isVerified ? '✓' : '✗'}
+          </div>
         </div>
         {sidebarOpen && (
           <div className="profile-info">
@@ -24,7 +29,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
             <p>{mentor?.email || mentorProfile.email}</p>
             <div className="mentor-stats">
               <span>⭐ {mentor?.details?.average_rating || 0} Rating</span>
-              <span>🎯 {mentorProfile?.details?.total_students || mentorProfile.sessionsCompleted} sessions</span>
+              <span>🎯 {mentor?.details?.total_sessions || mentorProfile.sessionsCompleted} sessions</span>
             </div>
           </div>
         )}

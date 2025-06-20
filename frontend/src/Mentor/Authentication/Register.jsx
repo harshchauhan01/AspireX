@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import API from '../../BackendConn/api';
 import styled from 'styled-components';
+import { useNavigate } from "react-router-dom";
 
 function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -27,50 +28,26 @@ function Register() {
     }
   };
 
+  const handleNavigation = (path) => {
+      // alert("clicked");
+        navigate(path);
+      };
+
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      {/* <h2 className="text-xl font-semibold mb-4">Mentor Registration</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          className="border p-2"
-          name="name"
-          type="text"
-          placeholder="Name"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="email"
-          type="email"
-          placeholder="Email"
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="border p-2"
-          name="password"
-          type="password"
-          placeholder="Password"
-          onChange={handleChange}
-          required
-        />
-        <button className="bg-green-500 text-white p-2 rounded hover:bg-green-600">
-          Register
-        </button>
-      </form> */}
+
+      
 
       <StyledWrapper>
         <div className="container">
-          <div className="heading">Sign In</div>
+          <div className="heading">Sign Up</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" action onSubmit={handleSubmit}>
             <input placeholder="Name" id="text" name="name" type="text" className="input" onChange={handleChange} required />
             <input placeholder="Email" id="email" name="email" type="email" className="input" onChange={handleChange} required />
             <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required />
             <span className="forgot-password"><a href="#">Forgot Password ?</a></span>
-            <input defaultValue="Sign In" type="submit" className="login-button" />
+            <input defaultValue="Sign Up" type="submit" className="login-button" />
           </form>
           <div className="social-account-container">
             <span className="title">Or Sign in with</span>
@@ -92,7 +69,7 @@ function Register() {
               </button>
             </div>
           </div>
-          <span className="agreement"><a href="#">Learn user licence agreement</a></span>
+          <span className="agreement"><a href="/mentor/login" onClick={() => handleNavigation("/mentor/login")}>Already have an Account? Log In</a></span>
         </div>
       </StyledWrapper>
     </div>
