@@ -4,7 +4,15 @@ import './CSS/Dashboard.css';
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile, mentor }) => {
   const isVerified = mentor?.details?.is_approved || false;
   const profilePhoto = mentor?.details?.profile_photo || '';
-  console.log(profilePhoto);
+  // console.log(profilePhoto);
+
+  const handleLogout = () => {
+    const confirmLogout = window.confirm("Are you sure you want to logout?");
+    if (confirmLogout) {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+  };
   
   return (
     <div className="sidebar">
@@ -74,7 +82,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
       
       {/* Logout */}
       <div className="logout-section">
-        <button className="logout-button">
+        <button className="logout-button" onClick={handleLogout}>
           <span>🚪</span> {sidebarOpen && 'Logout'}
         </button>
       </div>

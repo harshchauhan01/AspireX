@@ -46,7 +46,7 @@ const ProfilePage = ({ mentorProfile }) => {
     }
   }, [mentorProfile]);
   
-  console.log(photoPreview);
+  // console.log(photoPreview);
   
 
 
@@ -100,7 +100,7 @@ const ProfilePage = ({ mentorProfile }) => {
         }
       );
 
-      console.log("Profile updated successfully:", response.data);
+      // console.log("Profile updated successfully:", response.data);
       setSaveSuccess(true);
       setEditMode(false);
       
@@ -212,7 +212,7 @@ const ProfilePage = ({ mentorProfile }) => {
     const filledFields = requiredFields.filter(value => {
       if (typeof value === 'string') {
         const trimmed = value.trim().toLowerCase();
-        return trimmed !== '' && trimmed !== '#na' && trimmed !== 'n/a' && trimmed !== 'na';
+        return trimmed !== '' && trimmed !== '#na' && trimmed !== 'n/a' && trimmed !== 'na' && trimmed !== '#NA';
       }
       return value !== null && value !== undefined;
     });
