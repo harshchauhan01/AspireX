@@ -109,3 +109,15 @@ class StudentAdmin(UserAdmin):
         ('Personal info', {'fields': ('name',)}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
     )
+
+
+
+# This model for success story
+class SuccessStory(models.Model):
+    name = models.CharField(max_length=100)
+    title = models.CharField(max_length=200)
+    story = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.title}"

@@ -8,6 +8,7 @@ import Home from './components/Home';
 import SLogin from './Student/Authentication/login';
 import SRegister from './Student/Authentication/register';
 import SDashboard from './Student/pages/Dashboard';
+import StuHomepage from './Student/pages/StuHomepage';
 
 
 function App() {
@@ -18,10 +19,11 @@ function App() {
         <Route path="/student/login" element={<SLogin />} />
         <Route path="/student/signup" element={<SRegister />} />
         <Route path="/student/dashboard" element={<SDashboard />} />
+        <Route path="/student/Home_student" element={<StuHomepage />} />
         <Route path="/mentor/login" element={<Login />} />
         <Route path="/mentor/signup" element={<Register />} />
         <Route path="/mentor/dashboard" element={<Dashboard />} />
-        <Route path="/mentor/dashboardLayout" element={<DashboardLayout />} />
+        <Route path="/mentor/dashboardLayout" element={<DashboardLayout />} />  
       </Routes>
     </Router>
   );

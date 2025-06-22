@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Student
 from django.contrib.auth import authenticate 
-
+from .models import SuccessStory
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     
@@ -44,3 +44,12 @@ class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = ('student_id', 'email', 'name')
+        
+        
+   
+   
+    #  this is for success story
+class SuccessStorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SuccessStory
+        fields = '__all__'

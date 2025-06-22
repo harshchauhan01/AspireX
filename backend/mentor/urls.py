@@ -15,5 +15,6 @@ urlpatterns = [
     path('public/', PublicMentorListView.as_view(), name='public-mentor-list'),
     path('public/<str:mentor_id>/', PublicMentorListView.as_view(), name='public-mentor-detail'),
     
-    
+    path('feature/', filtered_mentor_list, name='mentor-feature-list'),
+    path('filter/', filtered_mentor_list, name='filtered_mentor_list'),
 ]

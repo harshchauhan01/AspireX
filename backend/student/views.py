@@ -3,6 +3,9 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from .models import Student
+from rest_framework import generics
+from .models import SuccessStory
+from .serializers import SuccessStorySerializer
 from .serializers import (
     StudentSerializer,
     StudentRegistrationSerializer,
@@ -65,3 +68,18 @@ class StudentProfileAPIView(APIView):
         student = request.user
         serializer = StudentSerializer(student)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+# this view is for success story
+from rest_framework import generics
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .models import SuccessStory
+from .serializers import SuccessStorySerializer
+
+class SuccessStoryListCreateView(generics.ListCreateAPIView):
+    queryset = SuccessStory.objects.all().order_by('-created_at')
+    serializer_class = SuccessStorySerializer
+    authentication_classes = [TokenAuthentication] 
+    permission_classes = [IsAuthenticatedOrReadOnly]  
