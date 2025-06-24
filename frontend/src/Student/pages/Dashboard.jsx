@@ -6,7 +6,7 @@
 
 
 import React, { useState } from 'react';
-import './Dashboard.css';
+import './CSS/Dashboard.css';
 
 const SDashboard = () => {
   const [activeTab, setActiveTab] = useState('mentors');
