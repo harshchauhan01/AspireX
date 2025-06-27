@@ -1,17 +1,13 @@
-
-
-
-
-
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './Dashboard.css';
 
 const SDashboard = () => {
   const [activeTab, setActiveTab] = useState('mentors');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userInfo, setUserInfo] = useState({ name: '', email: '' });
+
 
   // Mock data
   const mentors = [
@@ -32,6 +28,25 @@ const SDashboard = () => {
     upcomingSessions: 4,
     satisfactionRate: '92%'
   };
+  useEffect(() => {
+  const fetchUserInfo = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:8000/api/student/profile/", {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+      // console.log("🎯 Received user data:", res.data);
+      setUserInfo(res.data);
+    } catch (error) {
+      console.error("Failed to fetch user info:", error.response?.data || error.message);
+    }
+  };
+
+  fetchUserInfo();
+}, []);
+
 
   return (
     <div className={`dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
@@ -56,8 +71,8 @@ const SDashboard = () => {
           <div className="avatar">U</div>
           {sidebarOpen && (
             <div className="user-info">
-              <p className="username">User Name</p>
-              <p className="user-email">user@example.com</p>
+              <p className="username">{userInfo.name}</p>
+              <p className="user-email">{userInfo.email}</p>
             </div>
           )}
         </div>

@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import "./CSS/Home.css";
 import Navone from "./Navbar";
+import StuHomepage from "../Student/pages/StuHomepage";
 function Home() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -36,6 +37,8 @@ function Home() {
           </div>
         </div>
       </div>
+
+      <StuHomepage/>
     </>
   );
 }

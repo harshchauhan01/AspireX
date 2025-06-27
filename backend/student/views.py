@@ -47,30 +47,22 @@ class StudentLoginAPIView(APIView):
             'message': 'Login successful'
         }, status=status.HTTP_200_OK)
 
-# class StudentLoginAPIView(APIView):
-#     permission_classes = (permissions.AllowAny,)
-    
-#     def post(self, request):
-#         serializer = StudentLoginSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         student = serializer.validated_data['student']
-#         token, created = Token.objects.get_or_create(user=student)
-#         return Response({
-#             'student': StudentSerializer(student).data,
-#             'token': token.key,
-#             'message': 'Login successful'
-#         }, status=status.HTTP_200_OK)
 
+# This is for showing user name in the dashboard
+from rest_framework.authentication import TokenAuthentication
 class StudentProfileAPIView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         student = request.user
-        serializer = StudentSerializer(student)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            "name": student.name,
+            "email": student.email
+        })
     
     
-    
+
 # this view is for success story
 from rest_framework import generics
 from rest_framework.authentication import TokenAuthentication
@@ -79,7 +71,12 @@ from .models import SuccessStory
 from .serializers import SuccessStorySerializer
 
 class SuccessStoryListCreateView(generics.ListCreateAPIView):
-    queryset = SuccessStory.objects.all().order_by('-created_at')
     serializer_class = SuccessStorySerializer
-    authentication_classes = [TokenAuthentication] 
-    permission_classes = [IsAuthenticatedOrReadOnly]  
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return SuccessStory.objects.filter(is_approved=True).order_by('-created_at')  # ✅ Filter only approved
+
+    def perform_create(self, serializer):
+        serializer.save(is_approved=False)  # ✅ Set unapproved by default

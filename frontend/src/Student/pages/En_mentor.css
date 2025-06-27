@@ -1,0 +1,97 @@
+/* MentorDashboard.css */
+
+.mentor-dashboard {
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: auto;
+  font-family: "Inter", sans-serif;
+  background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 30px;
+}
+
+.mentor-section {
+  margin-bottom: 60px;
+}
+
+.mentor-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.mentor-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 280px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+
+.mentor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.mentor-avatar {
+  background-color: #3b82f6;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto auto 16px;
+}
+
+.mentor-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.mentor-card p {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.mentor-stats {
+  display: flex;
+  justify-content: space-around;
+  font-size: 14px;
+  margin-bottom: 16px;
+  color: #374151;
+}
+
+.session-btn {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.session-btn:hover {
+  background-color: #059669;
+}

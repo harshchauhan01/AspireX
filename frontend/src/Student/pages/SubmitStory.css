@@ -1,6 +1,10 @@
 .submit-story-section {
   background: #f4faff;
   padding: 80px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -19,14 +23,18 @@
 
 .story-form {
   max-width: 600px;
+  width: 100%;               /* ✅ Prevents shrinking */
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 0 20px;           /* ✅ Padding for small screens */
+  box-sizing: border-box;
 }
 
 .story-form input,
 .story-form textarea {
+  width: 100%;               /* ✅ Input fills form width */
   padding: 14px 18px;
   font-size: 16px;
   border: 1px solid #ccc;

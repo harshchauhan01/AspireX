@@ -6,7 +6,6 @@ import { faCircleUser } from "@fortawesome/free-solid-svg-icons";
 import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import { faIdCard } from "@fortawesome/free-solid-svg-icons";
 import Navtwo from "./Navtwo";
-import SuccessStorySection  from "./SuccessStorySection ";
 import axios from 'axios';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -15,6 +14,7 @@ import 'swiper/css/autoplay';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay } from 'swiper/modules';
 import { Navigation, Pagination } from 'swiper/modules';
+import SuccessStories from './SuccessStories';
 
 
 
@@ -84,46 +84,7 @@ useEffect(() => {
 
   return (
     <>
-      <Navtwo />
-      <div id="main-content">
-        <div id="wel-heading">
-          <h2 id="wel-text">Welcome to <span id="wel-heading2">Aspire X</span></h2>
-          <h2 className="subtitle">
-            Learn, grow, and succeed with expert guidance by your side
-          </h2>
-        </div>
-
-        <div id="wel-search">
-          <div className="searchbar">
-            <div className="searchbar-wrapper">
-              <div className="searchbar-left">
-                <div className="search-icon-wrapper">
-                  <span className="search-icon searchbar-icon">
-                    <FontAwesomeIcon icon={faMagnifyingGlass} />
-                  </span>
-                </div>
-              </div>
-
-              <div className="searchbar-center">
-                <div className="searchbar-input-spacer"></div>
-                <input 
-                  type="text" 
-                  className="searchbar-input" 
-                  maxLength="2048" 
-                  autoCapitalize="off" 
-                  autoComplete="off" 
-                  title="Search" 
-                  role="combobox" 
-                  placeholder="Search your mentor"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div id="wel-mentor_button">
-            <button id="button-inside">Find Mentor</button>
-          </div>
-        </div>
+        <div id="main-content">
 
         <div id="feature-mentor">
           <h2>Featured Mentors</h2>
@@ -224,7 +185,7 @@ useEffect(() => {
       </div>
     </section>
       </div>
-        <SuccessStorySection />
+        <SuccessStories/>
     </>
   );
 };

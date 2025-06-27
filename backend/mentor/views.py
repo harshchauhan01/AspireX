@@ -170,9 +170,31 @@ def filtered_mentor_list(request):
 
 
 
+# @api_view(['GET'])
+# @permission_classes([AllowAny])
+# def featured_mentor_list(request):
+#     mentors = Mentor.objects.filter(details__is_approved=True).select_related('details')[:6]
+#     serializer = MentorSerializer(mentors, many=True)
+#     return Response(serializer.data)
+
+from django.db.models import Q
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def featured_mentor_list(request):
-    mentors = Mentor.objects.filter(details__is_approved=True).select_related('details')[:6]
+def filtered_mentor_list(request):
+    search = request.GET.get('search')
+    category = request.GET.get('category')
+
+    mentors = Mentor.objects.select_related('details').all()
+
+    if search:
+        mentors = mentors.filter(
+        Q(name__icontains=search) |
+        Q(details__professions__title__icontains=search)
+    )
+
+    if category:
+        mentors = mentors.filter(details__professions__title__icontains=category)
+
+    mentors = mentors.distinct()
     serializer = MentorSerializer(mentors, many=True)
     return Response(serializer.data)

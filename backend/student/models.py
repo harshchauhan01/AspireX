@@ -113,11 +113,14 @@ class StudentAdmin(UserAdmin):
 
 
 # This model for success story
+from django.db import models
+
 class SuccessStory(models.Model):
     name = models.CharField(max_length=100)
     title = models.CharField(max_length=200)
     story = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=False)  # ✅ New field
 
     def __str__(self):
         return f"{self.name} - {self.title}"
