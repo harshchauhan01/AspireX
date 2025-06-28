@@ -171,7 +171,7 @@ class MentorDetail(models.Model):
     about = models.TextField(default="#NA")
     availability_timings = models.CharField(max_length=50, default="#NA")
     profile_photo = models.ImageField(upload_to='mentors/profile_photos/', null=True, blank=True, default=None)
-    cv = models.FileField(upload_to='cvs/', max_length=100, null=True, blank=True, default=None)
+    cv = models.FileField(upload_to='mentors/cvs/', max_length=100, null=True, blank=True, default=None)
 
     is_approved = models.BooleanField(default=False)
 
@@ -271,7 +271,7 @@ class MentorMessage(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='sent_messages'
+        related_name='mentor_sent_messages'
     )
 
     class Meta:
@@ -376,6 +376,7 @@ class Meeting(models.Model):
     def end_time(self):
         return self.scheduled_time + timezone.timedelta(minutes=self.duration)
     
+
 
 
 class MentorPost(models.Model):

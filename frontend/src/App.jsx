@@ -7,7 +7,7 @@ import DashboardLayout from './components/DashboardLayout';
 import Home from './components/Home';
 import SLogin from './Student/Authentication/login';
 import SRegister from './Student/Authentication/register';
-import SDashboard from './Student/pages/Dashboard';
+import StuDashboard from './Student/pages/Dashboard';
 import MentorProfile from './Student/pages/MentorProfile';
 
 
@@ -18,7 +18,7 @@ function App() {
         <Route path="" element={<Home />} />
         <Route path="/student/login" element={<SLogin />} />
         <Route path="/student/signup" element={<SRegister />} />
-        <Route path="/student/dashboard" element={<SDashboard />} />
+        <Route path="/student/dashboard" element={<StuDashboard />} />
         <Route path="/student/mentor1" element={<MentorProfile />} />
         <Route path="/mentor/login" element={<Login />} />
         <Route path="/mentor/signup" element={<Register />} />

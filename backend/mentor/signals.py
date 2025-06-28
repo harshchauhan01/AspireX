@@ -5,3 +5,6 @@ from .models import Meeting
 @receiver(pre_save, sender=Meeting)
 def update_meeting_status(sender, instance, **kwargs):
     instance.update_status_based_on_time()
+
+
+

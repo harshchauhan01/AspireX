@@ -1,0 +1,285 @@
+.profile-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.profile-content {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 30px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-right: 30px;
+  position: relative;
+}
+
+.avatar-edit-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  background-color: var(--white);
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.profile-info h2 {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+
+.profile-email {
+  color: var(--dark-gray);
+  margin-bottom: 10px;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.detail-section h3 {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: var(--primary-color);
+}
+
+.detail-section p {
+  line-height: 1.6;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.detail-item h3 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: var(--primary-color);
+}
+
+.profile-input, .profile-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--medium-gray);
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.profile-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.rate-input {
+  display: flex;
+  align-items: center;
+}
+
+.rate-input span {
+  margin-right: 5px;
+  font-weight: 500;
+}
+
+/* CV Upload Section Styles */
+.cv-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cv-link {
+  color: #2c83eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cv-link:hover {
+  text-decoration: underline;
+}
+
+.cv-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.file-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-upload-label {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-upload-label:hover {
+  background-color: #e0e0e0;
+}
+
+.small-button {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.file-upload-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 5px;
+}
+
+.profile-completion-bar {
+  margin: 1rem 0;
+}
+
+.profile-completion-bar label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.4s ease;
+}
+
+
+/* Profile Photo Styles */
+/* Profile Photo Styles */
+.profile-avatar-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-right: 30px;
+}
+
+.profile-avatar, .profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.avatar-edit-actions {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+}
+
+.avatar-edit-button,
+.avatar-remove-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--white);
+  color: var(--dark-gray);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+}
+
+.avatar-edit-button:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.avatar-remove-button:hover {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.avatar-upload-button {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 15px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.avatar-upload-button:hover {
+  background-color: var(--primary-dark);
+}
+
+.avatar-upload-button:disabled {
+  background-color: var(--medium-gray);
+  cursor: not-allowed;
+}

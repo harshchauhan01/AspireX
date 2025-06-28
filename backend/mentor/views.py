@@ -243,3 +243,30 @@ class MentorFileUploadAPIView(APIView):
             {"error": f"No {file_type} to delete"},
             status=status.HTTP_400_BAD_REQUEST
         )
+    
+
+
+
+from rest_framework.decorators import api_view, permission_classes
+from django.db.models import Q
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def filtered_mentor_list(request):
+    search = request.GET.get('search')
+    category = request.GET.get('category')
+
+    mentors = Mentor.objects.select_related('details').all()
+
+    if search:
+        mentors = mentors.filter(
+        Q(name__icontains=search) |
+        Q(details__professions__title__icontains=search)
+    )
+
+    if category:
+        mentors = mentors.filter(details__professions__title__icontains=category)
+
+    mentors = mentors.distinct()
+    serializer = MentorSerializer(mentors, many=True)
+    return Response(serializer.data)

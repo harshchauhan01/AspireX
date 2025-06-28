@@ -1,161 +1,103 @@
 
-
-
-
-
-
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Sidebar from './Sidebar';
+import DashboardHome from './DashboardHome';
+import MenteesPage from './MenteesPage';
+import EarningsPage from './EarningsPage';
+import Messages from './Messages';
+import ProfilePage from './ProfilePage';
+import SessionsPage from './SessionsPage';
 import './CSS/Dashboard.css';
+import API from "../../BackendConn/api";
 
-const SDashboard = () => {
-  const [activeTab, setActiveTab] = useState('mentors');
+const StuDashboard = () => {
+
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [mentor, setMentor] = useState(null);
+  const [error, setError] = useState('');
 
-  // Mock data
-  const mentors = [
-    { id: 1, name: 'Alex Johnson', expertise: 'Product Management', sessions: 24, rating: 4.8, avatar: 'A' },
-    { id: 2, name: 'Maria Garcia', expertise: 'UX Design', sessions: 18, rating: 4.9, avatar: 'M' },
-    { id: 3, name: 'David Kim', expertise: 'Frontend Development', sessions: 32, rating: 4.7, avatar: 'D' },
-    { id: 4, name: 'Sarah Chen', expertise: 'Data Science', sessions: 15, rating: 4.6, avatar: 'S' },
-  ];
+  useEffect(() => {
+    const fetchMentorProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        console.log(token);
+        
+        const response = await API.get('/api/student/profile/',{
+          headers: {
+            Authorization: `Token ${token}`,
+          }
+        });
+        console.log(response.data);
+        
+        setMentor(response.data);
+      } catch (err) {
+        setError('Failed to fetch mentor profile');
+        console.error(err);
+      }
+    };
 
-  const upcomingSessions = [
-    { id: 1, mentor: 'Alex Johnson', date: '2023-06-15', time: '14:00 - 15:00', topic: 'Career Growth' },
-    { id: 2, mentor: 'Maria Garcia', date: '2023-06-16', time: '10:00 - 11:00', topic: 'Portfolio Review' },
-  ];
+    fetchMentorProfile();
+  }, []);
 
-  const stats = {
-    totalSessions: 42,
-    completedSessions: 38,
-    upcomingSessions: 4,
-    satisfactionRate: '92%'
+  useEffect(() => {
+    if (!localStorage.getItem('token')) {
+        window.location.href = '/login';
+    }
+    }, []);
+
+
+  if (error) return <div className="text-red-600">{error}</div>;
+
+
+
+  
+  
+  // Mock profile data
+  const mentorProfile = {
+    name: 'Dr. Sarah Johnson',
+    email: 'sarah.johnson@mentor.com',
+    expertise: 'Career Counseling & Leadership',
+    rating: 4.9,
+    sessionsCompleted: 142
+  };
+
+  // Render the appropriate page based on activeTab
+  const renderPage = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardHome mentorProfile={mentorProfile} mentor = {mentor} />;
+      case 'mentees':
+        return <MenteesPage />;
+      case 'earning':
+        return <EarningsPage />;
+      case 'messages':
+        return <Messages />;
+      case 'profile':
+        return <ProfilePage mentorProfile={mentor} />;
+      case 'sessions':
+        return <SessionsPage sessions = {mentor.meetings}/>;
+      default:
+        return <DashboardHome mentorProfile={mentorProfile} />;
+    }
   };
 
   return (
-    <div className={`dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <h2>AspireX</h2>
-          <button className="toggle-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? '◀' : '▶'}
-          </button>
-        </div>
-        <nav>
-          <ul>
-            <li className="active"><span>🏠</span> {sidebarOpen && 'Dashboard'}</li>
-            <li><span>👥</span> {sidebarOpen && 'Mentors'}</li>
-            <li><span>🗓️</span> {sidebarOpen && 'Sessions'}</li>
-            <li><span>📊</span> {sidebarOpen && 'Progress'}</li>
-            <li><span>⚙️</span> {sidebarOpen && 'Settings'}</li>
-          </ul>
-        </nav>
-        <div className="user-profile">
-          <div className="avatar">U</div>
-          {sidebarOpen && (
-            <div className="user-info">
-              <p className="username">User Name</p>
-              <p className="user-email">user@example.com</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Main Content */}
+    <div className={`mentor-dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
+      <Sidebar 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        mentorProfile={mentorProfile}
+        mentor={mentor}
+      />
+      
       <div className="main-content">
-        <header>
-          <h1>Dashboard</h1>
-          <div className="search-bar">
-            <input 
-              type="text" 
-              placeholder="Search mentors..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button>🔍</button>
-          </div>
-          <div className="notifications">🔔</div>
-        </header>
-
-        {/* Stats Cards */}
-        <div className="stats-container">
-          <div className="stat-card">
-            <h3>Total Sessions</h3>
-            <p>{stats.totalSessions}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Completed</h3>
-            <p>{stats.completedSessions}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Upcoming</h3>
-            <p>{stats.upcomingSessions}</p>
-          </div>
-          <div className="stat-card">
-            <h3>Satisfaction Rate</h3>
-            <p>{stats.satisfactionRate}</p>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="tabs">
-          <button 
-            className={activeTab === 'mentors' ? 'active' : ''}
-            onClick={() => setActiveTab('mentors')}
-          >
-            Top Mentors
-          </button>
-          <button 
-            className={activeTab === 'upcoming' ? 'active' : ''}
-            onClick={() => setActiveTab('upcoming')}
-          >
-            Upcoming Sessions
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div className="tab-content">
-          {activeTab === 'mentors' ? (
-            <div className="mentors-grid">
-              {mentors.map(mentor => (
-                <div key={mentor.id} className="mentor-card">
-                  <div className="mentor-avatar">{mentor.avatar}</div>
-                  <h3>{mentor.name}</h3>
-                  <p className="expertise">{mentor.expertise}</p>
-                  <div className="mentor-stats">
-                    <span>⭐ {mentor.rating}</span>
-                    <span>🎯 {mentor.sessions} sessions</span>
-                  </div>
-                  <button className="book-button">Book Session</button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="sessions-list">
-              {upcomingSessions.map(session => (
-                <div key={session.id} className="session-item">
-                  <div className="session-date">
-                    <p className="day">{new Date(session.date).getDate()}</p>
-                    <p className="month">{new Date(session.date).toLocaleString('default', { month: 'short' })}</p>
-                  </div>
-                  <div className="session-info">
-                    <h3>{session.topic}</h3>
-                    <p>With {session.mentor}</p>
-                  </div>
-                  <div className="session-time">
-                    <p>{session.time}</p>
-                    <button className="join-button">Join</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {renderPage()}
       </div>
     </div>
   );
 };
 
-export default SDashboard;
+export default StuDashboard;

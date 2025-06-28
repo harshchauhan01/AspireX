@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager, Group, Per
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db import transaction
+from django.apps import apps
+
+
 
 class StudentManager(BaseUserManager):
     def create_user(self, email, name, password=None, **extra_fields):
@@ -93,19 +96,130 @@ def create_student_id(sender, instance, created, **kwargs):
 
 
 
-from django.contrib import admin
-from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import *
-# Register your models here.
-@admin.register(Student)
-class StudentAdmin(UserAdmin):
-    list_display = ('student_id', 'email', 'name', 'is_staff')
-    search_fields = ('student_id', 'email', 'name')
-    ordering = ('student_id',)
-    
-    fieldsets = (
-        (None, {'fields': ('student_id', 'email', 'password')}),
-        ('Personal info', {'fields': ('name',)}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
+
+
+class Skill(models.Model):
+    name = models.CharField(max_length=100, unique=True) 
+
+    def __str__(self):
+        return self.name
+
+class Profession(models.Model):
+    title = models.CharField(max_length=200, unique=True)
+
+    def __str__(self):
+        return self.title
+
+
+
+class StudentDetail(models.Model):
+    student = models.OneToOneField(
+        Student, 
+        on_delete=models.CASCADE,
+        related_name='details',
+        primary_key=True  # This makes the student_id the primary key of StudentDetail
     )
+    
+    # Add Details     
+    first_name = models.CharField(max_length=100, default="", blank=True)
+    last_name = models.CharField(max_length=100, default="", blank=True)
+    dob = models.DateField(null=True, blank=True, default=None)
+    age = models.PositiveIntegerField(default=0)
+    GENDER_CHOICES = (
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    )
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='Male')
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=15, unique=False, default="", blank=True)
+
+    college = models.CharField(max_length=200, default="", blank=True)
+    cgpa = models.FloatField(default=0, blank=True)
+    batch = models.PositiveIntegerField(default=2024)
+    
+    professions = models.ManyToManyField(Profession, related_name='students', blank=True)
+    skills = models.ManyToManyField(Skill, related_name='students', blank=True)
+
+    # fees = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    about = models.TextField(default="", blank=True)
+    # availability_timings = models.CharField(max_length=50, default="#NA")
+    profile_photo = models.ImageField(upload_to='student/profile_photos/', null=True, blank=True, default=None)
+    cv = models.FileField(upload_to='student/cvs/', max_length=255, null=True, blank=True, default=None)
+
+    is_approved = models.BooleanField(default=False)
+
+    # total_students = models.PositiveIntegerField(default=0)
+    total_sessions = models.PositiveIntegerField(default=0)
+    # average_rating = models.FloatField(default=0.0)
+    # years_of_experience = models.PositiveIntegerField(default=0)
+
+    linkedin_url = models.URLField(blank=True, null=True)
+    github_url = models.URLField(blank=True, null=True)
+    portfolio_url = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.first_name} {self.last_name}"
+    
+
+
+class Booking(models.Model):
+    student = models.ForeignKey('student.Student', on_delete=models.CASCADE, related_name="bookings")
+    mentor = models.ForeignKey('mentor.Mentor', on_delete=models.CASCADE, related_name="bookings")
+    subject = models.CharField(max_length=255)
+    time_slot = models.CharField(max_length=100)
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    is_paid = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'mentor', 'time_slot')
+
+    def __str__(self):
+        return f"Booking by {self.student.student_id} for {self.mentor.mentor_id}"
+
+
+
+
+
+import uuid
+from django.conf import settings
+class StudentMessage(models.Model):
+    message_id = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True
+    )
+
+    # The receiver is always the student
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name='received_messages'  # More descriptive
+    )
+
+    # The sender (mentor or admin)
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sent_student_messages'  # Ensure uniqueness here
+    )
+
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-sent_at']
+        verbose_name = "Student Message"
+        verbose_name_plural = "Student Messages"
+
+    def __str__(self):
+        return f"To {self.student.name}: {self.subject} (ID: {self.message_id})"
+
+    def mark_as_read(self):
+        self.is_read = True
+        self.save(update_fields=['is_read'])
