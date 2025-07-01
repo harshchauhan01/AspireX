@@ -169,3 +169,26 @@ class BookingCreateAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import NotFound, PermissionDenied
+
+class PublicStudentListView(generics.ListAPIView):
+    queryset = Student.objects.all().order_by('student_id')
+    serializer_class = StudentSerializer
+    permission_classes = [AllowAny]
+    pagination_class = PageNumberPagination
+    page_size = 20  # Default page size
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+    lookup_field = 'student_id'
+
+    def get_object(self):
+        student_id = self.kwargs.get('student_id')
+        try:
+            return self.queryset.get(student_id=student_id)
+        except Mentor.DoesNotExist:
+            raise NotFound(f"Mentor with student_id {student_id} does not exist.")
+        

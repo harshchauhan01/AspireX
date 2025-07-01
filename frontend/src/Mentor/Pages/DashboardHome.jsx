@@ -128,6 +128,10 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     { id: 1, mentee: 'Alex Chen', lastMessage: 'Thanks for the resources!', time: 'Yesterday' },
   ];
 
+  const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
+    const topNotifications = notifications.slice(0, 3);
+    const hasMoreNotifications = notifications.length > 3;
+
   return (
     <>
       <header>
@@ -181,15 +185,15 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           <h2>Calendar</h2>
           <div className="calendar">
             {/* Calendar implementation would go here */}
-            <p>Calendar component will be implemented here</p>
+            <Calendar meetings={mentor?.meetings || []} />
           </div>
         </section>
 
         <section className="notifications-section">
           <h2>Notifications</h2>
           <div className="notifications-list">
-            {notifications.length > 0 ? (
-              notifications.map(notification => (
+            {topNotifications.length > 0 ? (
+              topNotifications.map(notification => (
                 <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
                   <p>
                     <strong>{notification.sender}:</strong> {notification.text}
@@ -201,9 +205,45 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
             ) : (
               <p className="no-notifications">No new notifications</p>
             )}
+            
+            {hasMoreNotifications && (
+              <button 
+                className="view-all-button"
+                onClick={() => setShowNotificationsSidebar(true)}
+              >
+                View All Messages ({notifications.length})
+              </button>
+            )}
           </div>
         </section>
       </div>
+
+      {showNotificationsSidebar && (
+        <div className="notifications-sidebar-overlay" onClick={() => setShowNotificationsSidebar(false)}>
+          <div className="notifications-sidebar" onClick={(e) => e.stopPropagation()}>
+            <div className="sidebar-header">
+              <h3>All Notifications</h3>
+              <button 
+                className="close-sidebar"
+                onClick={() => setShowNotificationsSidebar(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="sidebar-content">
+              {notifications.map(notification => (
+                <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
+                  <p>
+                    <strong>{notification.sender}:</strong> {notification.text}
+                  </p>
+                  <span className="notification-time">{notification.time}</span>
+                  {!notification.read && <span className="unread-badge"></span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pinned Conversations and Notes */}
       <div className="bottom-section">
@@ -290,3 +330,151 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 };
 
 export default DashboardHome;
+
+
+
+
+
+// import React, { useState } from 'react';
+// ... (other imports remain the same)
+
+const Calendar = ({ meetings }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
+
+  // Get days in month
+  const daysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  // Get first day of month
+  const firstDayOfMonth = (month, year) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  // Check if date has meetings
+  const hasMeetings = (date) => {
+    return meetings.some(meeting => {
+      const meetingDate = new Date(meeting.scheduled_time).toDateString();
+      return meetingDate === date.toDateString();
+    });
+  };
+
+  // Get meetings for a specific date
+  const getMeetingsForDate = (date) => {
+    return meetings.filter(meeting => {
+      const meetingDate = new Date(meeting.scheduled_time).toDateString();
+      return meetingDate === date.toDateString();
+    });
+  };
+
+  // Navigate to previous month
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  // Navigate to next month
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  // Render calendar days
+  const renderDays = () => {
+    const month = currentDate.getMonth();
+    const year = currentDate.getFullYear();
+    const totalDays = daysInMonth(month, year);
+    const firstDay = firstDayOfMonth(month, year);
+    
+    const days = [];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    // Render day names
+    dayNames.forEach(day => {
+      days.push(
+        <div key={`header-${day}`} className="calendar-day-header">
+          {day}
+        </div>
+      );
+    });
+    
+    // Add empty cells for days before first day of month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+    }
+    
+    // Add cells for each day of the month
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month, day);
+      const isToday = date.toDateString() === new Date().toDateString();
+      const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+      const hasMeeting = hasMeetings(date);
+      
+      days.push(
+        <div
+          key={`day-${day}`}
+          className={`calendar-day 
+            ${isToday ? 'today' : ''} 
+            ${isSelected ? 'selected' : ''}
+            ${hasMeeting ? 'has-meeting' : ''}`}
+          onClick={() => setSelectedDate(date)}
+        >
+          <span className="day-number">{day}</span>
+          {hasMeeting && (
+            <div className="meeting-indicator">
+              {getMeetingsForDate(date).length > 1 && 
+                <span className="meeting-count">{getMeetingsForDate(date).length}</span>}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return days;
+  };
+
+  // Format month and year for display
+  const monthYearString = currentDate.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric'
+  });
+
+  return (
+    <div className="calendar-container">
+      <div className="calendar-header">
+        <button onClick={prevMonth} className="calendar-nav-button">
+          &lt;
+        </button>
+        <h3>{monthYearString}</h3>
+        <button onClick={nextMonth} className="calendar-nav-button">
+          &gt;
+        </button>
+      </div>
+      
+      <div className="calendar-grid">
+        {renderDays()}
+      </div>
+      
+      {selectedDate && (
+        <div className="calendar-meetings-detail">
+          <h4>Meetings on {selectedDate.toLocaleDateString()}</h4>
+          {getMeetingsForDate(selectedDate).length > 0 ? (
+            <ul>
+              {getMeetingsForDate(selectedDate).map((meeting, index) => (
+                <li key={index}>
+                  <strong>{meeting.title}</strong> with {meeting.student}<br/>
+                  {new Date(meeting.scheduled_time).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No meetings scheduled</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+

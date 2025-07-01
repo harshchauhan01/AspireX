@@ -185,3 +185,4 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return Booking.objects.create(student=student, mentor=mentor, **validated_data)
 
+

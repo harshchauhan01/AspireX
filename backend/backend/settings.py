@@ -42,8 +42,27 @@ INSTALLED_APPS = [
     'corsheaders',  
     'rest_framework',  
     'rest_framework.authtoken',
-    'student.apps.StudentConfig'
+    'student.apps.StudentConfig',
+    
 ]
+
+
+INSTALLED_APPS += ['channels']
+
+# Set ASGI application
+ASGI_APPLICATION = 'backend.asgi.application'
+
+# Channel Layer config (using Redis)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+
 
 
 

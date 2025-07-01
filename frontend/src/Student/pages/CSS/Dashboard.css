@@ -929,3 +929,139 @@ header {
     width: 320px;
   }
 }
+
+/* Calendar Styles */
+.calendar-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.calendar-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.calendar-nav-button {
+  background: #f0f2f5;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.calendar-nav-button:hover {
+  background: #e0e2e5;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  font-weight: bold;
+  color: #555;
+  padding: 5px;
+  font-size: 0.8rem;
+}
+
+.calendar-day {
+  position: relative;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f9f9f9;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calendar-day:hover {
+  background: #e9e9e9;
+}
+
+.calendar-day.today {
+  background: #e1f0ff;
+  font-weight: bold;
+}
+
+.calendar-day.has-meeting {
+  background: #d4edda;
+  font-weight: bold;
+}
+
+.calendar-day.has-meeting:hover {
+  background: #c3e6cb;
+}
+
+.calendar-day.selected {
+  background: #007bff;
+  color: white;
+}
+
+.calendar-day.empty {
+  background: transparent;
+  cursor: default;
+}
+
+.meeting-indicator {
+  position: absolute;
+  bottom: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #28a745;
+}
+
+.meeting-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.6rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.calendar-meetings-detail {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 5px;
+}
+
+.calendar-meetings-detail h4 {
+  margin-top: 0;
+  color: #333;
+}
+
+.calendar-meetings-detail ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.calendar-meetings-detail li {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
