@@ -8,6 +8,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
   const [showNoteForm, setShowNoteForm] = useState(false);
+  
 
   // Load notes from localStorage on component mount
   useEffect(() => {
@@ -128,6 +129,10 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     { id: 1, mentee: 'Alex Chen', lastMessage: 'Thanks for the resources!', time: 'Yesterday' },
   ];
 
+  const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
+  const topNotifications = notifications.slice(0, 3);
+  const hasMoreNotifications = notifications.length > 3;
+
   return (
     <>
       <header>
@@ -186,10 +191,48 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         </section>
 
         <section className="notifications-section">
-          <h2>Notifications</h2>
-          <div className="notifications-list">
-            {notifications.length > 0 ? (
-              notifications.map(notification => (
+        <h2>Notifications</h2>
+        <div className="notifications-list">
+          {topNotifications.length > 0 ? (
+            topNotifications.map(notification => (
+              <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
+                <p>
+                  <strong>Admin:</strong><br/> {notification.text}
+                </p>
+                <span className="notification-time">{notification.time}</span>
+                {!notification.read && <span className="unread-badge"></span>}
+              </div>
+            ))
+          ) : (
+            <p className="no-notifications">No new notifications</p>
+          )}
+          
+          {hasMoreNotifications && (
+            <button 
+              className="view-all-button"
+              onClick={() => setShowNotificationsSidebar(true)}
+            >
+              View All Messages ({notifications.length})
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* Notifications Sidebar */}
+      {showNotificationsSidebar && (
+        <div className="notifications-sidebar-overlay">
+          <div className="notifications-sidebar">
+            <div className="sidebar-header">
+              <h3>All Notifications</h3>
+              <button 
+                className="close-sidebar"
+                onClick={() => setShowNotificationsSidebar(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="sidebar-content">
+              {notifications.map(notification => (
                 <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
                   <p>
                     <strong>Admin:</strong><br/> {notification.text}
@@ -197,12 +240,11 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                   <span className="notification-time">{notification.time}</span>
                   {!notification.read && <span className="unread-badge"></span>}
                 </div>
-              ))
-            ) : (
-              <p className="no-notifications">No new notifications</p>
-            )}
+              ))}
+            </div>
           </div>
-        </section>
+        </div>
+      )}
       </div>
 
       {/* Pinned Conversations and Notes */}

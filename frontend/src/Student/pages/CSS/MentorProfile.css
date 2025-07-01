@@ -587,3 +587,12 @@ body {
   margin-top: 1rem;
   animation: fadeIn 0.5s ease;
 }
+
+/* Add to your CSS */
+input[type="datetime-local"] {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  font-family: inherit;
+}

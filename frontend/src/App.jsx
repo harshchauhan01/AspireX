@@ -19,7 +19,7 @@ function App() {
         <Route path="/student/login" element={<SLogin />} />
         <Route path="/student/signup" element={<SRegister />} />
         <Route path="/student/dashboard" element={<StuDashboard />} />
-        <Route path="/student/mentor1" element={<MentorProfile />} />
+        <Route path="/mentor/:id" element={<MentorProfile />} />
         <Route path="/mentor/login" element={<Login />} />
         <Route path="/mentor/signup" element={<Register />} />
         <Route path="/mentor/dashboard" element={<Dashboard />} />

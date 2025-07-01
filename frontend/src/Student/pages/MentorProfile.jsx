@@ -1,90 +1,176 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import './CSS/MentorProfile.css';
 
 const MentorProfile = () => {
-const [showBookingForm, setShowBookingForm] = useState(false);
+  const { id } = useParams();
+  const [mentor, setMentor] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const [showBookingForm, setShowBookingForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [sliderValue, setSliderValue] = useState(0);
   const [transactionId, setTransactionId] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  
-  // Form state
   const [formData, setFormData] = useState({
     timeSlot: '',
+    customTimeSlot: '',
     subject: '',
     termsAgreed: false,
     privacyAgreed: false
   });
 
-  // Mentor data
-  const mentor = {
-    name: "Dr. Sarah Johnson",
-    profession: "Senior Software Engineer & Career Coach",
-    bio: "With over 10 years of experience in the tech industry and 5 years mentoring junior developers, I specialize in helping professionals transition into tech careers and advance their skills.",
-    skills: ["JavaScript", "React", "Career Coaching", "Technical Interviews", "System Design"],
-    price: 85,
-    rating: 4.9,
-    reviews: 128,
-    experience: "10+ years",
-    qualification: "PhD in Computer Science, MIT",
-    availability: "Mon-Fri, 9am-5pm EST",
-    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=634&q=80",
-    timeSlots: [
-      "Monday, 10:00 AM - 11:00 AM",
-      "Tuesday, 2:00 PM - 3:00 PM",
-      "Wednesday, 4:00 PM - 5:00 PM",
-      "Thursday, 9:00 AM - 10:00 AM",
-      "Friday, 1:00 PM - 2:00 PM"
-    ]
-  };
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/mentor/public/')
+      .then(res => res.json())
+      .then(data => {
+        const foundMentor = data.find(m => m.mentor_id === id && m.details);
+        if (foundMentor) {
+          const mapped = {
+            name: foundMentor.name,
+            profession: foundMentor.details?.professions?.[0]?.title || "N/A",
+            bio: foundMentor.details.about || "No bio provided",
+            skills: foundMentor.details.skills?.map(s => s.name) || [],
+            price: foundMentor.details.fees || 0,
+            rating: foundMentor.details.average_rating || 0,
+            reviews: 0, // ← No review count in API; update if needed
+            experience: `${foundMentor.details.years_of_experience || 0} years`,
+            qualification: foundMentor.details.qualification || 'N/A',
+            availability: foundMentor.details.availability_timings || 'N/A',
+            photo: foundMentor.details.profile_photo || 'https://via.placeholder.com/150',
+            timeSlots: generateTimeSlots()
+          };
+          setMentor(mapped);
+        }
+        setLoading(false);
+      });
+  }, [id]);
 
-  const handleBookMeeting = () => {
-    setShowBookingForm(true);
-  };
-
+  const handleBookMeeting = () => setShowBookingForm(true);
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
-
   const handleSliderChange = (e) => {
     setSliderValue(e.target.value);
-    if (e.target.value >= 100) {
-      handlePayment();
-    }
+    if (e.target.value >= 100) handlePayment();
   };
-
   const handlePayment = () => {
+    const selectedTime = formData.timeSlot === 'custom' 
+      ? formData.customTimeSlot 
+      : formData.timeSlot;
+
+    if (!selectedTime) {
+      alert('Please select or specify a time slot');
+      return;
+    }
     setIsBooking(true);
-    // Simulate API call
     setTimeout(() => {
       setIsBooking(false);
       setShowBookingForm(false);
       setShowPaymentForm(true);
     }, 1500);
   };
-
-  const handleTransactionSubmit = (e) => {
+  const handleTransactionSubmit = async (e) => {
     e.preventDefault();
-    setPaymentSuccess(true);
-    setTimeout(() => {
-      setPaymentSuccess(false);
-      setShowPaymentForm(false);
-      setBookingSuccess(true);
-      setTimeout(() => setBookingSuccess(false), 3000);
-    }, 2000);
-  };
+    // setPaymentSuccess(true);
+    // setTimeout(() => {
+    //   setPaymentSuccess(false);
+    //   setShowPaymentForm(false);
+    //   setBookingSuccess(true);
+    //   setTimeout(() => setBookingSuccess(false), 3000);
+    // }, 2000);
+    const selectedTime = formData.timeSlot === 'custom' 
+      ? formData.customTimeSlot 
+      : formData.timeSlot;
 
+    const bookingData = {
+      mentor_id: id, // ✅ You already get this from useParams
+      subject: formData.subject,
+      time_slot: selectedTime,
+      transaction_id: transactionId,
+      is_paid: false
+    };
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/student/booking/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // ✅ Send authentication token for request.user
+          Authorization: `Token ${localStorage.getItem('token')}` // adjust if you store token differently
+        },
+        body: JSON.stringify(bookingData)
+      });
+
+      if (response.ok) {
+        setPaymentSuccess(true);
+        setTimeout(() => {
+          setPaymentSuccess(false);
+          setShowPaymentForm(false);
+          setBookingSuccess(true);
+          setTimeout(() => setBookingSuccess(false), 3000);
+        }, 2000);
+      } else {
+        const data = await response.json();
+        alert("Error: " + JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error. Try again.");
+    }
+  };
   const closeModal = () => {
     setShowBookingForm(false);
     setShowPaymentForm(false);
     setSliderValue(0);
   };
+
+  const generateTimeSlots = () => {
+    const timeConfigs = [
+      { day: 1, hour: 10, label: "Monday, 10:00 AM - 11:00 AM" },
+      { day: 2, hour: 14, label: "Tuesday, 2:00 PM - 3:00 PM" },
+      { day: 3, hour: 16, label: "Wednesday, 4:00 PM - 5:00 PM" }
+    ];
+
+    const today = new Date();
+    const slots = timeConfigs.map(({ day, hour, label }) => {
+      const slotDate = new Date(today);
+      const diff = (day + 7 - today.getDay()) % 7 || 7; // Days until next desired weekday
+      slotDate.setDate(today.getDate() + diff);
+      slotDate.setHours(hour, 0, 0, 0); // Set to the specific hour
+      return {
+        label,
+        value: slotDate.toISOString().slice(0, 16) // YYYY-MM-DDTHH:MM
+      };
+    });
+
+    return slots;
+  };
+
+  const handleTimeSlotChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      timeSlot: value,
+      // Reset custom time when selecting a predefined slot
+      customTimeSlot: value !== 'custom' ? '' : prev.customTimeSlot
+    }));
+  };
+
+  // New handler for custom time input
+  const handleCustomTimeChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      customTimeSlot: e.target.value
+    }));
+  };
+
+
+  if (loading) return <div>Loading mentor profile...</div>;
+  if (!mentor) return <div>Mentor not found.</div>;
 
   return (
     <div className="mentor-profile-container">
@@ -128,15 +214,30 @@ const [showBookingForm, setShowBookingForm] = useState(false);
                 <select 
                   name="timeSlot" 
                   value={formData.timeSlot}
-                  onChange={handleInputChange}
-                  required
+                  onChange={handleTimeSlotChange}
                 >
-                  <option value="">Choose a time slot</option>
+                  <option value="">Choose from upcoming slots</option>
                   {mentor.timeSlots.map((slot, index) => (
-                    <option key={index} value={slot}>{slot}</option>
+                    <option key={index} value={slot.value}>{slot.label}</option>
                   ))}
+                  <option value="custom">Custom Date & Time</option>
                 </select>
               </div>
+
+              {formData.timeSlot === "custom" && (
+                <div className="form-group">
+                  <label>Choose Custom Date & Time</label>
+                  <input 
+                    type="datetime-local" 
+                    name="customTimeSlot" 
+                    value={formData.customTimeSlot}
+                    onChange={handleCustomTimeChange} 
+                    required 
+                    min={new Date().toISOString().slice(0, 16)} // Prevent past dates
+                  />
+                </div>
+              )}
+
               
               <div className="form-group">
                 <label>Meeting Subject</label>

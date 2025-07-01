@@ -151,3 +151,21 @@ class StudentFileUploadAPIView(APIView):
         )
     
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions, status
+from rest_framework.authentication import TokenAuthentication
+from .models import Booking
+from .serializers import BookingSerializer
+from mentor.models import Mentor
+
+class BookingCreateAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = BookingSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

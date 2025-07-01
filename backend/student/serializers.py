@@ -163,5 +163,25 @@ class MeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
         fields = ['meeting_id', 'title', 'scheduled_time', 'meeting_link', 'status']
+        
 
+from rest_framework import serializers
+from .models import Booking
+
+class BookingSerializer(serializers.ModelSerializer):
+    mentor_id = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Booking
+        fields = ['mentor_id', 'subject', 'time_slot', 'transaction_id', 'is_paid']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        student = request.user  # If user is linked via OneToOneField in Student
+
+        mentor_id = validated_data.pop('mentor_id')
+        from mentor.models import Mentor
+        mentor = Mentor.objects.get(mentor_id=mentor_id)
+
+        return Booking.objects.create(student=student, mentor=mentor, **validated_data)
 

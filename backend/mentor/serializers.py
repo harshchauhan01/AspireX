@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth import authenticate 
 from rest_framework import serializers
+from student.models import Student
 
 class MentorRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -125,6 +126,7 @@ class MeetingSerializer(serializers.ModelSerializer):
             'meeting_id', 'title', 'description', 'scheduled_time', 'duration',
             'meeting_link', 'status', 'notes', 'created_at', 'updated_at', 'student'
         )
+    
 
 
 
@@ -185,3 +187,6 @@ class MentorSerializer(serializers.ModelSerializer):
 
 
         return instance
+
+
+
