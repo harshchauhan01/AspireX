@@ -11,4 +11,6 @@ urlpatterns = [
     path('profile/file/', views.StudentFileUploadAPIView.as_view(), name='student-cv-update'),
     path('booking/', views.BookingCreateAPIView.as_view(), name='booking-create'),
     path('public/', views.PublicStudentListView.as_view(), name='public-student-list'),
+    path('notes/', views.StudentNoteListCreateView.as_view(), name='student-notes'),
+    path('notes/<int:note_id>/', views.StudentNoteDeleteView.as_view(), name='delete-student-note'),
 ]

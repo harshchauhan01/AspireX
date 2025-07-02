@@ -91,6 +91,27 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     return 'Just now';
   };
 
+  useEffect(() => {
+    const fetchNotes = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/student/notes/', {
+          headers: {
+            'Authorization': `Token ${token}`
+          }
+        });
+        const data = await res.json();
+        setNotes(data);
+      } catch (err) {
+        console.error('Error fetching notes:', err);
+      }
+    };
+
+    fetchNotes();
+  }, []);
+
+
   // Format current date
   const formatCurrentDate = () => {
     return new Date().toLocaleDateString('en-US', {
@@ -101,25 +122,57 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   };
 
   // Add a new note
-  const addNote = () => {
+  const addNote = async () => {
     if (newNoteTitle.trim() && newNoteContent.trim()) {
-      const newNote = {
-        id: Date.now(),
-        title: newNoteTitle,
-        content: newNoteContent,
-        date: formatCurrentDate()
-      };
-      setNotes([newNote, ...notes]);
-      setNewNoteTitle('');
-      setNewNoteContent('');
-      setShowNoteForm(false);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/student/notes/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+          },
+          body: JSON.stringify({
+            title: newNoteTitle,
+            content: newNoteContent
+          })
+        });
+
+        if (res.ok) {
+          const newNote = await res.json();
+          setNotes([newNote, ...notes]);
+          setNewNoteTitle('');
+          setNewNoteContent('');
+          setShowNoteForm(false);
+        }
+      } catch (err) {
+        console.error('Error adding note:', err);
+      }
     }
   };
 
+
   // Delete a note
-  const deleteNote = (id) => {
-    setNotes(notes.filter(note => note.id !== id));
+  const deleteNote = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch(`http://127.0.0.1:8000/api/student/notes/${id}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Token ${token}`
+        }
+      });
+
+      if (res.ok) {
+        setNotes(notes.filter(note => note.id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting note:', err);
+    }
   };
+
 
   // Get data from mentor
   const notifications = formatNotifications(mentor?.messages || []);

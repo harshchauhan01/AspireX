@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import *
 from django.contrib.auth import authenticate 
 from mentor.models import Meeting
+from .models import *
 
 
 class StudentRegistrationSerializer(serializers.ModelSerializer):
@@ -186,3 +186,15 @@ class BookingSerializer(serializers.ModelSerializer):
         return Booking.objects.create(student=student, mentor=mentor, **validated_data)
 
 
+
+
+
+class StudentNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentNote
+        fields = ['id', 'student', 'title', 'content', 'created_at']
+        read_only_fields = ['id', 'created_at', 'student']
+
+    def create(self, validated_data):
+        validated_data['student'] = self.context['request'].user
+        return super().create(validated_data)

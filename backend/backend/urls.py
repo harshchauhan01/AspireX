@@ -19,6 +19,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from student import views as student_views
 from mentor import views as mentor_views
+from chat import views as chat_views
 
 from django.contrib import admin
 from django.urls import path, include
@@ -29,4 +30,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/student/', include('student.urls')),
     path('api/mentor/', include('mentor.urls')),
+    path('api/chat/', include('chat.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

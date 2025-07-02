@@ -192,3 +192,29 @@ class PublicStudentListView(generics.ListAPIView):
         except Mentor.DoesNotExist:
             raise NotFound(f"Mentor with student_id {student_id} does not exist.")
         
+
+
+
+class StudentNoteListCreateView(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StudentNoteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            return StudentNote.objects.filter(student=user)
+        except Student.DoesNotExist:
+            return StudentNote.objects.none()
+
+    def perform_create(self, serializer):
+        serializer.save(student=self.request.user)
+
+class StudentNoteDeleteView(generics.DestroyAPIView):
+    serializer_class = StudentNoteSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_url_kwarg = 'note_id'
+
+    def get_queryset(self):
+        return StudentNote.objects.filter(student=self.request.user)

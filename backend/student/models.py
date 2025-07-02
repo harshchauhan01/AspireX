@@ -223,3 +223,14 @@ class StudentMessage(models.Model):
     def mark_as_read(self):
         self.is_read = True
         self.save(update_fields=['is_read'])
+
+
+
+class StudentNote(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="notes")
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student.student_id} - {self.title}"

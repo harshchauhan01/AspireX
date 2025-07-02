@@ -1,14 +1,13 @@
 from django.db import models
-from student.models import Student
-from mentor.models import Mentor
+from django.contrib.auth import get_user_model
 
-class ChatMessage(models.Model):
-    sender_student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, blank=True)
-    sender_mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, null=True, blank=True)
-    receiver_student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, blank=True, related_name="received_messages_student")
-    receiver_mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, null=True, blank=True, related_name="received_messages_mentor")
-    message = models.TextField()
+User = get_user_model()
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name='chat_sent_messages', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(User, related_name='chat_received_messages', on_delete=models.CASCADE)
+    content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.message[:50]
+    class Meta:
+        ordering = ['timestamp']
