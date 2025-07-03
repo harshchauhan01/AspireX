@@ -174,6 +174,8 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   };
 
 
+  
+
   // Get data from mentor
   const notifications = formatNotifications(mentor?.messages || []);
   const upcomingSessions = formatUpcomingSessions(mentor?.meetings || []);

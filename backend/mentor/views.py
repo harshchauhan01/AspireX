@@ -273,3 +273,28 @@ def filtered_mentor_list(request):
 
 
 
+
+
+class MentorNoteListCreateView(generics.ListCreateAPIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MentorNoteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        try:
+            return MentorNote.objects.filter(mentor=user)
+        except Mentor.DoesNotExist:
+            return MentorNote.objects.none()
+
+    def perform_create(self, serializer):
+        serializer.save(mentor=self.request.user)
+
+class MentorNoteDeleteView(generics.DestroyAPIView):
+    serializer_class = MentorNoteSerializer
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_url_kwarg = 'note_id'
+
+    def get_queryset(self):
+        return MentorNote.objects.filter(mentor=self.request.user)

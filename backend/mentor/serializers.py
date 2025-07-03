@@ -190,3 +190,15 @@ class MentorSerializer(serializers.ModelSerializer):
 
 
 
+
+
+
+class MentorNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MentorNote
+        fields = ['id', 'mentor', 'title', 'content', 'created_at']
+        read_only_fields = ['id', 'created_at', 'mentor']
+
+    def create(self, validated_data):
+        validated_data['mentor'] = self.context['request'].user
+        return super().create(validated_data)

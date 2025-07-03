@@ -350,11 +350,16 @@ class Meeting(models.Model):
 
     def update_status_based_on_time(self):
         now = timezone.now()
-        if self.status in ['scheduled', 'ongoing']:
-            if now > self.scheduled_time + timezone.timedelta(minutes=self.duration):
-                self.status = 'completed'
-            elif now >= self.scheduled_time and now <= self.scheduled_time + timezone.timedelta(minutes=self.duration):
+        end_time = self.scheduled_time + timezone.timedelta(minutes=self.duration)
+
+        if self.status == 'scheduled':
+            if now > end_time:
+                self.status = 'missed'  # Mark as missed if scheduled time has passed and meeting not attended
+            elif self.scheduled_time <= now <= end_time:
                 self.status = 'ongoing'
+
+        elif self.status == 'ongoing' and now > end_time:
+            self.status = 'completed'
 
     @property
     def is_upcoming(self):
@@ -405,3 +410,13 @@ class MentorPost(models.Model):
         
     def __str__(self):
         return f"{self.mentor.name}'s {self.get_post_type_display()} post"
+    
+
+class MentorNote(models.Model):
+    mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE, related_name="notes")
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.mentor.mentor_id} - {self.title}"

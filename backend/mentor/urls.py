@@ -17,6 +17,9 @@ urlpatterns = [
     path('filter/', filtered_mentor_list, name='filtered_mentor_list'),
 
     # path('booking/', BookingCreateAPIView.as_view(), name='create-booking'),
+
+    path('notes/', MentorNoteListCreateView.as_view(), name='Mentor-notes'),
+    path('notes/<int:note_id>/', MentorNoteDeleteView.as_view(), name='delete-Mentor-note'),
     
     
 ]
