@@ -85,7 +85,7 @@ const Messages = () => {
     if (!conversationId) {
       console.warn("⚠️ Tried to fetch messages for undefined conversationId");
       return;
-    }
+    } 
 
     try {
       const token = localStorage.getItem('Mentortoken');
