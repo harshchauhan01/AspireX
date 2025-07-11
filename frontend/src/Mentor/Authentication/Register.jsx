@@ -34,15 +34,12 @@ function Register() {
       };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-
-      
-
+    <StyledPageWrapper>
       <StyledWrapper>
         <div className="container">
           <div className="heading">Sign Up</div>
           {error && <p className="text-red-500">{error}</p>}
-          <form className="form" action onSubmit={handleSubmit}>
+          <form className="form" onSubmit={handleSubmit}>
             <input placeholder="Name" id="text" name="name" type="text" className="input" onChange={handleChange} required />
             <input placeholder="Email" id="email" name="email" type="email" className="input" onChange={handleChange} required />
             <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required />
@@ -72,7 +69,7 @@ function Register() {
           <span className="agreement"><a href="/mentor/login" onClick={() => handleNavigation("/mentor/login")}>Already have an Account? Log In</a></span>
         </div>
       </StyledWrapper>
-    </div>
+    </StyledPageWrapper>
   );
 }
 
@@ -228,3 +225,13 @@ const StyledWrapper = styled.div`
     color: #0099ff;
     font-size: 9px;
   }`;
+
+const StyledPageWrapper = styled.div`
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+  padding: 0;
+`;

@@ -78,149 +78,179 @@ export default SLogin;
 
 
 const StyledWrapper = styled.div`
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+  padding: 0;
+
   .container {
-    max-width: 350px;
-    background: #f8f9fd;
-    background: linear-gradient(
-      0deg,
-      rgb(255, 255, 255) 0%,
-      rgb(244, 247, 251) 100%
-    );
-    border-radius: 40px;
-    padding: 25px 35px;
-    border: 5px solid rgb(255, 255, 255);
-    box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 30px 30px -20px;
-    margin: 20px;
+    max-width: 380px;
+    width: 100%;
+    background: #fff;
+    border-radius: 32px;
+    padding: 40px 35px 32px 35px;
+    border: none;
+    box-shadow: 0 8px 32px rgba(16,137,211,0.10), 0 1.5px 6px rgba(16,137,211,0.08);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .heading {
     text-align: center;
     font-weight: 900;
-    font-size: 30px;
-    color: rgb(16, 137, 211);
+    font-size: 2.2rem;
+    color: #1089d3;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
   }
 
   .form {
     margin-top: 20px;
+    width: 100%;
   }
 
   .form .input {
     width: 100%;
-    background: white;
+    background: #f4f7fb;
     border: none;
-    padding: 15px 20px;
-    border-radius: 20px;
+    padding: 14px 18px;
+    border-radius: 16px;
     margin-top: 15px;
-    box-shadow: #cff0ff 0px 10px 10px -5px;
+    box-shadow: 0 2px 8px #cff0ff44;
     border-inline: 2px solid transparent;
-  }
-
-  .form .input::-moz-placeholder {
-    color: rgb(170, 170, 170);
-  }
-
-  .form .input::placeholder {
-    color: rgb(170, 170, 170);
+    font-size: 1rem;
+    transition: border 0.2s;
   }
 
   .form .input:focus {
     outline: none;
     border-inline: 2px solid #12b1d1;
+    background: #fff;
   }
 
   .form .forgot-password {
     display: block;
     margin-top: 10px;
-    margin-left: 10px;
+    margin-left: 2px;
+    text-align: right;
+    width: 100%;
   }
 
   .form .forgot-password a {
-    font-size: 11px;
+    font-size: 12px;
     color: #0099ff;
     text-decoration: none;
+    transition: color 0.2s;
+  }
+  .form .forgot-password a:hover {
+    color: #1089d3;
+    text-decoration: underline;
   }
 
   .form .login-button {
     display: block;
     width: 100%;
     font-weight: bold;
-    background: linear-gradient(
-      45deg,
-      rgb(16, 137, 211) 0%,
-      rgb(18, 177, 209) 100%
-    );
+    background: linear-gradient(45deg, #1089d3 0%, #12b1d1 100%);
     color: white;
-    padding-block: 15px;
-    margin: 20px auto;
-    border-radius: 20px;
-    box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 20px 10px -15px;
+    padding-block: 14px;
+    margin: 22px auto 0 auto;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px #85bdd733;
     border: none;
-    transition: all 0.2s ease-in-out;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+    letter-spacing: 1px;
   }
 
   .form .login-button:hover {
     transform: scale(1.03);
-    box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 23px 10px -20px;
+    box-shadow: 0 8px 24px #85bdd744;
   }
 
   .form .login-button:active {
-    transform: scale(0.95);
-    box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 15px 10px -10px;
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px #85bdd744;
   }
 
   .social-account-container {
     margin-top: 25px;
+    width: 100%;
   }
 
   .social-account-container .title {
     display: block;
     text-align: center;
-    font-size: 10px;
-    color: rgb(170, 170, 170);
+    font-size: 11px;
+    color: #aaaaaa;
+    margin-bottom: 8px;
   }
 
   .social-account-container .social-accounts {
     width: 100%;
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 18px;
     margin-top: 5px;
   }
 
   .social-account-container .social-accounts .social-button {
-    background: linear-gradient(45deg, rgb(0, 0, 0) 0%, rgb(112, 112, 112) 100%);
-    border: 5px solid white;
-    padding: 5px;
+    background: linear-gradient(45deg, #000 0%, #707070 100%);
+    border: 4px solid #fff;
+    padding: 7px;
     border-radius: 50%;
     width: 40px;
     aspect-ratio: 1;
     display: grid;
     place-content: center;
-    box-shadow: rgba(133, 189, 215, 0.8784313725) 0px 12px 10px -8px;
-    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 12px #85bdd744;
+    transition: all 0.2s;
   }
 
   .social-account-container .social-accounts .social-button .svg {
     fill: white;
     margin: auto;
+    width: 20px;
+    height: 20px;
   }
 
   .social-account-container .social-accounts .social-button:hover {
-    transform: scale(1.2);
+    transform: scale(1.15);
+    box-shadow: 0 8px 24px #85bdd744;
   }
 
   .social-account-container .social-accounts .social-button:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
 
   .agreement {
     display: block;
     text-align: center;
-    margin-top: 15px;
+    margin-top: 18px;
   }
 
   .agreement a {
     text-decoration: none;
     color: #0099ff;
-    font-size: 9px;
-  }`;
+    font-size: 10px;
+    transition: color 0.2s;
+  }
+  .agreement a:hover {
+    color: #1089d3;
+    text-decoration: underline;
+  }
+
+  /* Error message styling */
+  .text-red-500 {
+    color: #e74c3c;
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.98rem;
+    font-weight: 500;
+  }
+`;

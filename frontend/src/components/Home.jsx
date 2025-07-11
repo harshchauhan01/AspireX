@@ -8,13 +8,11 @@ import "./CSS/Home.css";
 
 function Home() {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [counts, setCounts] = useState({
     students: 0,
     sessions: 0,
     mentors: 0
   });
-
   const toggleNav = () => {
     setIsOpen(!isOpen);
   };
@@ -73,29 +71,14 @@ function Home() {
     return () => clearInterval(counter);
   }, []);
 
-  // Auto slide for mentors
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % mentors.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % mentors.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + mentors.length) % mentors.length);
-  };
-
+  // Use more mentors and randomuser.me images
   const mentors = [
     {
       id: 1,
       name: "Dr. Sarah Johnson",
       expertise: "Career Development",
       experience: "15 years in HR & Career Coaching",
-      image: "/mentor1.jpg",
+      image: "https://randomuser.me/api/portraits/women/44.jpg",
       quote: "Helping individuals find their true potential is my passion."
     },
     {
@@ -103,7 +86,7 @@ function Home() {
       name: "Mark Williams",
       expertise: "Tech Industry",
       experience: "Ex-Google, 10 years in Tech",
-      image: "/mentor2.jpg",
+      image: "https://randomuser.me/api/portraits/men/32.jpg",
       quote: "Technology changes fast, but fundamentals remain the same."
     },
     {
@@ -111,9 +94,55 @@ function Home() {
       name: "Lisa Chen",
       expertise: "Entrepreneurship",
       experience: "Founder of 3 successful startups",
-      image: "/mentor3.jpg",
+      image: "https://randomuser.me/api/portraits/women/68.jpg",
       quote: "Every failure is a stepping stone to success."
+    },
+    {
+      id: 4,
+      name: "Carlos Rivera",
+      expertise: "Product Management",
+      experience: "PM at top SaaS companies",
+      image: "https://randomuser.me/api/portraits/men/45.jpg",
+      quote: "Great products are built by great teams."
+    },
+    {
+      id: 5,
+      name: "Emily Smith",
+      expertise: "Design & UX",
+      experience: "Award-winning UX Designer",
+      image: "https://randomuser.me/api/portraits/women/12.jpg",
+      quote: "Design is intelligence made visible."
+    },
+    {
+      id: 6,
+      name: "Raj Patel",
+      expertise: "Data Science",
+      experience: "PhD, Data Science Lead",
+      image: "https://randomuser.me/api/portraits/men/76.jpg",
+      quote: "Data tells the story behind every decision."
     }
+  ];
+
+  // Show 3 mentors at a time, auto-slide every 5s
+  const [currentSlide, setCurrentSlide] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 3) % mentors.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [mentors.length]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 3) % mentors.length);
+  };
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 3 + mentors.length) % mentors.length);
+  };
+  // Get 3 mentors for current slide
+  const visibleMentors = [
+    mentors[currentSlide],
+    mentors[(currentSlide + 1) % mentors.length],
+    mentors[(currentSlide + 2) % mentors.length],
   ];
 
   const testimonials = [
@@ -260,52 +289,40 @@ function Home() {
         </div>
       </section>
 
-      {/* Mentors Section */}
+      {/* Top Mentors Section */}
       <section className="mentors-section" id="mentors">
-        <h2>Meet Our Top Mentors</h2>
-        <p className="section-subtitle">
-          Learn from the best in various industries and domains
-        </p>
-        
-        <div className="mentors-slider">
-          <button className="slider-arrow left" onClick={prevSlide}>
+        <h2>Top Mentors</h2>
+        <p className="section-subtitle">Meet our most inspiring mentors</p>
+        <div className="mentors-carousel">
+          <button className="carousel-btn left" onClick={prevSlide} aria-label="Previous mentor">
             <FaChevronLeft />
           </button>
-          
-          <div className="mentors-container">
-            {mentors.map((mentor, index) => (
-              <div
-                key={mentor.id}
-                className={`mentor-card ${index === currentSlide ? "active" : ""}`}
-              >
-                <div className="mentor-image">
-                  <img src="https://randomuser.me/api/portraits/men/75.jpg" alt={mentor.name} />
-                </div>
-                <div className="mentor-info">
+          {visibleMentors.map((mentor, idx) => (
+            <div className="mentor-card-3d" key={mentor.id}>
+              <div className="mentor-card-inner">
+                <div className="mentor-card-front">
+                  <img src={mentor.image} alt={mentor.name} className="mentor-img" />
                   <h3>{mentor.name}</h3>
-                  <div className="mentor-expertise">{mentor.expertise}</div>
-                  <div className="mentor-experience">{mentor.experience}</div>
-                  <div className="mentor-quote">
-                    <FaQuoteLeft /> {mentor.quote}
-                  </div>
-                  <button className="btn-outline">View Profile</button>
+                  <p className="mentor-expertise">{mentor.expertise}</p>
+                </div>
+                <div className="mentor-card-back">
+                  <p className="mentor-quote">“{mentor.quote}”</p>
+                  <p className="mentor-experience">{mentor.experience}</p>
                 </div>
               </div>
-            ))}
-          </div>
-          
-          <button className="slider-arrow right" onClick={nextSlide}>
+            </div>
+          ))}
+          <button className="carousel-btn right" onClick={nextSlide} aria-label="Next mentor">
             <FaChevronRight />
           </button>
         </div>
-        
-        <div className="slider-dots">
-          {mentors.map((_, index) => (
-            <div
-              key={index}
-              className={`dot ${index === currentSlide ? "active" : ""}`}
-              onClick={() => setCurrentSlide(index)}
-            ></div>
+        <div className="mentor-indicators">
+          {Array.from({ length: Math.ceil(mentors.length / 3) }).map((_, idx) => (
+            <span
+              key={idx}
+              className={`indicator-dot ${Math.floor(currentSlide / 3) === idx ? "active" : ""}`}
+              onClick={() => setCurrentSlide((idx * 3) % mentors.length)}
+            ></span>
           ))}
         </div>
       </section>

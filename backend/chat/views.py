@@ -141,3 +141,6 @@ class GetUserInfoView(APIView):
                 "user_type": "student"
             })
         return Response({"detail": "Unrecognized user"}, status=400)
+
+
+

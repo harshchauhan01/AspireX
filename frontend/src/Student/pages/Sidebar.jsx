@@ -64,9 +64,6 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           <li className={activeTab === 'mentees' ? 'active' : ''} onClick={() => setActiveTab('mentees')}>
             <span>👥</span> {sidebarOpen && 'Mentees'}
           </li>
-          <li className={activeTab === 'earning' ? 'active' : ''} onClick={() => setActiveTab('earning')}>
-            <span>💰</span> {sidebarOpen && 'Earnings'}
-          </li>
           <li className={activeTab === 'messages' ? 'active' : ''} onClick={() => setActiveTab('messages')}>
             <span>✉️</span> {sidebarOpen && 'Messages'}
           </li>

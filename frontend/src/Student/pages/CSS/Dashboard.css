@@ -1,3 +1,197 @@
+/* --- Modern Glassmorphic, Responsive Dashboard Enhancements --- */
+:root {
+  --primary-color: #5e72e4;
+  --primary-dark: #4a5acf;
+  --secondary-color: #f7fafc;
+  --accent-color: #2196f3;
+  --light-gray: #f8f9fa;
+  --medium-gray: #e9ecef;
+  --dark-gray: #495057;
+  --text-color: #212529;
+  --white: #ffffff;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+  --header-height: 80px;
+  --border-radius: 18px;
+  --box-shadow: 0 8px 32px rgba(33,150,243,0.10), 0 1.5px 6px rgba(33,150,243,0.08);
+  --glass-bg: rgba(255,255,255,0.35);
+  --glass-blur: blur(16px);
+}
+
+body {
+  background: linear-gradient(120deg, #f5fafd 0%, #e3f2fd 100%);
+  color: var(--text-color);
+}
+
+header, section, .calendar-section, .notifications-section, .pinned-conversations, .notes-section {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  margin-bottom: 18px;
+  padding-bottom: 0;
+}
+
+header {
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  margin-bottom: 1.2rem;
+}
+.header-left {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+  max-width: 100%;
+  width: 100%;
+  margin: 0 0 1rem 0;
+  display: block;
+  text-align: left;
+}
+.header-left h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+.header-left h1 span {
+  color: var(--accent-color);
+}
+.welcome-message {
+  color: var(--dark-gray);
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+section h2, .calendar-section h2, .notifications-section h2, .pinned-conversations h2, .notes-section h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  text-align: left;
+  letter-spacing: 0.5px;
+}
+
+.sessions-list, .conversations-list, .notes-list {
+  gap: 14px;
+}
+
+.session-card, .note-item, .conversation-item, .notification-item {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.session-card:hover, .note-item:hover, .conversation-item:hover, .notification-item:hover {
+  box-shadow: 0 12px 32px #2196f344;
+  transform: translateY(-4px) scale(1.01);
+}
+
+.session-card {
+  border: 1.5px solid #e3f2fd;
+}
+
+/* Restore yellowish color for notes */
+.note-item {
+  background: #fff9db;
+  border-left: 4px solid #ffd43b;
+  color: var(--text-color);
+}
+
+.add-note-button {
+  background: var(--glass-bg);
+  color: var(--primary-color);
+  border: 1.5px dashed var(--primary-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px;
+  margin-top: 12px;
+  transition: background 0.2s, color 0.2s;
+}
+.add-note-button:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.primary-button, .secondary-button {
+  border-radius: 22px;
+  font-size: 1rem;
+  padding: 8px 18px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+.primary-button {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+}
+.primary-button:hover {
+  background: var(--accent-color);
+}
+.secondary-button {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1.5px solid var(--primary-color);
+}
+.secondary-button:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* Sidebar glass effect */
+.sidebar {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--box-shadow);
+}
+
+/* Responsive Enhancements */
+@media (max-width: 1200px) {
+  .middle-section, .bottom-section {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+@media (max-width: 992px) {
+  .main-content {
+    padding: 12px;
+  }
+  header {
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+  }
+}
+@media (max-width: 768px) {
+  .sessions-list, .conversations-list, .notes-list {
+    gap: 16px;
+  }
+  .session-card, .note-item, .conversation-item {
+    padding: 14px;
+  }
+  .middle-section, .bottom-section {
+    gap: 16px;
+  }
+  section, .calendar-section, .notifications-section, .pinned-conversations, .notes-section {
+    padding: 12px;
+    margin-bottom: 18px;
+  }
+}
+@media (max-width: 576px) {
+  .main-content {
+    padding: 6px;
+  }
+  header {
+    padding: 0.7rem 0.2rem 0.7rem 0.2rem;
+  }
+  section h2, .calendar-section h2, .notifications-section h2, .pinned-conversations h2, .notes-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.7rem;
+  }
+}
+
+/* --- End Modern Dashboard Enhancements --- */
+
+
 /* Base Styles */
 :root {
   --primary-color: #5e72e4;
@@ -306,12 +500,17 @@ header {
 /* Upcoming Sessions */
 .upcoming-sessions {
   margin-bottom: 30px;
+  text-align: left;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .upcoming-sessions h2 {
   font-size: 1.3rem;
   margin-bottom: 15px;
   color: var(--text-color);
+  margin-left: 0;
+  margin-bottom: 1rem;
 }
 
 .sessions-list {
@@ -1065,3 +1264,268 @@ header {
   margin-bottom: 5px;
   font-size: 0.9rem;
 }
+
+/* --- Welcome Section Width & Alignment Fixes --- */
+.header-left {
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto 1.5rem auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+  margin-bottom: 2rem;
+  background: var(--glass-bg);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+}
+
+@media (max-width: 768px) {
+  .header-left {
+    max-width: 100%;
+    padding: 0 8px;
+  }
+  header {
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .header-left {
+    padding: 0 2px;
+  }
+  header {
+    padding: 0.7rem 0.2rem 0.7rem 0.2rem;
+  }
+}
+/* --- End Welcome Section Fixes --- */
+
+/* --- Compact Spacing, Header Alignment, and Notes Color Fixes --- */
+
+@media (max-width: 768px) {
+  .header-left {
+    text-align: center;
+    padding: 0 8px;
+  }
+  header {
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+  }
+  .upcoming-sessions, .upcoming-sessions h2 {
+    text-align: center;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .header-left {
+    padding: 0 2px;
+  }
+  header {
+    padding: 0.7rem 0.2rem 0.7rem 0.2rem;
+  }
+}
+/* --- End Compact Spacing & Notes Color Fixes --- */
+
+/* --- Force Welcome Section Full Width, Remove Excess Gaps, Align Sections Left --- */
+
+header {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 10px 0;
+  padding: 1.2rem 0 0.7rem 0;
+  background: var(--glass-bg);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  display: block;
+}
+
+.header-left {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 24px;
+  text-align: left;
+  display: block;
+}
+
+.header-left h1, .header-left .welcome-message {
+  text-align: left;
+}
+
+section, .calendar-section, .notifications-section, .pinned-conversations, .notes-section {
+  margin-bottom: 10px;
+  padding: 18px 24px 10px 24px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  background: var(--glass-bg);
+}
+
+section h2, .calendar-section h2, .notifications-section h2, .pinned-conversations h2, .notes-section h2 {
+  text-align: left;
+  margin-bottom: 0.7rem;
+  margin-top: 0;
+}
+
+.upcoming-sessions {
+  text-align: left;
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 10px;
+}
+.upcoming-sessions h2 {
+  text-align: left;
+  margin-left: 0;
+  margin-bottom: 0.7rem;
+}
+
+.sessions-list, .conversations-list, .notes-list {
+  gap: 10px;
+}
+
+.note-item {
+  background: #fff9db;
+  border-left: 4px solid #ffd43b;
+  color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+  .header-left {
+    text-align: center;
+    padding: 0 8px;
+  }
+  .header-left h1, .header-left .welcome-message {
+    text-align: center;
+  }
+  header {
+    padding: 1rem 0.5rem 0.7rem 0.5rem;
+  }
+  section, .calendar-section, .notifications-section, .pinned-conversations, .notes-section {
+    padding: 12px 6px 8px 6px;
+  }
+}
+
+@media (max-width: 576px) {
+  .header-left {
+    padding: 0 2px;
+  }
+  header {
+    padding: 0.7rem 0.2rem 0.7rem 0.2rem;
+  }
+}
+/* --- End Force Full Width & Alignment Fixes --- */
+
+/* --- Welcome Section and Upcoming Sessions Alignment & Padding Fixes --- */
+
+header {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 10px 0;
+  padding: 2.2rem 24px 1.2rem 24px;
+  background: var(--glass-bg);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  display: block;
+}
+
+.header-left {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  display: block;
+}
+
+.header-left h1, .header-left .welcome-message {
+  text-align: left;
+  padding-left: 0;
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 1.2rem 8px 1rem 8px;
+  }
+  .header-left {
+    text-align: center;
+  }
+  .header-left h1, .header-left .welcome-message {
+    text-align: center;
+    padding-left: 0;
+  }
+}
+@media (max-width: 576px) {
+  header {
+    padding: 0.7rem 2px 0.7rem 2px;
+  }
+}
+
+.upcoming-sessions {
+  text-align: center;
+  padding: 1.5rem 24px 1.2rem 24px;
+  margin-bottom: 10px;
+  background: var(--glass-bg);
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+}
+.upcoming-sessions h2 {
+  text-align: center;
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 768px) {
+  .upcoming-sessions {
+    padding: 1.2rem 8px 1rem 8px;
+  }
+}
+@media (max-width: 576px) {
+  .upcoming-sessions {
+    padding: 0.7rem 2px 0.7rem 2px;
+  }
+}
+
+/* --- End Welcome & Upcoming Sessions Fixes --- */
+
+/* --- Ensure Welcome Section (header-left) Has Consistent Padding --- */
+.header-left {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 20px 24px;
+  text-align: left;
+  display: block;
+}
+
+.header-left h1, .header-left .welcome-message {
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .header-left {
+    text-align: center;
+    padding: 0 8px;
+  }
+  .header-left h1, .header-left .welcome-message {
+    text-align: center;
+  }
+}
+@media (max-width: 576px) {
+  .header-left {
+    padding: 0 2px;
+  }
+}
+
+/* --- End Welcome Section Padding Fix --- */
