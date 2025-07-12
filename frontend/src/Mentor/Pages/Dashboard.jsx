@@ -12,7 +12,7 @@
   //       const token = localStorage.getItem('token');
   //       console.log(token);
         
-  //       const response = await API.get('/api/mentor/profile/',{
+  //       const response = await API.get('mentor/profile/',{
   //         headers: {
   //           Authorization: `Token ${token}`,
   //         }
@@ -92,7 +92,7 @@ const Dashboard = () => {
         const token = localStorage.getItem('Mentortoken');
         console.log(token);
         
-        const response = await API.get('/api/mentor/profile/',{
+        const response = await API.get('mentor/profile/',{
           headers: {
             Authorization: `Token ${token}`,
           }

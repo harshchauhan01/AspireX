@@ -15,7 +15,7 @@ function Login() {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const res = await API.post('/api/mentor/login/', form);
+      const res = await API.post('mentor/login/', form);
       // console.log(res.data);
       
       localStorage.setItem('Mentortoken', res.data.token);

@@ -17,7 +17,7 @@ function Register() {
     e.preventDefault();
     try {
       
-      const res = await API.post('/api/mentor/register/', form);
+      const res = await API.post('mentor/register/', form);
       localStorage.setItem('Mentortoken', res.data.token);
       alert('Registration successful! \nYour Mentor ID : ' + res.data.mentor.mentor_id);
       console.log(res.data);

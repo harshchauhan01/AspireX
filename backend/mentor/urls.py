@@ -21,5 +21,9 @@ urlpatterns = [
     path('notes/', MentorNoteListCreateView.as_view(), name='Mentor-notes'),
     path('notes/<int:note_id>/', MentorNoteDeleteView.as_view(), name='delete-Mentor-note'),
     
+    # Earnings endpoints
+    path('earnings/', MentorEarningsAPIView.as_view(), name='mentor-earnings'),
+    path('earnings/withdraw/', MentorWithdrawalAPIView.as_view(), name='mentor-withdrawal'),
+    path('earnings/export/', MentorEarningsExportAPIView.as_view(), name='mentor-earnings-export'),
     
 ]

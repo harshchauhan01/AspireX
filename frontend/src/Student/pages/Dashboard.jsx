@@ -27,7 +27,7 @@ const StuDashboard = () => {
         const token = localStorage.getItem('token');
         console.log(token);
         
-        const response = await API.get('/api/student/profile/',{
+        const response = await API.get('student/profile/',{
           headers: {
             Authorization: `Token ${token}`,
           }

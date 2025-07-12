@@ -19,7 +19,7 @@ function SRegister() {
     try {
         console.log("Sending form data:", form);
 
-      const res = await API.post('/api/student/register/', form);
+      const res = await API.post('student/register/', form);
       console.log(res);
       
       localStorage.setItem('token', res.data.token);

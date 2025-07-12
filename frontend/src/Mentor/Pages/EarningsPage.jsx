@@ -1,33 +1,168 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { earningsService } from '../services/earningsService';
 import './CSS/PageStyles.css';
 
 const EarningsPage = () => {
-  // Sample data for the table
-  const earningsData = [
-    { id: 1, studentName: 'John Doe', sessionTime: '2023-05-15 14:30', earning: '$25.00' },
-    { id: 2, studentName: 'Jane Smith', sessionTime: '2023-05-16 10:15', earning: '$30.00' },
-    { id: 3, studentName: 'Robert Johnson', sessionTime: '2023-05-17 16:45', earning: '$20.00' },
-    { id: 4, studentName: 'Emily Davis', sessionTime: '2023-05-18 11:00', earning: '$35.00' },
-    { id: 5, studentName: 'Michael Wilson', sessionTime: '2023-05-19 13:20', earning: '$28.00' },
-  ];
+  const [earningsData, setEarningsData] = useState([]);
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    totalStudents: 0,
+    totalEarnings: 0,
+    availableBalance: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    count: 0
+  });
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+  const [withdrawalError, setWithdrawalError] = useState('');
 
-  // Stats data
-  const stats = {
-    totalSessions: 48,
-    totalStudents: 32,
-    totalEarnings: '$1,245.50',
-    availableBalance: '$845.50'
+  // Fetch earnings data
+  const fetchEarnings = async (filter = timeFilter, page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await earningsService.getEarningsPage(page, filter);
+      
+      setEarningsData(data.earnings);
+      setStats(data.stats);
+      setPagination(data.pagination);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to fetch earnings data');
+      console.error('Error fetching earnings:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Handle time filter change
+  const handleTimeFilterChange = (newFilter) => {
+    setTimeFilter(newFilter);
+    fetchEarnings(newFilter, 1);
+  };
+
+  // Handle pagination
+  const handlePageChange = (page) => {
+    fetchEarnings(timeFilter, page);
+  };
+
+  // Handle withdrawal request
+  const handleWithdrawal = async () => {
+    if (!withdrawalAmount || parseFloat(withdrawalAmount) < 50) {
+      setWithdrawalError('Minimum withdrawal amount is $50.00');
+      return;
+    }
+
+    try {
+      setWithdrawalLoading(true);
+      setWithdrawalError('');
+      
+      await earningsService.requestWithdrawal(parseFloat(withdrawalAmount));
+      
+      // Close modal and refresh data
+      setShowWithdrawalModal(false);
+      setWithdrawalAmount('');
+      fetchEarnings(timeFilter, pagination.current_page);
+      
+      // Show success message (you could add a toast notification here)
+      alert('Withdrawal request submitted successfully!');
+    } catch (err) {
+      setWithdrawalError(err.response?.data?.error || 'Failed to process withdrawal');
+    } finally {
+      setWithdrawalLoading(false);
+    }
+  };
+
+  // Handle export data
+  const handleExportData = async () => {
+    try {
+      const data = await earningsService.exportEarnings(timeFilter);
+      if (!data.earnings || !Array.isArray(data.earnings) || data.earnings.length === 0) {
+        alert('No earnings data to export for the selected period.');
+        return;
+      }
+      // Create and download CSV file
+      const csvContent = generateCSV(data.earnings);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `earnings_${timeFilter}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting data:', err);
+      alert('Failed to export data');
+    }
+  };
+
+  // Generate CSV content
+  const generateCSV = (earnings) => {
+    const headers = ['Date', 'Source', 'Amount', 'Status', 'Transaction ID'];
+    const rows = earnings.map(earning => [
+      earning.date,
+      earning.source,
+      earning.amount,
+      earning.status,
+      earning.transaction_id
+    ]);
+    return [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    fetchEarnings();
+  }, []);
+
+  if (loading && earningsData.length === 0) {
+    return (
+      <div className="page-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading earnings data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">
       <header className="page-header">
         <h1>Earnings</h1>
         <div className="page-actions">
-          <button className="secondary-button">Export Data</button>
-          <button className="primary-button">Withdraw</button>
+          <button 
+            className="secondary-button" 
+            onClick={handleExportData}
+            disabled={loading}
+          >
+            Export Data
+          </button>
+          <button 
+            className="primary-button" 
+            onClick={() => setShowWithdrawalModal(true)}
+            disabled={loading || (stats.availableBalance || 0) < 50}
+          >
+            Withdraw
+          </button>
         </div>
       </header>
+      
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+          <button onClick={() => fetchEarnings()}>Retry</button>
+        </div>
+      )}
       
       <div className="page-content">
         {/* Stats Cards Section */}
@@ -69,7 +204,7 @@ const EarningsPage = () => {
             </div>
             <div className="stat-info">
               <h3>Earnings</h3>
-              <p>{stats.totalEarnings}</p>
+              <p>${(stats.totalEarnings || 0).toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -77,7 +212,7 @@ const EarningsPage = () => {
         {/* Available Balance */}
         <div className="balance-card">
           <h3>Available Balance</h3>
-          <p className="balance-amount">{stats.availableBalance}</p>
+          <p className="balance-amount">${(stats.availableBalance || 0).toFixed(2)}</p>
           <p className="balance-note">Minimum withdrawal amount is $50.00</p>
         </div>
 
@@ -86,47 +221,141 @@ const EarningsPage = () => {
           <div className="table-header">
             <h3>Recent Earnings</h3>
             <div className="table-actions">
-              <select className="time-filter">
-                <option>Last 7 days</option>
-                <option>Last 30 days</option>
-                <option>Last 3 months</option>
-                <option>All time</option>
+              <select 
+                className="time-filter"
+                value={timeFilter}
+                onChange={(e) => handleTimeFilterChange(e.target.value)}
+                disabled={loading}
+              >
+                <option value="all">All time</option>
+                <option value="7days">Last 7 days</option>
+                <option value="30days">Last 30 days</option>
+                <option value="3months">Last 3 months</option>
               </select>
             </div>
           </div>
           
-          <table className="earnings-table">
-            <thead>
-              <tr>
-                <th>S.No.</th>
-                <th>Student Name</th>
-                <th>Session Time</th>
-                <th>Earning</th>
-              </tr>
-            </thead>
-            <tbody>
-              {earningsData.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{index + 1}</td>
-                  <td>{item.studentName}</td>
-                  <td>{item.sessionTime}</td>
-                  <td>{item.earning}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          <div className="table-footer">
-            <span>Showing 1 to 5 of {earningsData.length} entries</span>
-            <div className="pagination">
-              <button disabled>Previous</button>
-              <button className="active">1</button>
-              <button>2</button>
-              <button>Next</button>
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading earnings...</p>
+            </div>
+          ) : (
+            <>
+              <table className="earnings-table">
+                <thead>
+                  <tr>
+                    <th>S.No.</th>
+                    <th>Source</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {earningsData.map((item, index) => (
+                    <tr key={item.transaction_id}>
+                      <td>{(pagination.current_page - 1) * 10 + index + 1}</td>
+                      <td>{item.source}</td>
+                      <td>{new Date(item.date).toLocaleDateString()}</td>
+                      <td>${(parseFloat(item.amount) || 0).toFixed(2)}</td>
+                      <td>
+                        <span className={`status-badge status-${item.status}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              <div className="table-footer">
+                <span>
+                  Showing {((pagination.current_page - 1) * 10) + 1} to {Math.min(pagination.current_page * 10, pagination.count)} of {pagination.count} entries
+                </span>
+                <div className="pagination">
+                  <button 
+                    disabled={pagination.current_page === 1}
+                    onClick={() => handlePageChange(pagination.current_page - 1)}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: Math.min(5, pagination.total_pages) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <button
+                        key={pageNum}
+                        className={pageNum === pagination.current_page ? 'active' : ''}
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button 
+                    disabled={pagination.current_page === pagination.total_pages}
+                    onClick={() => handlePageChange(pagination.current_page + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Withdrawal Modal */}
+      {showWithdrawalModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Request Withdrawal</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setShowWithdrawalModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="withdrawal-amount">Amount ($)</label>
+                <input
+                  type="number"
+                  id="withdrawal-amount"
+                  value={withdrawalAmount}
+                  onChange={(e) => setWithdrawalAmount(e.target.value)}
+                  min="50"
+                  step="0.01"
+                  placeholder="Enter amount (minimum $50)"
+                />
+              </div>
+              {withdrawalError && (
+                <div className="error-message">
+                  <p>{withdrawalError}</p>
+                </div>
+              )}
+              <div className="modal-actions">
+                <button 
+                  className="secondary-button"
+                  onClick={() => setShowWithdrawalModal(false)}
+                  disabled={withdrawalLoading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="primary-button"
+                  onClick={handleWithdrawal}
+                  disabled={withdrawalLoading || !withdrawalAmount || parseFloat(withdrawalAmount) < 50}
+                >
+                  {withdrawalLoading ? 'Processing...' : 'Submit Request'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

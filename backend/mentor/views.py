@@ -12,6 +12,8 @@ from .serializers import MentorRegistrationSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from django.db import models
+from django.utils import timezone
 
 class MentorViewSet(viewsets.ModelViewSet):
     queryset = Mentor.objects.all()
@@ -310,3 +312,164 @@ class MentorNoteDeleteView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return MentorNote.objects.filter(mentor=self.request.user)
+
+# Earnings API Views
+class MentorEarningsAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        mentor = request.user
+        time_filter = request.query_params.get('time_filter', 'all')
+        
+        # Get earnings based on time filter
+        earnings = Earning.objects.filter(mentor=mentor, status='completed')
+        
+        if time_filter == '7days':
+            from datetime import timedelta
+            earnings = earnings.filter(date__gte=timezone.now().date() - timedelta(days=7))
+        elif time_filter == '30days':
+            from datetime import timedelta
+            earnings = earnings.filter(date__gte=timezone.now().date() - timedelta(days=30))
+        elif time_filter == '3months':
+            from datetime import timedelta
+            earnings = earnings.filter(date__gte=timezone.now().date() - timedelta(days=90))
+        
+        # Calculate statistics - only positive earnings (exclude withdrawals)
+        positive_earnings = earnings.filter(amount__gt=0)
+        total_earnings = positive_earnings.aggregate(total=models.Sum('amount'))['total'] or 0
+        total_sessions = positive_earnings.count()
+        
+        # Get unique students by extracting student names from source
+        # Source format: "Session Type with Student Name"
+        student_sources = positive_earnings.values_list('source', flat=True)
+        unique_students = set()
+        for source in student_sources:
+            if 'with' in source.lower():
+                # Extract student name after "with"
+                student_name = source.split('with')[-1].strip()
+                unique_students.add(student_name)
+        total_students = len(unique_students)
+        
+        # Available balance (total positive earnings minus withdrawals)
+        withdrawals = earnings.filter(amount__lt=0).aggregate(total=models.Sum('amount'))['total'] or 0
+        available_balance = total_earnings + withdrawals  # withdrawals are negative, so we add them
+        
+        # Paginate earnings
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginated_earnings = paginator.paginate_queryset(earnings, request)
+        
+        earnings_serializer = EarningSerializer(paginated_earnings, many=True)
+        
+        return Response({
+            'earnings': earnings_serializer.data,
+            'stats': {
+                'totalEarnings': float(total_earnings),
+                'totalSessions': total_sessions,
+                'totalStudents': total_students,
+                'availableBalance': float(available_balance)
+            },
+            'pagination': {
+                'count': paginator.page.paginator.count,
+                'next': paginator.get_next_link(),
+                'previous': paginator.get_previous_link(),
+                'current_page': paginator.page.number,
+                'total_pages': paginator.page.paginator.num_pages
+            }
+        }, status=status.HTTP_200_OK)
+
+class MentorWithdrawalAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        mentor = request.user
+        amount = request.data.get('amount')
+        
+        if not amount:
+            return Response(
+                {"error": "Amount is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            amount = float(amount)
+        except ValueError:
+            return Response(
+                {"error": "Invalid amount"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check minimum withdrawal amount
+        if amount < 50.00:
+            return Response(
+                {"error": "Minimum withdrawal amount is $50.00"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if mentor has sufficient balance (only positive earnings)
+        positive_earnings = Earning.objects.filter(
+            mentor=mentor, 
+            status='completed',
+            amount__gt=0
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        
+        # Calculate available balance (positive earnings minus withdrawals)
+        withdrawals = Earning.objects.filter(
+            mentor=mentor,
+            status='completed',
+            amount__lt=0
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        
+        available_balance = positive_earnings + withdrawals  # withdrawals are negative
+        
+        if amount > float(available_balance):
+            return Response(
+                {"error": "Insufficient balance"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create withdrawal record (you might want to create a separate Withdrawal model)
+        # For now, we'll create an earning record with negative amount
+        withdrawal = Earning.objects.create(
+            mentor=mentor,
+            amount=-amount,
+            source="Withdrawal",
+            status="completed",
+            notes=f"Withdrawal request for ${amount}"
+        )
+        
+        return Response({
+            "message": f"Withdrawal request for ${amount} submitted successfully",
+            "withdrawal_id": withdrawal.transaction_id
+        }, status=status.HTTP_201_CREATED)
+
+class MentorEarningsExportAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        mentor = request.user
+        time_filter = request.query_params.get('time_filter', 'all')
+        
+        earnings = Earning.objects.filter(mentor=mentor, status='completed').order_by('-date')
+        
+        if time_filter == '7days':
+            from datetime import timedelta
+            earnings = earnings.filter(date__gte=timezone.now().date() - timedelta(days=7))
+        elif time_filter == '30days':
+            from datetime import timedelta
+            earnings = earnings.filter(date__gte=timezone.now().date() - timedelta(days=30))
+        elif time_filter == '3months':
+            from datetime import timedelta
+            earnings = earnings.filter(date__gte=timezone.now().date() - timedelta(days=90))
+        
+        earnings_serializer = EarningSerializer(earnings, many=True)
+        
+        return Response({
+            'earnings': earnings_serializer.data,
+            'export_date': timezone.now().isoformat(),
+            'mentor_name': mentor.name,
+            'mentor_id': mentor.mentor_id
+        }, status=status.HTTP_200_OK)
