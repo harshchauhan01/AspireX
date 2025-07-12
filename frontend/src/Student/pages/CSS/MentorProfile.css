@@ -21,11 +21,51 @@ body {
   color: var(--dark-color);
   line-height: 1.6;
 }
+/* Back Button */
+.back-button-container {
+  margin-bottom: 1.5rem;
+}
+
+.back-button {
+  background: var(--light-gray);
+  color: var(--dark-color);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.back-button:hover {
+  background: var(--gray-color);
+  color: white;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Mentor Profile Container */
 .mentor-profile-container {
   max-width: 1200px;
-  margin: 2rem auto;
+  margin: 1rem auto;
   padding: 0 1rem;
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Header Section */

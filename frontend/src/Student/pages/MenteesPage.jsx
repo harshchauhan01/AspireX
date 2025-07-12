@@ -150,8 +150,7 @@ const MenteesPage = () => {
                     className="book-button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      alert(`Booking session with ${mentor.name}`);
-                      navigate(`/mentor/${mentor.id}`);
+                      navigate(`/student/dashboard/mentor/${mentor.id}`);
                     }}
                   >
                     Book Session

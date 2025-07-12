@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import DashboardHome from './DashboardHome';
 import MenteesPage from './MenteesPage';
@@ -7,10 +8,13 @@ import EarningsPage from './EarningsPage';
 import Messages from './Messages';
 import ProfilePage from './ProfilePage';
 import SessionsPage from './SessionsPage';
+import MentorProfile from './MentorProfile';
 import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
 
 const StuDashboard = () => {
+  const { mentorId } = useParams();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -40,6 +44,13 @@ const StuDashboard = () => {
     fetchMentorProfile();
   }, []);
 
+  // Set active tab based on URL
+  useEffect(() => {
+    if (mentorId) {
+      setActiveTab('mentees'); // Show mentees as active when viewing a mentor profile
+    }
+  }, [mentorId]);
+
   useEffect(() => {
     if (!localStorage.getItem('token')) {
         window.location.href = '/login';
@@ -62,11 +73,25 @@ const StuDashboard = () => {
     sessionsCompleted: 142
   };
 
-  // Render the appropriate page based on activeTab
+  // Render the appropriate page based on activeTab or mentorId
   const renderPage = () => {
+    // If there's a mentorId in the URL, show the mentor profile
+    if (mentorId) {
+      return (
+        <MentorProfile 
+          mentorId={mentorId} 
+          onBack={() => {
+            navigate('/student/dashboard');
+            setActiveTab('mentees');
+          }}
+        />
+      );
+    }
+
+    // Otherwise, render based on activeTab
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardHome mentorProfile={mentorProfile} mentor = {mentor} />;
+        return <DashboardHome mentorProfile={mentorProfile} mentor={mentor} />;
       case 'mentees':
         return <MenteesPage />;
       case 'earning':
@@ -76,7 +101,7 @@ const StuDashboard = () => {
       case 'profile':
         return <ProfilePage mentorProfile={mentor} />;
       case 'sessions':
-        return <SessionsPage sessions = {mentor.meetings}/>;
+        return <SessionsPage sessions={mentor.meetings} />;
       default:
         return <DashboardHome mentorProfile={mentorProfile} />;
     }

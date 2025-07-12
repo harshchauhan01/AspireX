@@ -1,9 +1,10 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import './CSS/MentorProfile.css';
 
-const MentorProfile = () => {
+const MentorProfile = ({ mentorId, onBack }) => {
   const { id } = useParams();
+  const actualMentorId = mentorId || id; // Use prop if provided, otherwise use URL param
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +27,7 @@ const MentorProfile = () => {
     fetch('http://127.0.0.1:8000/api/mentor/public/')
       .then(res => res.json())
       .then(data => {
-        const foundMentor = data.find(m => m.mentor_id === id && m.details);
+        const foundMentor = data.find(m => m.mentor_id === actualMentorId && m.details);
         if (foundMentor) {
           const mapped = {
             name: foundMentor.name,
@@ -46,7 +47,7 @@ const MentorProfile = () => {
         }
         setLoading(false);
       });
-  }, [id]);
+  }, [actualMentorId]);
 
   const handleBookMeeting = () => setShowBookingForm(true);
   const handleInputChange = (e) => {
@@ -87,7 +88,7 @@ const MentorProfile = () => {
       : formData.timeSlot;
 
     const bookingData = {
-      mentor_id: id, // ✅ You already get this from useParams
+      mentor_id: actualMentorId, // ✅ Use the actual mentor ID
       subject: formData.subject,
       time_slot: selectedTime,
       transaction_id: transactionId,
@@ -174,6 +175,14 @@ const MentorProfile = () => {
 
   return (
     <div className="mentor-profile-container">
+      {/* Back Button */}
+      {onBack && (
+        <div className="back-button-container">
+          <button onClick={onBack} className="back-button">
+            ← Back to Mentors
+          </button>
+        </div>
+      )}
       <div className="mentor-header">
         <div className="mentor-photo-container">
           <img src={mentor.photo} alt={mentor.name} className="mentor-photo" />
