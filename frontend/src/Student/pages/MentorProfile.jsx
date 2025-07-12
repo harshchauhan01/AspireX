@@ -119,7 +119,6 @@ const MentorProfile = ({ mentorId, onBack }) => {
         alert("Error: " + JSON.stringify(data));
       }
     } catch (err) {
-      console.error(err);
       alert("Server error. Try again.");
     }
   };

@@ -17,19 +17,14 @@ function SRegister() {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-        console.log("Sending form data:", form);
-
-      const res = await API.post('student/register/', form);
-      console.log(res);
+        const res = await API.post('student/register/', form);
       
       localStorage.setItem('token', res.data.token);
       alert('Registration successful! \nYour Student ID : ' + res.data.student.student_id);
-      console.log(res.data);
       navigate('/student/login');
       
       
     } catch (err) {
-      console.error("Error response:", err.response?.data);
         setError(err.response?.data?.detail || 'Error during registration');
     }
   };

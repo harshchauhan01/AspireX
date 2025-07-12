@@ -24,6 +24,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   border-bottom: 1px solid var(--medium-gray);
+  position: relative;
 }
 
 .conversation-item:hover {
@@ -32,6 +33,15 @@
 
 .conversation-item.active {
   background-color: rgba(94, 114, 228, 0.1);
+}
+
+.conversation-item.pinned {
+  background-color: rgba(255, 107, 107, 0.05);
+  border-left: 3px solid #ff6b6b;
+}
+
+.conversation-item.pinned:hover {
+  background-color: rgba(255, 107, 107, 0.1);
 }
 
 .conversation-avatar {
@@ -46,6 +56,7 @@
   font-weight: bold;
   margin-right: 15px;
   position: relative;
+  flex-shrink: 0;
 }
 
 .unread-badge {
@@ -59,9 +70,29 @@
   border: 2px solid white;
 }
 
+.conversation-details {
+  flex: 1;
+  min-width: 0;
+}
+
 .conversation-details h3 {
   font-size: 1rem;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pin-indicator {
+  font-size: 0.8rem;
+  color: #ff6b6b;
+  animation: pulse 0.3s ease;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .conversation-details p {
@@ -72,11 +103,58 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+  line-height: 1.3;
 }
 
 .conversation-time {
   font-size: 0.75rem;
   color: var(--dark-gray);
+}
+
+.conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.conversation-item:hover .conversation-actions {
+  opacity: 1;
+}
+
+.pin-button {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.pin-button:hover {
+  background: rgba(94, 114, 228, 0.1);
+  transform: scale(1.1);
+}
+
+.pin-button.pinned {
+  color: #ff6b6b;
+  opacity: 1;
+}
+
+.pin-button:not(.pinned) {
+  color: var(--medium-gray);
+}
+
+.pin-button:not(.pinned):hover {
+  color: var(--primary-color);
 }
 
 .message-view {

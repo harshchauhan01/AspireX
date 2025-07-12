@@ -35,7 +35,7 @@ def handle_booking_payment(sender, instance, created, **kwargs):
                 ),
                 sender=None  # You can also use instance.mentor.user if sender needs to be mentor's User
             )
-            print("StudentMessage created:", msg.id, msg.subject)
+            pass
 
 
 

@@ -91,6 +91,7 @@ class MentorLoginAPIView(APIView):
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import RetrieveAPIView
 from django.db.models import Q
 from .models import Mentor
 from .serializers import MentorSerializer
@@ -105,7 +106,6 @@ class PublicMentorListView(generics.ListAPIView):
     max_page_size = 100
     lookup_field = 'mentor_id'
 
-
     def get_queryset(self):
         queryset = super().get_queryset()
         search = self.request.query_params.get('search', '')
@@ -116,6 +116,13 @@ class PublicMentorListView(generics.ListAPIView):
                 Q(mentor_id__icontains=search)
             )
         return queryset
+
+class PublicMentorDetailView(RetrieveAPIView):
+    queryset = Mentor.objects.all()
+    serializer_class = MentorSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'mentor_id'
+    lookup_url_kwarg = 'mentor_id'
 
 
 
@@ -130,11 +137,8 @@ class MentorProfileUpdateAPIView(APIView):
         serializer = MentorSerializer(mentor, data=request.data, partial=True)
         
         if serializer.is_valid():
-            print("Valid data, saving...")
             serializer.save()
-            print("After save:", MentorSerializer(mentor).data)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        print("Validation errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MentorCVUpdateAPIView(APIView):
@@ -352,8 +356,11 @@ class MentorEarningsAPIView(APIView):
         total_students = len(unique_students)
         
         # Available balance (total positive earnings minus withdrawals)
-        withdrawals = earnings.filter(amount__lt=0).aggregate(total=models.Sum('amount'))['total'] or 0
-        available_balance = total_earnings + withdrawals  # withdrawals are negative, so we add them
+        total_withdrawals = Withdrawal.objects.filter(
+            mentor=mentor,
+            status__in=['pending', 'approved', 'processed']
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        available_balance = total_earnings - total_withdrawals
         
         # Paginate earnings
         paginator = PageNumberPagination()
@@ -383,9 +390,19 @@ class MentorWithdrawalAPIView(APIView):
     authentication_classes = [MentorTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     
+    def get(self, request):
+        """Get all withdrawals for the mentor"""
+        mentor = request.user
+        withdrawals = Withdrawal.objects.filter(mentor=mentor).order_by('-request_date')
+        serializer = WithdrawalSerializer(withdrawals, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
     def post(self, request):
+        """Create a new withdrawal request"""
         mentor = request.user
         amount = request.data.get('amount')
+        bank_details = request.data.get('bank_details', '')
+        payment_method = request.data.get('payment_method', 'bank_transfer')
         
         if not amount:
             return Response(
@@ -408,41 +425,43 @@ class MentorWithdrawalAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if mentor has sufficient balance (only positive earnings)
+        # Check if mentor has sufficient balance
+        # Get total positive earnings
         positive_earnings = Earning.objects.filter(
             mentor=mentor, 
             status='completed',
             amount__gt=0
         ).aggregate(total=models.Sum('amount'))['total'] or 0
         
-        # Calculate available balance (positive earnings minus withdrawals)
-        withdrawals = Earning.objects.filter(
+        # Get total withdrawals (pending, approved, processed)
+        total_withdrawals = Withdrawal.objects.filter(
             mentor=mentor,
-            status='completed',
-            amount__lt=0
+            status__in=['pending', 'approved', 'processed']
         ).aggregate(total=models.Sum('amount'))['total'] or 0
         
-        available_balance = positive_earnings + withdrawals  # withdrawals are negative
+        available_balance = float(positive_earnings) - float(total_withdrawals)
         
-        if amount > float(available_balance):
+        if amount > available_balance:
             return Response(
-                {"error": "Insufficient balance"}, 
+                {"error": f"Insufficient balance. Available: ${available_balance:.2f}"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Create withdrawal record (you might want to create a separate Withdrawal model)
-        # For now, we'll create an earning record with negative amount
-        withdrawal = Earning.objects.create(
-            mentor=mentor,
-            amount=-amount,
-            source="Withdrawal",
-            status="completed",
-            notes=f"Withdrawal request for ${amount}"
-        )
+        # Create withdrawal record
+        withdrawal_data = {
+            'mentor': mentor,
+            'amount': amount,
+            'payment_method': payment_method,
+            'bank_details': bank_details,
+            'status': 'pending'
+        }
+        
+        withdrawal = Withdrawal.objects.create(**withdrawal_data)
+        serializer = WithdrawalSerializer(withdrawal)
         
         return Response({
             "message": f"Withdrawal request for ${amount} submitted successfully",
-            "withdrawal_id": withdrawal.transaction_id
+            "withdrawal": serializer.data
         }, status=status.HTTP_201_CREATED)
 
 class MentorEarningsExportAPIView(APIView):

@@ -23,8 +23,6 @@ function Login() {
       navigate('/mentor/dashboard');
       // redirect or update state
     } catch (err) {
-        console.log(err);
-        
       setError('Invalid credentials');
     }
   };

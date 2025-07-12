@@ -420,3 +420,76 @@ class MentorNote(models.Model):
 
     def __str__(self):
         return f"{self.mentor.mentor_id} - {self.title}"
+
+
+class Withdrawal(models.Model):
+    WITHDRAWAL_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('processed', 'Processed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    mentor = models.ForeignKey(
+        Mentor,
+        on_delete=models.CASCADE,
+        related_name='withdrawals'
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Withdrawal amount in USD"
+    )
+    request_date = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Date when the withdrawal was requested"
+    )
+    processed_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date when the withdrawal was processed"
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=WITHDRAWAL_STATUS_CHOICES,
+        default='pending'
+    )
+    payment_method = models.CharField(
+        max_length=50,
+        default='bank_transfer',
+        help_text="Payment method for withdrawal"
+    )
+    bank_details = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Bank account details for transfer"
+    )
+    admin_notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Admin notes about this withdrawal"
+    )
+    transaction_id = models.CharField(
+        max_length=50,
+        unique=True,
+        blank=True,
+        null=True,
+        help_text="Payment gateway transaction ID if available"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-request_date']
+        verbose_name = "Mentor Withdrawal"
+        verbose_name_plural = "Mentor Withdrawals"
+
+    def __str__(self):
+        return f"{self.mentor.mentor_id} - ${self.amount} - {self.status}"
+
+    def save(self, *args, **kwargs):
+        if not self.transaction_id:
+            # Generate a simple transaction ID if none provided
+            self.transaction_id = f"WD-{timezone.now().strftime('%Y%m%d')}-{self.mentor.mentor_id}-{Withdrawal.objects.filter(mentor=self.mentor).count() + 1}"
+        super().save(*args, **kwargs)

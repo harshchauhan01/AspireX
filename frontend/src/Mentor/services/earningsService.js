@@ -13,12 +13,27 @@ export const earningsService = {
   },
 
   // Request withdrawal
-  requestWithdrawal: async (amount) => {
+  requestWithdrawal: async (amount, bankDetails = '', paymentMethod = 'bank_transfer') => {
     try {
-      const response = await API.post('mentor/earnings/withdraw/', { amount });
+      const response = await API.post('mentor/withdrawals/', { 
+        amount, 
+        bank_details: bankDetails,
+        payment_method: paymentMethod
+      });
       return response.data;
     } catch (error) {
       console.error('Error requesting withdrawal:', error);
+      throw error;
+    }
+  },
+
+  // Get withdrawal history
+  getWithdrawals: async () => {
+    try {
+      const response = await API.get('mentor/withdrawals/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching withdrawals:', error);
       throw error;
     }
   },

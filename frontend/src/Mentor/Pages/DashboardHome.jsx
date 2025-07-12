@@ -8,6 +8,10 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
   const [showNoteForm, setShowNoteForm] = useState(false);
+  
+  // State for conversations
+  const [conversations, setConversations] = useState([]);
+  const [pinnedConversations, setPinnedConversations] = useState([]);
 
   // Load notes from localStorage on component mount
   useEffect(() => {
@@ -21,6 +25,93 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   useEffect(() => {
     localStorage.setItem('mentorNotes', JSON.stringify(notes));
   }, [notes]);
+
+  // Fetch conversations from API
+  useEffect(() => {
+    const fetchConversations = async () => {
+      const token = localStorage.getItem('Mentortoken');
+      if (!token) return;
+      
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/chat/conversations/', {
+          headers: {
+            'Authorization': `Token ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConversations(data);
+          
+          // Filter pinned conversations
+          const pinned = data.filter(conv => conv.pinned);
+          setPinnedConversations(pinned);
+        }
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+      }
+    };
+
+    fetchConversations();
+  }, []);
+
+  // Pin/Unpin conversation
+  const togglePinConversation = async (conversationId, isPinned) => {
+    const token = localStorage.getItem('Mentortoken');
+    if (!token) return;
+
+    try {
+      const endpoint = isPinned ? 'unpin' : 'pin';
+      const response = await fetch(`http://127.0.0.1:8000/api/chat/conversations/${conversationId}/${endpoint}/`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Token ${token}`
+        }
+      });
+
+      if (response.ok) {
+        // Update conversations list
+        setConversations(prev => 
+          prev.map(conv => 
+            conv.id === conversationId 
+              ? { ...conv, pinned: !isPinned }
+              : conv
+          )
+        );
+
+        // Update pinned conversations
+        if (isPinned) {
+          setPinnedConversations(prev => prev.filter(conv => conv.id !== conversationId));
+        } else {
+          const conversation = conversations.find(conv => conv.id === conversationId);
+          if (conversation) {
+            setPinnedConversations(prev => [...prev, { ...conversation, pinned: true }]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+    }
+  };
+
+  // Format time for display
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    const now = new Date();
+    const messageDate = new Date(timestamp);
+    const diffInHours = (now - messageDate) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      if (diffInHours < 1) {
+        const minutes = Math.floor(diffInHours * 60);
+        return minutes === 0 ? 'Just now' : `${minutes}m ago`;
+      }
+      return `${Math.floor(diffInHours)}h ago`;
+    } else {
+      const days = Math.floor(diffInHours / 24);
+      return `${days}d ago`;
+    }
+  };
 
   // Format notifications from mentor messages
   const formatNotifications = (messages = []) => {
@@ -174,11 +265,6 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   // Get data from mentor
   const notifications = formatNotifications(mentor?.messages || []);
   const upcomingSessions = formatUpcomingSessions(mentor?.meetings || []);
-  
-  // Mock data for other sections
-  const pinnedConversations = [
-    { id: 1, mentee: 'Alex Chen', lastMessage: 'Thanks for the resources!', time: 'Yesterday' },
-  ];
 
   const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
     const topNotifications = notifications.slice(0, 3);
@@ -302,18 +388,40 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         <section className="pinned-conversations">
           <h2>Pinned Conversations</h2>
           <div className="conversations-list">
-            {pinnedConversations.map(conversation => (
-              <div key={conversation.id} className="conversation-item">
-                <div className="conversation-avatar">
-                  {conversation.mentee.split(' ').map(n => n[0]).join('')}
+            {pinnedConversations.length > 0 ? (
+              pinnedConversations.map(conversation => (
+                <div key={conversation.id} className="conversation-item">
+                  <div className="conversation-avatar">
+                    {conversation.other_person_name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="conversation-details">
+                    <h3>{conversation.other_person_name}</h3>
+                    <p>
+                      {conversation.last_message_content 
+                        ? conversation.last_message_content.length > 50 
+                          ? conversation.last_message_content.substring(0, 50) + '...'
+                          : conversation.last_message_content
+                        : 'No message yet'
+                      }
+                    </p>
+                    <span className="conversation-time">
+                      {conversation.last_message_time ? formatTime(conversation.last_message_time) : ''}
+                    </span>
+                  </div>
+                  <div className="conversation-actions">
+                    <button 
+                      onClick={() => togglePinConversation(conversation.id, true)}
+                      className="pin-button pinned"
+                      title="Unpin conversation"
+                    >
+                      📌
+                    </button>
+                  </div>
                 </div>
-                <div className="conversation-details">
-                  <h3>{conversation.mentee}</h3>
-                  <p>{conversation.lastMessage}</p>
-                  <span className="conversation-time">{conversation.time}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="no-conversations">No pinned conversations</p>
+            )}
           </div>
         </section>
 

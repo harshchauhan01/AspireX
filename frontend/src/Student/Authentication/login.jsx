@@ -15,7 +15,7 @@ function SLogin() {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const res = await API.post('student/login/', form);
+      const res = await API.post('/api/student/login/', form);
       // console.log(res.data);
       
       localStorage.setItem('token', res.data.token);
@@ -23,8 +23,6 @@ function SLogin() {
       navigate('/student/dashboard');
       // redirect or update state
     } catch (err) {
-        console.log(err);
-        
       setError('Invalid credentials');
     }
   };

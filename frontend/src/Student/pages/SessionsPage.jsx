@@ -35,19 +35,33 @@ const SessionsPage = ({ sessions = [] }) => {
       hour12: true
     });
 
-    // Extract avatar initials
-    const studentName = session.student.split(' - ')[1] || session.student;
-    const avatar = studentName.split(' ')
-      .map(name => name[0])
-      .join('')
-      .toUpperCase();
+    // Extract avatar initials - for students, show mentor info
+    let mentorName = 'Unknown Mentor';
+    let avatar = 'UN';
+    
+    if (session.mentor) {
+      // Handle different possible formats of mentor data
+      if (typeof session.mentor === 'string') {
+        mentorName = session.mentor.split(' - ')[1] || session.mentor;
+      } else if (session.mentor.name) {
+        mentorName = session.mentor.name;
+      } else if (session.mentor.mentor_id) {
+        mentorName = session.mentor.mentor_id;
+      }
+      
+      // Generate avatar from mentor name
+      avatar = mentorName.split(' ')
+        .map(name => name[0])
+        .join('')
+        .toUpperCase();
+    }
 
     return {
       ...session,
       displayDate: date,
       displayTime: `${time} (${session.duration} mins)`,
-      menteeAvatar: avatar.slice(0, 2),
-      menteeName: studentName
+      mentorAvatar: avatar.slice(0, 2),
+      mentorName: mentorName
     };
   };
 
@@ -143,8 +157,8 @@ const SessionsPage = ({ sessions = [] }) => {
             </select>
           </div>
           <div className="filter-group">
-            <label>Student</label>
-            <input type="text" placeholder="Filter by student" />
+            <label>Mentor</label>
+            <input type="text" placeholder="Filter by mentor" />
           </div>
           <div className="filter-actions">
             <button className="secondary-button">Reset</button>
@@ -182,11 +196,11 @@ const SessionsPage = ({ sessions = [] }) => {
               <div key={session.meeting_id} className="session-card">
                 <div className="session-info">
                   <div className="mentee-avatar">
-                    {formattedSession.menteeAvatar}
+                    {formattedSession.mentorAvatar}
                   </div>
                   <div className="session-details">
                     <h3>{session.title}</h3>
-                    <p>With {formattedSession.menteeName}</p>
+                    <p>With {formattedSession.mentorName}</p>
                     <div className="session-time">
                       <span>{formattedSession.displayDate}</span>
                       <span>{formattedSession.displayTime}</span>

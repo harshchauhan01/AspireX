@@ -19,9 +19,9 @@ class ConversationListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         if isinstance(user, Mentor):
-            return Conversation.objects.filter(mentor=user)
+            return Conversation.objects.filter(mentor=user).select_related('student')
         elif isinstance(user, Student):
-            return Conversation.objects.filter(student=user)
+            return Conversation.objects.filter(student=user).select_related('mentor')
         return Conversation.objects.none()
 
 
@@ -66,6 +66,50 @@ class ConversationListCreateView(generics.ListCreateAPIView):
         return Response(full_serializer.data, status=status.HTTP_201_CREATED)
 
 
+class ConversationPinView(generics.UpdateAPIView):
+    serializer_class = ConversationSerializer
+    authentication_classes = [DualTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        user = self.request.user
+        if isinstance(user, Mentor):
+            return Conversation.objects.filter(mentor=user)
+        elif isinstance(user, Student):
+            return Conversation.objects.filter(student=user)
+        return Conversation.objects.none()
+
+    def update(self, request, *args, **kwargs):
+        conversation = self.get_object()
+        conversation.pinned = True
+        conversation.save()
+        serializer = self.get_serializer(conversation, context={'request': request})
+        return Response(serializer.data)
+
+
+class ConversationUnpinView(generics.UpdateAPIView):
+    serializer_class = ConversationSerializer
+    authentication_classes = [DualTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        user = self.request.user
+        if isinstance(user, Mentor):
+            return Conversation.objects.filter(mentor=user)
+        elif isinstance(user, Student):
+            return Conversation.objects.filter(student=user)
+        return Conversation.objects.none()
+
+    def update(self, request, *args, **kwargs):
+        conversation = self.get_object()
+        conversation.pinned = False
+        conversation.save()
+        serializer = self.get_serializer(conversation, context={'request': request})
+        return Response(serializer.data)
+
+
 
 class MessageCreateView(generics.CreateAPIView):
     queryset = Message.objects.all()
@@ -74,7 +118,7 @@ class MessageCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        conversation_id = self.kwargs.get('conversation_id')
+        conversation_id = self.kwargs.get('id')
         conversation = get_object_or_404(Conversation, id=conversation_id)
         user = self.request.user
 
@@ -95,7 +139,7 @@ class MessageListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        conversation_id = self.kwargs.get('conversation_id')
+        conversation_id = self.kwargs.get('id')
         conversation = get_object_or_404(Conversation, id=conversation_id)
         
         # Mark unread messages as read when mentor views them

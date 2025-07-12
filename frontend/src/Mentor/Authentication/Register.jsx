@@ -20,7 +20,6 @@ function Register() {
       const res = await API.post('mentor/register/', form);
       localStorage.setItem('Mentortoken', res.data.token);
       alert('Registration successful! \nYour Mentor ID : ' + res.data.mentor.mentor_id);
-      console.log(res.data);
       
       
     } catch (err) {

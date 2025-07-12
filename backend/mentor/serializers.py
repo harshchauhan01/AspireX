@@ -199,6 +199,13 @@ class MentorNoteSerializer(serializers.ModelSerializer):
         fields = ['id', 'mentor', 'title', 'content', 'created_at']
         read_only_fields = ['id', 'created_at', 'mentor']
 
-    def create(self, validated_data):
-        validated_data['mentor'] = self.context['request'].user
-        return super().create(validated_data)
+
+class WithdrawalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Withdrawal
+        fields = [
+            'id', 'mentor', 'amount', 'request_date', 'processed_date', 
+            'status', 'payment_method', 'bank_details', 'admin_notes', 
+            'transaction_id', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'request_date', 'processed_date', 'transaction_id', 'created_at', 'updated_at', 'mentor']

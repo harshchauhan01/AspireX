@@ -90,19 +90,17 @@ const Dashboard = () => {
     const fetchMentorProfile = async () => {
       try {
         const token = localStorage.getItem('Mentortoken');
-        console.log(token);
         
         const response = await API.get('mentor/profile/',{
           headers: {
             Authorization: `Token ${token}`,
           }
         });
-        console.log(response.data);
+        // console.log(response.data);
         
         setMentor(response.data);
       } catch (err) {
         setError('Failed to fetch mentor profile');
-        console.error(err);
       }
     };
 

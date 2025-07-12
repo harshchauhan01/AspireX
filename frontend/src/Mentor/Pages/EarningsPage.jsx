@@ -4,6 +4,7 @@ import './CSS/PageStyles.css';
 
 const EarningsPage = () => {
   const [earningsData, setEarningsData] = useState([]);
+  const [withdrawalsData, setWithdrawalsData] = useState([]);
   const [stats, setStats] = useState({
     totalSessions: 0,
     totalStudents: 0,
@@ -11,8 +12,10 @@ const EarningsPage = () => {
     availableBalance: 0
   });
   const [loading, setLoading] = useState(true);
+  const [withdrawalsLoading, setWithdrawalsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [timeFilter, setTimeFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('earnings'); // 'earnings' or 'withdrawals'
   const [pagination, setPagination] = useState({
     current_page: 1,
     total_pages: 1,
@@ -38,6 +41,21 @@ const EarningsPage = () => {
       console.error('Error fetching earnings:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch withdrawals data
+  const fetchWithdrawals = async () => {
+    try {
+      setWithdrawalsLoading(true);
+      setError(null);
+      const data = await earningsService.getWithdrawals();
+      setWithdrawalsData(data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to fetch withdrawals data');
+      console.error('Error fetching withdrawals:', err);
+    } finally {
+      setWithdrawalsLoading(false);
     }
   };
 
@@ -69,6 +87,7 @@ const EarningsPage = () => {
       setShowWithdrawalModal(false);
       setWithdrawalAmount('');
       fetchEarnings(timeFilter, pagination.current_page);
+      fetchWithdrawals();
       
       // Show success message (you could add a toast notification here)
       alert('Withdrawal request submitted successfully!');
@@ -122,6 +141,7 @@ const EarningsPage = () => {
   // Load data on component mount
   useEffect(() => {
     fetchEarnings();
+    fetchWithdrawals();
   }, []);
 
   if (loading && earningsData.length === 0) {
@@ -216,24 +236,41 @@ const EarningsPage = () => {
           <p className="balance-note">Minimum withdrawal amount is $50.00</p>
         </div>
 
-        {/* Earnings Table */}
-        <div className="table-container">
-          <div className="table-header">
-            <h3>Recent Earnings</h3>
-            <div className="table-actions">
-              <select 
-                className="time-filter"
-                value={timeFilter}
-                onChange={(e) => handleTimeFilterChange(e.target.value)}
-                disabled={loading}
-              >
-                <option value="all">All time</option>
-                <option value="7days">Last 7 days</option>
-                <option value="30days">Last 30 days</option>
-                <option value="3months">Last 3 months</option>
-              </select>
+        {/* Tab Navigation */}
+        <div className="tab-navigation">
+          <button 
+            className={`tab-button ${activeTab === 'earnings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('earnings')}
+          >
+            Earnings
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'withdrawals' ? 'active' : ''}`}
+            onClick={() => setActiveTab('withdrawals')}
+          >
+            Withdrawal History
+          </button>
+        </div>
+
+        {/* Earnings Tab */}
+        {activeTab === 'earnings' && (
+          <div className="table-container">
+            <div className="table-header">
+              <h3>Recent Earnings</h3>
+              <div className="table-actions">
+                <select 
+                  className="time-filter"
+                  value={timeFilter}
+                  onChange={(e) => handleTimeFilterChange(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="all">All time</option>
+                  <option value="7days">Last 7 days</option>
+                  <option value="30days">Last 30 days</option>
+                  <option value="3months">Last 3 months</option>
+                </select>
+              </div>
             </div>
-          </div>
           
           {loading ? (
             <div className="loading-container">
@@ -303,6 +340,62 @@ const EarningsPage = () => {
             </>
           )}
         </div>
+        )}
+
+        {/* Withdrawals Tab */}
+        {activeTab === 'withdrawals' && (
+          <div className="table-container">
+            <div className="table-header">
+              <h3>Withdrawal History</h3>
+            </div>
+            
+            {withdrawalsLoading ? (
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
+                <p>Loading withdrawals...</p>
+              </div>
+            ) : (
+              <>
+                <table className="earnings-table">
+                  <thead>
+                    <tr>
+                      <th>S.No.</th>
+                      <th>Amount</th>
+                      <th>Request Date</th>
+                      <th>Status</th>
+                      <th>Payment Method</th>
+                      <th>Transaction ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {withdrawalsData.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="no-data">
+                          No withdrawal requests found
+                        </td>
+                      </tr>
+                    ) : (
+                      withdrawalsData.map((item, index) => (
+                        <tr key={item.id}>
+                          <td>{index + 1}</td>
+                          <td>${(parseFloat(item.amount) || 0).toFixed(2)}</td>
+                          <td>{new Date(item.request_date).toLocaleDateString()}</td>
+                          <td>
+                            <span className={`status-badge status-${item.status}`}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td>{item.payment_method}</td>
+                          <td>{item.transaction_id}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Withdrawal Modal */}

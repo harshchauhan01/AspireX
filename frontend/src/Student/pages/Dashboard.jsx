@@ -25,19 +25,16 @@ const StuDashboard = () => {
     const fetchMentorProfile = async () => {
       try {
         const token = localStorage.getItem('token');
-        console.log(token);
         
         const response = await API.get('student/profile/',{
           headers: {
             Authorization: `Token ${token}`,
           }
         });
-        console.log(response.data);
         
         setMentor(response.data);
       } catch (err) {
         setError('Failed to fetch mentor profile');
-        console.error(err);
       }
     };
 

@@ -42,7 +42,7 @@ const MenteesPage = () => {
         setMentors(mappedMentors);
       })
       .catch(err => {
-        console.error("Error fetching mentors:", err);
+        // Handle error silently or show user-friendly message
       });
   }, []);
 

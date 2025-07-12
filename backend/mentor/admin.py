@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import *
+from django.utils import timezone
 
 @admin.register(MentorDetail)
 class MentorDetailAdmin(admin.ModelAdmin):
@@ -157,6 +158,67 @@ class MeetingAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(mentor__user=request.user)
+
+
+@admin.register(Withdrawal)
+class WithdrawalAdmin(admin.ModelAdmin):
+    list_display = ('mentor', 'amount', 'request_date', 'status', 'payment_method', 'transaction_id')
+    list_filter = ('status', 'payment_method', 'request_date')
+    search_fields = ('mentor__mentor_id', 'mentor__name', 'transaction_id')
+    readonly_fields = ('request_date', 'transaction_id', 'created_at', 'updated_at')
+    date_hierarchy = 'request_date'
+    list_select_related = ('mentor',)
+    actions = ['approve_withdrawals', 'reject_withdrawals', 'mark_as_processed']
+    
+    fieldsets = (
+        ('Withdrawal Information', {
+            'fields': ('mentor', 'amount', 'request_date', 'status')
+        }),
+        ('Payment Details', {
+            'fields': ('payment_method', 'bank_details', 'transaction_id')
+        }),
+        ('Admin Actions', {
+            'fields': ('processed_date', 'admin_notes'),
+            'classes': ('collapse',)
+        }),
+        ('System Information', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def approve_withdrawals(self, request, queryset):
+        """Approve selected withdrawal requests"""
+        updated = queryset.filter(status='pending').update(
+            status='approved',
+            processed_date=timezone.now()
+        )
+        self.message_user(request, f"{updated} withdrawal(s) approved successfully.")
+    approve_withdrawals.short_description = "Approve selected withdrawals"
+
+    def reject_withdrawals(self, request, queryset):
+        """Reject selected withdrawal requests"""
+        updated = queryset.filter(status='pending').update(
+            status='rejected',
+            processed_date=timezone.now()
+        )
+        self.message_user(request, f"{updated} withdrawal(s) rejected successfully.")
+    reject_withdrawals.short_description = "Reject selected withdrawals"
+
+    def mark_as_processed(self, request, queryset):
+        """Mark approved withdrawals as processed"""
+        updated = queryset.filter(status='approved').update(
+            status='processed',
+            processed_date=timezone.now()
+        )
+        self.message_user(request, f"{updated} withdrawal(s) marked as processed.")
+    mark_as_processed.short_description = "Mark as processed"
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

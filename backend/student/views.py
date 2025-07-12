@@ -63,16 +63,12 @@ class StudentProfileUpdateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def put(self, request):
-        print("Received data:", request.data)
         student = request.user
         serializer = StudentSerializer(student, data=request.data, partial=True)
         
         if serializer.is_valid():
-            print("Valid data, saving...")
             serializer.save()
-            print("After save:", StudentSerializer(student).data)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        print("Validation errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -175,6 +171,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework import generics
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
@@ -201,6 +198,13 @@ class PublicStudentListView(generics.ListAPIView):
                 Q(student_id__icontains=search)
             )
         return queryset
+
+class PublicStudentDetailView(RetrieveAPIView):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'student_id'
+    lookup_url_kwarg = 'student_id'
     
 
     
