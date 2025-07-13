@@ -73,6 +73,9 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           <li className={activeTab === 'sessions' ? 'active' : ''} onClick={() => setActiveTab('sessions')}>
             <span>🗓️</span> {sidebarOpen && 'Sessions'}
           </li>
+          <li className={activeTab === 'Explore' ? 'active' : ''} onClick={() => setActiveTab('Explore')}>
+            <span>🚀</span> {sidebarOpen && 'Explore'}
+          </li>
         </ul>
       </nav>
       

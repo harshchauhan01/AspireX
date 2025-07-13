@@ -7,6 +7,7 @@ import EarningsPage from './EarningsPage';
 import Messages from './Messages';
 import ProfilePage from './ProfilePage';
 import SessionsPage from './SessionsPage';
+import Explore from './Explore';
 import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
 
@@ -71,6 +72,8 @@ const StuDashboard = () => {
         return <MenteesPage />;
       case 'earning':
         return <EarningsPage />;
+      case 'Explore':
+        return <Explore />;
       case 'messages':
         return <Messages />;
       case 'profile':

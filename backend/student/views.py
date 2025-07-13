@@ -228,3 +228,24 @@ class StudentNoteDeleteView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return StudentNote.objects.filter(student=self.request.user)
+    
+    
+    
+    
+# this view is for success story
+from rest_framework import generics
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .models import SuccessStory
+from .serializers import SuccessStorySerializer
+
+class SuccessStoryListCreateView(generics.ListCreateAPIView):
+    serializer_class = SuccessStorySerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return SuccessStory.objects.filter(is_approved=True).order_by('-created_at')  # ✅ Filter only approved
+
+    def perform_create(self, serializer):
+        serializer.save(is_approved=False)  # ✅ Set unapproved by default
