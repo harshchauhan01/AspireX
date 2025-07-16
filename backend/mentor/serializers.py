@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth import authenticate 
 from rest_framework import serializers
-from student.models import Student
+from student.models import Student, Feedback
 
 class MentorRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -137,13 +137,18 @@ class MentorSerializer(serializers.ModelSerializer):
     earnings = EarningSerializer(many=True, read_only=True)
     messages = MentorMessageSerializer(many=True, read_only=True)
     meetings = MeetingSerializer(many=True, read_only=True)
+    feedback_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Mentor
         fields = (
             'mentor_id', 'email', 'name', 'is_staff', 'is_active', 'is_superuser',
-            'details', 'auth_token', 'earnings', 'messages', 'meetings'
+            'details', 'auth_token', 'earnings', 'messages', 'meetings', 'feedback_count'
         )
+    
+    def get_feedback_count(self, obj):
+        from student.models import Feedback
+        return Feedback.objects.filter(mentor=obj).count()
 
     def update(self, instance, validated_data):
         details_data = validated_data.pop('details', {})
@@ -198,6 +203,22 @@ class MentorNoteSerializer(serializers.ModelSerializer):
         model = MentorNote
         fields = ['id', 'mentor', 'title', 'content', 'created_at']
         read_only_fields = ['id', 'created_at', 'mentor']
+
+class MentorFeedbackSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.name', read_only=True)
+    student_id = serializers.CharField(source='student.student_id', read_only=True)
+    meeting_title = serializers.CharField(source='meeting.title', read_only=True)
+    meeting_id = serializers.CharField(source='meeting.meeting_id', read_only=True)
+    rating_display = serializers.CharField(source='get_rating_display', read_only=True)
+    
+    class Meta:
+        model = Feedback  # Import Feedback model from student app
+        fields = [
+            'id', 'student_name', 'student_id', 'meeting_title', 'meeting_id',
+            'rating', 'rating_display', 'feedback_text', 'is_approved',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class WithdrawalSerializer(serializers.ModelSerializer):

@@ -76,8 +76,10 @@ import EarningsPage from './EarningsPage';
 import Messages from './Messages';
 import ProfilePage from './ProfilePage';
 import SessionsPage from './SessionsPage';
+import FeedbackPage from './FeedbackPage';
 import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
+import Loader from '../../components/ui/loader';
 
 const Dashboard = () => {
 
@@ -115,6 +117,7 @@ const Dashboard = () => {
 
 
   if (error) return <div className="text-red-600">{error}</div>;
+  if (!mentor) return <Loader />;
 
 
 
@@ -144,6 +147,8 @@ const Dashboard = () => {
         return <ProfilePage mentorProfile={mentor} />;
       case 'sessions':
         return <SessionsPage sessions = {mentor.meetings}/>;
+      case 'feedback':
+        return <FeedbackPage />;
       default:
         return <DashboardHome mentorProfile={mentorProfile} />;
     }

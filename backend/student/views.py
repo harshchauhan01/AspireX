@@ -2,12 +2,13 @@ from rest_framework import viewsets, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
-from .models import Student
+from .models import Student, StudentNote, Feedback
 from .serializers import *
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.authentication import TokenAuthentication
 from django.utils import timezone
+from utils import send_credentials_email
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -23,6 +24,14 @@ class StudentRegistrationAPIView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         student = serializer.save()
         token, created = Token.objects.get_or_create(user=student)
+        # Send welcome email with credentials
+        password = request.data.get('password')
+        send_credentials_email(
+            email=student.email,
+            username=student.student_id,
+            password=password,
+            name=getattr(student, 'name', None)
+        )
         return Response({
             'student': StudentSerializer(student).data,
             'token': token.key,
@@ -232,3 +241,149 @@ class StudentNoteDeleteView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return StudentNote.objects.filter(student=self.request.user)
+
+from rest_framework import generics
+from .serializers import FeedbackSerializer
+
+class FeedbackCreateAPIView(generics.CreateAPIView):
+    """
+    Create feedback for a mentor after a meeting
+    """
+    serializer_class = FeedbackSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        print("FEEDBACK POST DATA:", request.data)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        
+        if not serializer.is_valid():
+            print("FEEDBACK ERRORS:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Additional check for duplicate feedback
+        meeting_id = request.data.get('meeting_id')
+        if meeting_id:
+            from mentor.models import Meeting
+            try:
+                meeting = Meeting.objects.get(meeting_id=meeting_id)
+                existing_feedback = Feedback.objects.filter(student=request.user, meeting=meeting)
+                if existing_feedback.exists():
+                    return Response({
+                        'meeting_id': ['You have already submitted feedback for this meeting.']
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            except Meeting.DoesNotExist:
+                return Response({
+                    'meeting_id': ['Meeting not found.']
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+class FeedbackListAPIView(generics.ListAPIView):
+    """
+    List all feedback given by the authenticated student
+    """
+    serializer_class = FeedbackSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Feedback.objects.filter(student=self.request.user)
+
+class FeedbackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update, or delete a specific feedback
+    """
+    serializer_class = FeedbackSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Feedback.objects.filter(student=self.request.user)
+
+class MentorFeedbackListAPIView(generics.ListAPIView):
+    """
+    List all approved feedback for a specific mentor (public view)
+    """
+    serializer_class = FeedbackSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        mentor_id = self.kwargs.get('mentor_id')
+        return Feedback.objects.filter(
+            mentor__mentor_id=mentor_id,
+            is_approved=True
+        )
+
+class CheckFeedbackExistsAPIView(APIView):
+    """
+    Check if feedback exists for a specific meeting
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, meeting_id):
+        try:
+            from mentor.models import Meeting
+            meeting = Meeting.objects.get(meeting_id=meeting_id)
+            existing_feedback = Feedback.objects.filter(student=request.user, meeting=meeting).first()
+            
+            if existing_feedback:
+                return Response({
+                    'exists': True,
+                    'feedback': {
+                        'rating': existing_feedback.rating,
+                        'feedback_text': existing_feedback.feedback_text,
+                        'created_at': existing_feedback.created_at
+                    }
+                })
+            else:
+                return Response({'exists': False})
+        except Meeting.DoesNotExist:
+            return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+from rest_framework import generics
+from .serializers import FeedbackSerializer, StudentMessageSerializer
+from .models import Feedback, StudentMessage
+
+class StudentMessageListAPIView(generics.ListAPIView):
+    """
+    List all messages for the authenticated student
+    """
+    serializer_class = StudentMessageSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return StudentMessage.objects.filter(student=self.request.user).order_by('-sent_at')
+
+class StudentMessageDetailAPIView(generics.RetrieveAPIView):
+    """
+    Retrieve a specific message for the authenticated student
+    """
+    serializer_class = StudentMessageSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return StudentMessage.objects.filter(student=self.request.user)
+
+class StudentMessageMarkAsReadAPIView(APIView):
+    """
+    Mark a message as read
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, message_id):
+        try:
+            message = StudentMessage.objects.get(
+                id=message_id, 
+                student=request.user
+            )
+            message.mark_as_read()
+            return Response({'status': 'Message marked as read'}, status=status.HTTP_200_OK)
+        except StudentMessage.DoesNotExist:
+            return Response({'error': 'Message not found'}, status=status.HTTP_404_NOT_FOUND)

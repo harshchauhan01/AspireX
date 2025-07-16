@@ -234,3 +234,82 @@ class StudentNote(models.Model):
 
     def __str__(self):
         return f"{self.student.student_id} - {self.title}"
+
+
+
+class Feedback(models.Model):
+    RATING_CHOICES = [
+        (1, '1 - Poor'),
+        (2, '2 - Fair'),
+        (3, '3 - Good'),
+        (4, '4 - Very Good'),
+        (5, '5 - Excellent'),
+    ]
+    
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name='feedback_given'
+    )
+    mentor = models.ForeignKey(
+        'mentor.Mentor',
+        on_delete=models.CASCADE,
+        related_name='feedback_received'
+    )
+    meeting = models.ForeignKey(
+        'mentor.Meeting',
+        on_delete=models.CASCADE,
+        related_name='feedback',
+        null=True,
+        blank=True
+    )
+    rating = models.IntegerField(
+        choices=RATING_CHOICES,
+        help_text="Rate your experience with the mentor"
+    )
+    feedback_text = models.TextField(
+        help_text="Please share your experience and suggestions"
+    )
+    is_approved = models.BooleanField(
+        default=False,
+        help_text="Admin approval for feedback visibility"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Student Feedback"
+        verbose_name_plural = "Student Feedback"
+        unique_together = ('student', 'meeting')  # Ensures one feedback per student per meeting
+        constraints = [
+            models.UniqueConstraint(
+                fields=['student', 'meeting'],
+                name='unique_student_meeting_feedback'
+            )
+        ]
+
+    def __str__(self):
+        return f"Feedback from {self.student.name} to {self.mentor.name} - {self.get_rating_display()}"
+
+    def save(self, *args, **kwargs):
+        # Update mentor's average rating when feedback is saved
+        super().save(*args, **kwargs)
+        self.update_mentor_rating()
+
+    def update_mentor_rating(self):
+        """Update mentor's average rating based on all approved feedback"""
+        approved_feedback = Feedback.objects.filter(
+            mentor=self.mentor,
+            is_approved=True
+        )
+        
+        if approved_feedback.exists():
+            avg_rating = approved_feedback.aggregate(
+                avg=models.Avg('rating')
+            )['avg']
+            
+            # Update mentor's average rating in MentorDetail
+            mentor_detail = self.mentor.details
+            mentor_detail.average_rating = round(avg_rating, 2)
+            mentor_detail.save(update_fields=['average_rating'])

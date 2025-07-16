@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Conversation, Message
+from .models import Conversation, Message, ContactMessage
 from mentor.models import Mentor
 from student.models import Student
 
@@ -76,6 +76,11 @@ class ConversationSerializer(serializers.ModelSerializer):
     def get_last_message_time(self, obj):
         last_message = obj.messages.last()
         return last_message.timestamp if last_message else None
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['id', 'name', 'email', 'phone', 'query', 'created_at']
 
 
 

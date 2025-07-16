@@ -22,4 +22,8 @@ urlpatterns = [
     path('earnings/', MentorEarningsAPIView.as_view(), name='mentor-earnings'),
     path('withdrawals/', MentorWithdrawalAPIView.as_view(), name='mentor-withdrawals'),
     path('earnings/export/', MentorEarningsExportAPIView.as_view(), name='mentor-earnings-export'),
+    
+    path('feedback/', MentorFeedbackListAPIView.as_view(), name='mentor-feedback-list'),
+    path('feedback/<int:pk>/', MentorFeedbackDetailAPIView.as_view(), name='mentor-feedback-detail'),
+    path('feedback/stats/', MentorFeedbackStatsAPIView.as_view(), name='mentor-feedback-stats'),
 ]

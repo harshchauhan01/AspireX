@@ -1,23 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CSS/PageStyles.css';
 import './CSS/Sessions.css';
+import FeedbackModal from '../components/FeedbackModal';
+import API from '../../BackendConn/api';
 
 const SessionsPage = ({ sessions = [] }) => {
   const [activeTab, setActiveTab] = useState('scheduled');
   const [showFilters, setShowFilters] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [feedbackStatus, setFeedbackStatus] = useState({});
+
+  // Check feedback status for completed sessions
+  useEffect(() => {
+    const checkFeedbackStatus = async () => {
+      const completedSessions = sessions.filter(session => session.status === 'completed');
+      const status = {};
+      
+      for (const session of completedSessions) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await API.get(`student/feedback/check/${session.meeting_id}/`, {
+            headers: {
+              Authorization: `Token ${token}`,
+            }
+          });
+          status[session.meeting_id] = response.data;
+        } catch (error) {
+          console.error('Error checking feedback status:', error);
+          status[session.meeting_id] = { exists: false };
+        }
+      }
+      
+      setFeedbackStatus(status);
+    };
+    
+    if (sessions.length > 0) {
+      checkFeedbackStatus();
+    }
+  }, [sessions]);
 
   // Categorize sessions based on status
   const categorizedSessions = sessions.reduce((acc, session) => {
-
     if (session.status === 'scheduled') {
       acc.scheduled.push(session);
-    } else if (session.status === 'ongoing' || session.status === 'missed') {
-      acc.pending.push(session);
+    } else if (session.status === 'ongoing') {
+      acc.ongoing.push(session);
     } else if (session.status === 'completed') {
       acc.completed.push(session);
+    } else if (session.status === 'missed' || session.status === 'cancelled') {
+      acc.pending.push(session);
     }
     return acc;
-  }, { scheduled: [], pending: [], completed: [] });
+  }, { scheduled: [], ongoing: [], pending: [], completed: [] });
   
   
 
@@ -36,25 +71,11 @@ const SessionsPage = ({ sessions = [] }) => {
     });
 
     // Extract avatar initials - for students, show mentor info
-    let mentorName = 'Unknown Mentor';
-    let avatar = 'UN';
-    
-    if (session.mentor) {
-      // Handle different possible formats of mentor data
-      if (typeof session.mentor === 'string') {
-        mentorName = session.mentor.split(' - ')[1] || session.mentor;
-      } else if (session.mentor.name) {
-        mentorName = session.mentor.name;
-      } else if (session.mentor.mentor_id) {
-        mentorName = session.mentor.mentor_id;
-      }
-      
-      // Generate avatar from mentor name
-      avatar = mentorName.split(' ')
-        .map(name => name[0])
-        .join('')
-        .toUpperCase();
-    }
+    let mentorName = session.mentor_name || 'Unknown Mentor';
+    let avatar = mentorName.split(' ')
+      .map(name => name[0])
+      .join('')
+      .toUpperCase();
 
     return {
       ...session,
@@ -103,18 +124,34 @@ const SessionsPage = ({ sessions = [] }) => {
           </div>
         );
       case 'completed':
+        const hasFeedback = feedbackStatus[session.meeting_id]?.exists;
         return (
-          <div className="session-feedback">
-            {session.notes && (
-              <>
-                <div className="rating">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i} className={i < (session.rating || 0) ? 'filled' : ''}>★</span>
-                  ))}
-                </div>
-                <p className="feedback-text">{session.notes}</p>
-              </>
+          <div className="session-actions">
+            {hasFeedback ? (
+              <div className="feedback-given">
+                <span className="feedback-badge">✓ Feedback Given</span>
+                <button 
+                  className="secondary-button small"
+                  onClick={() => {
+                    // Show existing feedback details
+                    alert(`Your feedback: ${feedbackStatus[session.meeting_id].feedback.feedback_text}\nRating: ${feedbackStatus[session.meeting_id].feedback.rating}/5`);
+                  }}
+                >
+                  View Feedback
+                </button>
+              </div>
+            ) : (
+              <button 
+                className="primary-button small"
+                onClick={() => {
+                  setSelectedSession(session);
+                  setShowFeedbackModal(true);
+                }}
+              >
+                Give Feedback
+              </button>
             )}
+            <button className="secondary-button small">View Details</button>
           </div>
         );
       default:
@@ -175,6 +212,12 @@ const SessionsPage = ({ sessions = [] }) => {
           Scheduled ({categorizedSessions.scheduled.length})
         </button>
         <button
+          className={activeTab === 'ongoing' ? 'active' : ''}
+          onClick={() => setActiveTab('ongoing')}
+        >
+          Ongoing ({categorizedSessions.ongoing.length})
+        </button>
+        <button
           className={activeTab === 'pending' ? 'active' : ''}
           onClick={() => setActiveTab('pending')}
         >
@@ -200,7 +243,7 @@ const SessionsPage = ({ sessions = [] }) => {
                   </div>
                   <div className="session-details">
                     <h3>{session.title}</h3>
-                    <p>With {formattedSession.mentorName}</p>
+                    <p>With {formattedSession.mentorName !== 'Unknown Mentor' ? formattedSession.mentorName : ''}</p>
                     <div className="session-time">
                       <span>{formattedSession.displayDate}</span>
                       <span>{formattedSession.displayTime}</span>
@@ -220,6 +263,33 @@ const SessionsPage = ({ sessions = [] }) => {
           </div>
         )}
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          setShowFeedbackModal(false);
+          setSelectedSession(null);
+        }}
+        session={selectedSession}
+        onSubmitSuccess={(feedbackData) => {
+          console.log('Feedback submitted successfully:', feedbackData);
+          // Refresh feedback status
+          setFeedbackStatus(prev => ({
+            ...prev,
+            [selectedSession.meeting_id]: {
+              exists: true,
+              feedback: {
+                rating: feedbackData.rating,
+                feedback_text: feedbackData.feedback_text,
+                created_at: new Date().toISOString()
+              }
+            }
+          }));
+          setShowFeedbackModal(false);
+          setSelectedSession(null);
+        }}
+      />
     </div>
   );
 };

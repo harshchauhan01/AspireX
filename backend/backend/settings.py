@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,11 +41,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'chat',
     'mentor',
-    'corsheaders',  
-    'rest_framework',  
+    'corsheaders',
+    'rest_framework',
     'rest_framework.authtoken',
     'student.apps.StudentConfig',
-    
+
 ]
 
 
@@ -89,7 +91,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 REST_FRAMEWORK = {
-    
+
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
         'rest_framework.authentication.TokenAuthentication',
@@ -171,7 +173,15 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import os
 # settings.py
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Email configuration using python-decouple
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

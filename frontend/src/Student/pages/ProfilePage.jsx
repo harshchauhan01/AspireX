@@ -2,6 +2,7 @@ import React, { useState,useEffect,useRef } from 'react';
 import axios from 'axios';
 import './CSS/PageStyles.css';
 import './CSS/Profile.css';
+import Loader from '../../components/ui/loader';
 
 const ProfilePage = ({ mentorProfile }) => {
   const [editMode, setEditMode] = useState(false);
@@ -765,6 +766,7 @@ const ProfilePage = ({ mentorProfile }) => {
           </div>
         </div>
       </div>
+      {isSaving && <Loader />}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import Messages from './Messages';
 import ProfilePage from './ProfilePage';
 import SessionsPage from './SessionsPage';
 import MentorProfile from './MentorProfile';
+import Loader from '../../components/ui/loader';
 import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
 
@@ -56,6 +57,7 @@ const StuDashboard = () => {
 
 
   if (error) return <div className="text-red-600">{error}</div>;
+  if (!mentor) return <Loader />;
 
 
 

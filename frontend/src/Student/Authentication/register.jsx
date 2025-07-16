@@ -33,6 +33,7 @@ function SRegister() {
     <StyledPageWrapper>
       <StyledWrapper>
         <div className="container">
+          <MentorSwitch href="/mentor/login">Login as a Mentor</MentorSwitch>
           <div className="heading">Sign Up</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" onSubmit={handleSubmit}>
@@ -252,4 +253,20 @@ const StyledPageWrapper = styled.div`
   justify-content: center;
   background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
   padding: 0;
+`;
+
+const MentorSwitch = styled.a`
+  display: block;
+  text-align: right;
+  color: #145af2;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+  cursor: pointer;
+  &:hover {
+    color: #0d3ea1;
+    text-decoration: underline;
+  }
 `;
