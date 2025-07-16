@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from .models import Conversation, Message, ContactMessage
+from .serializers import ConversationSerializer, MessageSerializer, ContactMessageSerializer
 from mentor.models import Mentor
 from student.models import Student
 from django.shortcuts import get_object_or_404
@@ -185,6 +185,17 @@ class GetUserInfoView(APIView):
                 "user_type": "student"
             })
         return Response({"detail": "Unrecognized user"}, status=400)
+
+
+class ContactMessageAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self, request):
+        serializer = ContactMessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Message sent successfully!'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

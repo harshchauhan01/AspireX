@@ -94,3 +94,38 @@ class StudentMessageAdmin(admin.ModelAdmin):
             'fields': ('is_read', 'sent_at')
         }),
     )
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ('student', 'mentor', 'rating', 'is_approved', 'created_at')
+    list_filter = ('rating', 'is_approved', 'created_at')
+    search_fields = ('student__name', 'mentor__name', 'feedback_text')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    list_select_related = ('student', 'mentor', 'meeting')
+    actions = ['approve_feedback', 'reject_feedback']
+    
+    fieldsets = (
+        ('Feedback Information', {
+            'fields': ('student', 'mentor', 'meeting', 'rating', 'feedback_text')
+        }),
+        ('Approval Status', {
+            'fields': ('is_approved',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def approve_feedback(self, request, queryset):
+        """Approve selected feedback"""
+        updated = queryset.filter(is_approved=False).update(is_approved=True)
+        self.message_user(request, f"{updated} feedback(s) approved successfully.")
+    approve_feedback.short_description = "Approve selected feedback"
+
+    def reject_feedback(self, request, queryset):
+        """Reject selected feedback"""
+        updated = queryset.filter(is_approved=True).update(is_approved=False)
+        self.message_user(request, f"{updated} feedback(s) rejected successfully.")
+    reject_feedback.short_description = "Reject selected feedback"

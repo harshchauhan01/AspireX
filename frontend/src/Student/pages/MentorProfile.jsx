@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import './CSS/MentorProfile.css';
+import Loader from '../../components/ui/loader';
 
 const MentorProfile = ({ mentorId, onBack }) => {
   const { id } = useParams();
@@ -169,7 +170,7 @@ const MentorProfile = ({ mentorId, onBack }) => {
   };
 
 
-  if (loading) return <div>Loading mentor profile...</div>;
+  if (loading) return <Loader />;
   if (!mentor) return <div>Mentor not found.</div>;
 
   return (

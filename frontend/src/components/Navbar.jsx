@@ -21,6 +21,7 @@ const Navone = () => {
             <li className='land-nav-li'><a onClick={() => handleNavigation("/student/login")}>Log in</a></li>
             <li className='land-nav-li'><a onClick={() => handleNavigation("/student/signup")}>Sign up</a></li>
             <li className='land-nav-li'><a onClick={() => handleNavigation("/mentor/signup")}>Become a mentor</a></li>
+            <li className='land-nav-li'><a onClick={() => handleNavigation("/contact")}>Contact</a></li>
         </ul>
           <div className="hamburger" onClick={toggleNav}>☰</div>
       </div>
@@ -31,6 +32,7 @@ const Navone = () => {
             <li><a onClick={() => handleNavigation("/student/login")}>Log in</a></li>
             <li><a onClick={() => handleNavigation("/student/signup")}>Sign up</a></li>
             <li><a onClick={() => handleNavigation("/mentor/signup")}>Become a mentor</a></li>
+            <li><a onClick={() => handleNavigation("/contact")}>Contact</a></li>
         </ul>
       </div>
     </>

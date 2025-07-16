@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './CSS/PageStyles.css';
 import './CSS/Messages.css';
+import Loader from '../../components/ui/loader';
 
 const Messages = () => {
   const [activeConversation, setActiveConversation] = useState(null);
@@ -408,9 +409,7 @@ const Messages = () => {
     );
   };
 
-  if (isLoading) {
-    return <div className="page-container messages-page">Loading conversations...</div>;
-  }
+  if (isLoading) return <Loader />;
 
   if (error) {
     return <div className="page-container messages-page">{error}</div>;

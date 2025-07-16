@@ -35,8 +35,13 @@ const SessionsPage = ({ sessions = [] }) => {
       hour12: true
     });
 
-    // Extract avatar initials
-    const studentName = session.student.split(' - ')[1] || session.student;
+    // Extract avatar initials with null check
+    let studentName = '';
+    if (session.student) {
+      studentName = session.student.split(' - ')[1] || session.student;
+    } else {
+      studentName = 'Unknown';
+    }
     const avatar = studentName.split(' ')
       .map(name => name[0])
       .join('')

@@ -8,6 +8,7 @@ function Register() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('')
   const [token, setToken] = useState(null)
+  const navigate = useNavigate();
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -20,6 +21,7 @@ function Register() {
       const res = await API.post('mentor/register/', form);
       localStorage.setItem('Mentortoken', res.data.token);
       alert('Registration successful! \nYour Mentor ID : ' + res.data.mentor.mentor_id);
+      navigate('/mentor/login');
       
       
     } catch (err) {
@@ -36,6 +38,7 @@ function Register() {
     <StyledPageWrapper>
       <StyledWrapper>
         <div className="container">
+          <StudentSwitch href="/student/login">Login as a Student</StudentSwitch>
           <div className="heading">Sign Up</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" onSubmit={handleSubmit}>
@@ -233,4 +236,20 @@ const StyledPageWrapper = styled.div`
   justify-content: center;
   background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
   padding: 0;
+`;
+
+const StudentSwitch = styled.a`
+  display: block;
+  text-align: right;
+  color: #145af2;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+  cursor: pointer;
+  &:hover {
+    color: #0d3ea1;
+    text-decoration: underline;
+  }
 `;

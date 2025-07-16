@@ -5,6 +5,8 @@ import { IoMdClose } from "react-icons/io";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { useNavigate } from "react-router-dom";
 import "./CSS/Home.css";
+import ContactPage from "./ContactPage";
+import logo from "../assets/logo.png";
 
 function Home() {
   const [isOpen, setIsOpen] = useState(false);
@@ -351,6 +353,27 @@ function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Contact Section (aligned right, interactive) */}
+      <section className="home-contact-section">
+        <div className="home-contact-flex">
+          <div className="home-contact-left">
+            <h2>Contact Our Team</h2>
+            <p>Have questions, suggestions, or need help? Reach out and we'll respond promptly!</p>
+            <ul className="home-contact-info">
+              <li><span role="img" aria-label="location">📍</span> 123 Mentor St, Knowledge City</li>
+              <li><span role="img" aria-label="phone">📞</span> +1 (234) 567-8900</li>
+              <li><span role="img" aria-label="email">✉️</span> hello@aspirex.com</li>
+            </ul>
+            <div className="home-contact-illustration">
+              <img src={logo} alt="Contact Illustration" style={{maxWidth: '180px', marginTop: '4px'}} />
+            </div>
+          </div>
+          <div className="home-contact-right">
+            <ContactPage />
+          </div>
         </div>
       </section>
 

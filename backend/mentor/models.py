@@ -147,20 +147,20 @@ class MentorDetail(models.Model):
     )
     
     # Add Details     
-    first_name = models.CharField(max_length=100, default="NULL")
-    last_name = models.CharField(max_length=100, default="NULL")
-    dob = models.DateField(default="NULL")
+    first_name = models.CharField(max_length=100, default="", blank=True)
+    last_name = models.CharField(max_length=100, default="", blank=True)
+    dob = models.DateField(null=True, blank=True, default=None)
     age = models.PositiveIntegerField(default=0)
     GENDER_CHOICES = (
         ('male', 'Male'),
         ('female', 'Female'),
         ('other', 'Other'),
     )
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='Male')
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, unique=False, default="#NA")
+    phone_number = models.CharField(max_length=15, unique=False, default="", blank=True)
 
-    college = models.CharField(max_length=200, default="#NA")
+    college = models.CharField(max_length=200, default="", blank=True)
     cgpa = models.FloatField(default=0.0)
     batch = models.PositiveIntegerField(default=2024)
     
@@ -168,8 +168,8 @@ class MentorDetail(models.Model):
     skills = models.ManyToManyField(Skill, related_name='mentors', blank=True)
 
     fees = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    about = models.TextField(default="#NA")
-    availability_timings = models.CharField(max_length=50, default="#NA")
+    about = models.TextField(default="", blank=True)
+    availability_timings = models.CharField(max_length=50, default="", blank=True)
     profile_photo = models.ImageField(upload_to='mentors/profile_photos/', null=True, blank=True, default=None)
     cv = models.FileField(upload_to='mentors/cvs/', max_length=100, null=True, blank=True, default=None)
 

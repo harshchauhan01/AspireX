@@ -51,6 +51,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
             <div className="mentor-stats">
               <span>⭐ {mentor?.details?.average_rating || 0} Rating</span>
               <span>🎯 {mentor?.details?.total_sessions || mentorProfile.sessionsCompleted} sessions</span>
+              <span>💬 {mentor?.feedback_count || 0} feedback</span>
             </div>
           </div>
         )}
@@ -73,6 +74,9 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           </li>
           <li className={activeTab === 'sessions' ? 'active' : ''} onClick={() => setActiveTab('sessions')}>
             <span>🗓️</span> {sidebarOpen && 'Sessions'}
+          </li>
+          <li className={activeTab === 'feedback' ? 'active' : ''} onClick={() => setActiveTab('feedback')}>
+            <span>⭐</span> {sidebarOpen && 'Feedback'}
           </li>
         </ul>
       </nav>

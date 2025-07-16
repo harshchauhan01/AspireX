@@ -14,6 +14,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from django.db import models
 from django.utils import timezone
+from utils import send_credentials_email
 
 class MentorViewSet(viewsets.ModelViewSet):
     queryset = Mentor.objects.all()
@@ -64,6 +65,14 @@ class MentorRegistrationAPIView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         mentor = serializer.save()
         token = MentorToken.objects.create(user=mentor)
+        # Send welcome email with credentials
+        password = request.data.get('password')
+        send_credentials_email(
+            email=mentor.email,
+            username=mentor.mentor_id,
+            password=password,
+            name=getattr(mentor, 'name', None)
+        )
         return Response({
             'mentor': MentorSerializer(mentor).data,
             'token': token.key,
@@ -492,3 +501,51 @@ class MentorEarningsExportAPIView(APIView):
             'mentor_name': mentor.name,
             'mentor_id': mentor.mentor_id
         }, status=status.HTTP_200_OK)
+
+class MentorFeedbackListAPIView(generics.ListAPIView):
+    """
+    List all feedback received by the authenticated mentor
+    """
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MentorFeedbackSerializer
+    
+    def get_queryset(self):
+        from student.models import Feedback
+        return Feedback.objects.filter(mentor=self.request.user).order_by('-created_at')
+
+class MentorFeedbackDetailAPIView(generics.RetrieveAPIView):
+    """
+    Retrieve a specific feedback detail
+    """
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MentorFeedbackSerializer
+    
+    def get_queryset(self):
+        from student.models import Feedback
+        return Feedback.objects.filter(mentor=self.request.user)
+
+class MentorFeedbackStatsAPIView(APIView):
+    """
+    Get feedback statistics for the mentor
+    """
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        from student.models import Feedback
+        from django.db.models import Avg, Count
+        
+        mentor = request.user
+        feedbacks = Feedback.objects.filter(mentor=mentor)
+        
+        stats = {
+            'total_feedback': feedbacks.count(),
+            'average_rating': feedbacks.aggregate(Avg('rating'))['rating__avg'] or 0,
+            'rating_distribution': feedbacks.values('rating').annotate(count=Count('rating')).order_by('rating'),
+            'approved_feedback': feedbacks.filter(is_approved=True).count(),
+            'pending_feedback': feedbacks.filter(is_approved=False).count(),
+        }
+        
+        return Response(stats, status=status.HTTP_200_OK)

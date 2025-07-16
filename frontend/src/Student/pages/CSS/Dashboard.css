@@ -498,14 +498,14 @@ header {
 }
 
 /* Upcoming Sessions */
-.upcoming-sessions {
+.upcoming-sessions, .completed-sessions {
   margin-bottom: 30px;
   text-align: left;
   padding-left: 0;
   padding-right: 0;
 }
 
-.upcoming-sessions h2 {
+.upcoming-sessions h2, .completed-sessions h2 {
   font-size: 1.3rem;
   margin-bottom: 15px;
   color: var(--text-color);
@@ -530,6 +530,19 @@ header {
 
 .session-card:hover {
   transform: translateY(-3px);
+}
+
+.session-card.completed {
+  opacity: 0.8;
+  background-color: #f8f9fa;
+}
+
+.session-card.completed .session-date .day {
+  color: #6c757d;
+}
+
+.session-card.completed .session-time {
+  color: #6c757d;
 }
 
 .session-date {
@@ -1647,4 +1660,20 @@ header {
   background: var(--light-gray);
   border-radius: var(--border-radius);
   border: 2px dashed var(--medium-gray);
+}
+
+.feedback-given {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-badge {
+  background-color: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
 }

@@ -101,10 +101,9 @@ class StudentSerializer(serializers.ModelSerializer):
         fields = ('student_id', 'email', 'name','details','meetings','messages')
 
     def get_meetings(self, obj):
-        upcoming_meetings = obj.mentor_meetings.filter(
-            scheduled_time__gte=timezone.now()
-        ).order_by('scheduled_time')
-        return MeetingSerializer(upcoming_meetings, many=True).data
+        # Return all meetings for the student, ordered by scheduled time
+        all_meetings = obj.mentor_meetings.all().order_by('scheduled_time')
+        return MeetingSerializer(all_meetings, many=True).data
     
 
     def get_messages(self, obj):
@@ -160,9 +159,20 @@ class StudentSerializer(serializers.ModelSerializer):
 
 
 class MeetingSerializer(serializers.ModelSerializer):
+    mentor_id = serializers.CharField(source='mentor.mentor_id', read_only=True)
+    mentor_name = serializers.CharField(source='mentor.name', read_only=True)
+    student_name = serializers.CharField(source='student.name', read_only=True)
+    has_feedback = serializers.SerializerMethodField()
+    
     class Meta:
         model = Meeting
-        fields = ['meeting_id', 'title', 'scheduled_time', 'meeting_link', 'status']
+        fields = ['meeting_id', 'title', 'scheduled_time', 'meeting_link', 'status', 'mentor_id', 'mentor_name', 'student_name', 'has_feedback']
+    
+    def get_has_feedback(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.feedback.filter(student=request.user).exists()
+        return False
         
 
 from rest_framework import serializers
@@ -194,6 +204,59 @@ class StudentNoteSerializer(serializers.ModelSerializer):
         model = StudentNote
         fields = ['id', 'student', 'title', 'content', 'created_at']
         read_only_fields = ['id', 'created_at', 'student']
+
+    def create(self, validated_data):
+        validated_data['student'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.name', read_only=True)
+    mentor_name = serializers.CharField(source='mentor.name', read_only=True)
+    meeting_title = serializers.CharField(source='meeting.title', read_only=True)
+    mentor_id = serializers.CharField(write_only=True, required=False)
+    meeting_id = serializers.CharField(write_only=True, required=False)
+    
+    class Meta:
+        model = Feedback
+        fields = [
+            'id', 'student', 'mentor', 'meeting', 'rating', 'feedback_text',
+            'is_approved', 'created_at', 'updated_at',
+            'student_name', 'mentor_name', 'meeting_title', 'mentor_id', 'meeting_id'
+        ]
+        read_only_fields = ['student', 'is_approved', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'mentor': {'required': False},
+            'meeting': {'required': False}
+        }
+
+    def validate(self, data):
+        mentor_id = data.pop('mentor_id', None)
+        if mentor_id:
+            from mentor.models import Mentor
+            try:
+                data['mentor'] = Mentor.objects.get(mentor_id=mentor_id)
+            except Mentor.DoesNotExist:
+                raise serializers.ValidationError({'mentor_id': 'Mentor not found'})
+
+        meeting_id = data.pop('meeting_id', None)
+        if meeting_id:
+            from mentor.models import Meeting
+            try:
+                data['meeting'] = Meeting.objects.get(meeting_id=meeting_id)
+            except Meeting.DoesNotExist:
+                raise serializers.ValidationError({'meeting_id': 'Meeting not found'})
+
+        # Prevent duplicate feedback for the same student and meeting
+        student = self.context['request'].user
+        meeting = data.get('meeting')
+        if meeting:
+            existing_feedback = Feedback.objects.filter(student=student, meeting=meeting)
+            if existing_feedback.exists():
+                raise serializers.ValidationError({
+                    'meeting_id': 'You have already submitted feedback for this meeting.'
+                })
+        return data
 
     def create(self, validated_data):
         validated_data['student'] = self.context['request'].user

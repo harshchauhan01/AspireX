@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './CSS/Dashboard.css';
 import './CSS/PageStyles.css';
+import FeedbackModal from '../components/FeedbackModal';
+import API from '../../BackendConn/api';
 // import Calendar from "./Calendar";
 
 const DashboardHome = ({ mentorProfile, mentor }) => {
@@ -14,6 +16,15 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   const [conversations, setConversations] = useState([]);
   const [pinnedConversations, setPinnedConversations] = useState([]);
 
+  // State for feedback
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [feedbackStatus, setFeedbackStatus] = useState({});
+
+  // State for notifications
+  const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
   // Load notes from localStorage on component mount
   useEffect(() => {
     const savedNotes = localStorage.getItem('mentorNotes');
@@ -26,6 +37,67 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   useEffect(() => {
     localStorage.setItem('mentorNotes', JSON.stringify(notes));
   }, [notes]);
+
+  // Fetch notifications (messages) from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/student/messages/', {
+          headers: {
+            'Authorization': `Token ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  // Format notifications from student messages
+  const formatNotifications = (messages = []) => {
+    return messages.map((message, index) => ({
+      id: index + 1,
+      text: `${message.subject}: ${message.message}`,
+      time: formatTimeAgo(message.sent_at),
+      read: message.is_read,
+      sender: "Admin"
+    }));
+  };
+
+  // Helper function to format time ago
+  const formatTimeAgo = (isoString) => {
+    const now = new Date();
+    const date = new Date(isoString);
+    const seconds = Math.floor((now - date) / 1000);
+    
+    const intervals = {
+      year: 31536000,
+      month: 2592000,
+      week: 604800,
+      day: 86400,
+      hour: 3600,
+      minute: 60
+    };
+    
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+      const interval = Math.floor(seconds / secondsInUnit);
+      if (interval >= 1) {
+        return `${interval} ${unit}${interval === 1 ? '' : 's'} ago`;
+      }
+    }
+    
+    return 'Just now';
+  };
 
   // Fetch conversations from API
   useEffect(() => {
@@ -114,17 +186,6 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     }
   };
 
-  // Format notifications from mentor messages
-  const formatNotifications = (messages = []) => {
-    return messages.map((message, index) => ({
-      id: index + 1,
-      text: `(${message.subject})  ${message.message}`,
-      time: formatTimeAgo(message.sent_at),
-      read: message.is_read,
-      sender: message.admin_sender
-    }));
-  };
-
   // Format upcoming sessions from mentor meetings
   const formatUpcomingSessions = (meetings = []) => {
     return meetings
@@ -156,29 +217,34 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
-  // Helper function to format time ago
-  const formatTimeAgo = (isoString) => {
-    const now = new Date();
-    const date = new Date(isoString);
-    const seconds = Math.floor((now - date) / 1000);
-    
-    const intervals = {
-      year: 31536000,
-      month: 2592000,
-      week: 604800,
-      day: 86400,
-      hour: 3600,
-      minute: 60
-    };
-    
-    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-      const interval = Math.floor(seconds / secondsInUnit);
-      if (interval >= 1) {
-        return `${interval} ${unit}${interval === 1 ? '' : 's'} ago`;
-      }
-    }
-    
-    return 'Just now';
+  // Format completed sessions for feedback
+  const formatCompletedSessions = (meetings = []) => {
+    return meetings
+      .filter(meeting => meeting.status === 'completed')
+      .map(meeting => {
+        const dateObj = new Date(meeting.scheduled_time);
+        const date = dateObj.toISOString().split('T')[0];
+        const time = dateObj.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        const mentorName = meeting.mentor_name || 'Unknown Mentor';
+
+        return {
+          id: meeting.meeting_id,
+          mentor: mentorName,
+          mentor_id: meeting.mentor_id,
+          date: date,
+          time: `${time} (${meeting.duration} mins)`,
+          topic: meeting.title,
+          description: meeting.description,
+          meeting_link: meeting.meeting_link,
+          status: meeting.status
+        };
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
   };
 
   useEffect(() => {
@@ -266,13 +332,45 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 
   
 
+  // Check feedback status for completed sessions
+  useEffect(() => {
+    const checkFeedbackStatus = async () => {
+      const completedSessions = formatCompletedSessions(mentor?.meetings || []);
+      const status = {};
+      
+      for (const session of completedSessions) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await API.get(`student/feedback/check/${session.id}/`, {
+            headers: {
+              Authorization: `Token ${token}`,
+            }
+          });
+          status[session.id] = response.data;
+        } catch (error) {
+          console.error('Error checking feedback status:', error);
+          status[session.id] = { exists: false };
+        }
+      }
+      
+      setFeedbackStatus(status);
+    };
+    
+    if (mentor?.meetings) {
+      checkFeedbackStatus();
+    }
+  }, [mentor?.meetings]);
+
   // Get data from mentor
-  const notifications = formatNotifications(mentor?.messages || []);
+  const studentNotifications = formatNotifications(notifications);
   const upcomingSessions = formatUpcomingSessions(mentor?.meetings || []);
+  const completedSessions = formatCompletedSessions(mentor?.meetings || []);
   
-  const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
-  const topNotifications = notifications.slice(0, 3);
-  const hasMoreNotifications = notifications.length > 3;
+  // Check if all completed sessions have feedback
+  const hasUnfeedbackedSessions = completedSessions.some(session => !feedbackStatus[session.id]?.exists);
+  
+  const topNotifications = studentNotifications.slice(0, 3);
+  const hasMoreNotifications = studentNotifications.length > 3;
 
   return (
     <>
@@ -323,6 +421,58 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         </div>
       </section>
 
+      {/* Completed Sessions */}
+      {hasUnfeedbackedSessions && (
+        <section className="completed-sessions">
+          <h2>Recent Completed Sessions</h2>
+          <div className="sessions-list">
+            {completedSessions.slice(0, 3).map(session => (
+              <div key={session.id} className="session-card completed">
+                <div className="session-date">
+                  <p className="day">{new Date(session.date).getDate()}</p>
+                  <p className="month">{new Date(session.date).toLocaleString('default', { month: 'short' })}</p>
+                </div>
+                <div className="session-details">
+                  <h3>{session.topic}</h3>
+                  <p>With {session.mentor}</p>
+                  <p className="session-time">{session.time}</p>
+                  {session.description && (
+                    <p className="session-description">{session.description}</p>
+                  )}
+                </div>
+                <div className="session-actions">
+                  {feedbackStatus[session.id]?.exists ? (
+                    <div className="feedback-given">
+                      <span className="feedback-badge">✓ Feedback Given</span>
+                      <button 
+                        className="secondary-button"
+                        onClick={() => {
+                          // Show existing feedback details
+                          alert(`Your feedback: ${feedbackStatus[session.id].feedback.feedback_text}\nRating: ${feedbackStatus[session.id].feedback.rating}/5`);
+                        }}
+                      >
+                        View Feedback
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      className="primary-button"
+                      onClick={() => {
+                        setSelectedSession(session);
+                        setShowFeedbackModal(true);
+                      }}
+                    >
+                      Give Feedback
+                    </button>
+                  )}
+                  <button className="secondary-button">View Details</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Calendar and Notifications */}
       <div className="middle-section">
         <section className="calendar-section">
@@ -356,7 +506,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
               className="view-all-button"
               onClick={() => setShowNotificationsSidebar(true)}
             >
-              View All Messages ({notifications.length})
+              View All Messages ({studentNotifications.length})
             </button>
           )}
         </div>
@@ -376,7 +526,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
               </button>
             </div>
             <div className="sidebar-content">
-              {notifications.map(notification => (
+              {studentNotifications.map(notification => (
                 <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
                   <p>
                     <strong>Admin:</strong><br/> {notification.text}
@@ -493,6 +643,33 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           </div>
         </section>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          setShowFeedbackModal(false);
+          setSelectedSession(null);
+        }}
+        session={selectedSession}
+        onSubmitSuccess={(feedbackData) => {
+          console.log('Feedback submitted successfully:', feedbackData);
+          // Refresh feedback status
+          setFeedbackStatus(prev => ({
+            ...prev,
+            [selectedSession.id]: {
+              exists: true,
+              feedback: {
+                rating: feedbackData.rating,
+                feedback_text: feedbackData.feedback_text,
+                created_at: new Date().toISOString()
+              }
+            }
+          }));
+          setShowFeedbackModal(false);
+          setSelectedSession(null);
+        }}
+      />
     </>
   );
 };

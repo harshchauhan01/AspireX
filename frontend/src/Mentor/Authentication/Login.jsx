@@ -36,6 +36,7 @@ function Login() {
     <StyledPageWrapper>
       <StyledWrapper>
         <div className="container">
+          <StudentSwitch href="/student/login">Login as a Student</StudentSwitch>
           <div className="heading">Sign In</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" onSubmit={handleSubmit}>
@@ -248,5 +249,21 @@ const StyledWrapper = styled.div`
     margin-top: 8px;
     font-size: 0.98rem;
     font-weight: 500;
+  }
+`;
+
+const StudentSwitch = styled.a`
+  display: block;
+  text-align: right;
+  color: #145af2;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+  cursor: pointer;
+  &:hover {
+    color: #0d3ea1;
+    text-decoration: underline;
   }
 `;
