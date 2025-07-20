@@ -77,9 +77,11 @@ import Messages from './Messages';
 import ProfilePage from './ProfilePage';
 import SessionsPage from './SessionsPage';
 import FeedbackPage from './FeedbackPage';
+import CustomerServicePage from './CustomerServicePage';
 import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
 import Loader from '../../components/ui/loader';
+import Modal from '../../components/ui/Modal';
 
 const Dashboard = () => {
 
@@ -87,6 +89,11 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mentor, setMentor] = useState(null);
   const [error, setError] = useState('');
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceMeeting, setAttendanceMeeting] = useState(null);
+  const [attendanceKey, setAttendanceKey] = useState('');
+  const [attendanceStatus, setAttendanceStatus] = useState('');
+  const [attendanceError, setAttendanceError] = useState('');
 
   useEffect(() => {
     const fetchMentorProfile = async () => {
@@ -132,6 +139,49 @@ const Dashboard = () => {
     sessionsCompleted: 142
   };
 
+  // Function to open modal for a meeting
+  const openAttendanceModal = (meeting) => {
+    setAttendanceMeeting(meeting);
+    setAttendanceKey('');
+    setAttendanceStatus('');
+    setAttendanceError('');
+    setShowAttendanceModal(true);
+  };
+
+  // Function to submit attendance key
+  const submitAttendanceKey = async () => {
+    if (!attendanceMeeting || !attendanceMeeting.meeting_id) {
+      setAttendanceError('Meeting ID is missing. Please refresh and try again.');
+      return;
+    }
+    if (!attendanceKey) {
+      setAttendanceError('Please enter the student\'s attendance key.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('Mentortoken');
+      const res = await API.post('mentor/record_meeting_attendance/', {
+        meeting_id: attendanceMeeting.meeting_id,
+        role: 'mentor',
+        attendance_key: attendanceKey
+      }, {
+        headers: { Authorization: `Token ${token}` }
+      });
+      if (res.data.success) {
+        setAttendanceStatus('Attendance marked successfully!');
+        setAttendanceError('');
+        // Optionally update meeting status in UI
+      } else if (res.data.message) {
+        setAttendanceStatus(res.data.message);
+        setAttendanceError('');
+      } else {
+        setAttendanceError(res.data.error || 'Failed to mark attendance.');
+      }
+    } catch (err) {
+      setAttendanceError(err.response?.data?.error || 'Failed to mark attendance.');
+    }
+  };
+
   // Render the appropriate page based on activeTab
   const renderPage = () => {
     switch (activeTab) {
@@ -146,9 +196,11 @@ const Dashboard = () => {
       case 'profile':
         return <ProfilePage mentorProfile={mentor} />;
       case 'sessions':
-        return <SessionsPage sessions = {mentor.meetings}/>;
+        return <SessionsPage sessions={mentor.meetings || []} />;
       case 'feedback':
         return <FeedbackPage />;
+      case 'customerService':
+        return <CustomerServicePage />;
       default:
         return <DashboardHome mentorProfile={mentorProfile} />;
     }
@@ -168,6 +220,23 @@ const Dashboard = () => {
       <div className="main-content">
         {renderPage()}
       </div>
+      <Modal isOpen={showAttendanceModal} onClose={() => setShowAttendanceModal(false)} title="Mark Attendance">
+        <div style={{ marginBottom: 12 }}>
+          Ask your student for their attendance key and enter it below to mark your attendance for this meeting.
+        </div>
+        <input
+          type="text"
+          value={attendanceKey}
+          onChange={e => setAttendanceKey(e.target.value)}
+          placeholder="Enter student's attendance key"
+          style={{ width: '100%', padding: 8, marginBottom: 8 }}
+        />
+        <button onClick={submitAttendanceKey} style={{ width: '100%', padding: 10, background: '#1089d3', color: 'white', border: 'none', borderRadius: 6, fontWeight: 'bold' }}>
+          Submit
+        </button>
+        {attendanceStatus && <div style={{ color: 'green', marginTop: 8 }}>{attendanceStatus}</div>}
+        {attendanceError && <div style={{ color: 'red', marginTop: 8 }}>{attendanceError}</div>}
+      </Modal>
     </div>
   );
 };

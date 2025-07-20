@@ -3,7 +3,11 @@ import './CSS/Dashboard.css';
 import './CSS/PageStyles.css';
 import FeedbackModal from '../components/FeedbackModal';
 import API from '../../BackendConn/api';
+import { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
+import Modal from '../../components/ui/Modal';
 // import Calendar from "./Calendar";
+
+const now = new Date();
 
 const DashboardHome = ({ mentorProfile, mentor }) => {
   // State for notes
@@ -24,6 +28,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   // State for notifications
   const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
   const [notifications, setNotifications] = useState([]);
+
+  // State for attendance
+  const [attendanceStatus, setAttendanceStatus] = useState({});
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceMeeting, setAttendanceMeeting] = useState(null);
+  const [attendanceKey, setAttendanceKey] = useState('');
+  const [attendanceStatusMsg, setAttendanceStatusMsg] = useState('');
+  const [attendanceError, setAttendanceError] = useState('');
 
   // Load notes from localStorage on component mount
   useEffect(() => {
@@ -186,23 +198,44 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     }
   };
 
-  // Format upcoming sessions from mentor meetings
+  const getMeetingTime = (meeting) => {
+    // Always use scheduled_time if available, fallback to date+time
+    if (meeting.scheduled_time) return new Date(meeting.scheduled_time);
+    if (meeting.date && meeting.time) {
+      // Remove any extra text after the time (e.g., ' (60 mins)')
+      const timePart = meeting.time.split(' ')[0];
+      return new Date(`${meeting.date}T${timePart}`);
+    }
+    return new Date();
+  };
+
+  // Update formatUpcomingSessions to include ongoing meetings
   const formatUpcomingSessions = (meetings = []) => {
     return meetings
-      .filter(meeting => meeting.status === 'scheduled' || meeting.status === 'ongoing')
+      .filter(meeting => {
+        const meetingTime = getMeetingTime(meeting);
+        const attendedRoles = attendanceStatus[meeting.meeting_id] || [];
+        const studentAttended = attendedRoles.includes('student');
+        const oneHourAfter = new Date(meetingTime.getTime() + 60 * 60 * 1000);
+        // Show as upcoming if now < meetingTime + 1hr and status is scheduled or ongoing
+        return (meeting.status === 'scheduled' || meeting.status === 'ongoing') && now < oneHourAfter;
+      })
       .map(meeting => {
-        const dateObj = new Date(meeting.scheduled_time);
-        const date = dateObj.toISOString().split('T')[0];
+        const dateObj = getMeetingTime(meeting);
+        const date = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
         const time = dateObj.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: true
+          hour12: true,
+          timeZoneName: 'short'
         });
-        
-        const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ') 
-          ? meeting.student.split(' - ')[1] 
+        const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ')
+          ? meeting.student.split(' - ')[1]
           : meeting.student;
-
         return {
           id: meeting.meeting_id,
           mentee: studentName,
@@ -211,27 +244,39 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           topic: meeting.title,
           description: meeting.description,
           meeting_link: meeting.meeting_link,
-          status: meeting.status
+          status: meeting.status,
+          meetingObj: meeting
         };
-      })
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      });
   };
 
-  // Format completed sessions for feedback
   const formatCompletedSessions = (meetings = []) => {
     return meetings
-      .filter(meeting => meeting.status === 'completed')
+      .filter(meeting => {
+        const meetingTime = getMeetingTime(meeting);
+        const attendedRoles = attendanceStatus[meeting.meeting_id] || [];
+        const studentAttended = attendedRoles.includes('student');
+        const oneHourAfter = new Date(meetingTime.getTime() + 60 * 60 * 1000);
+        // Completed if status is completed, or attended and >1hr past scheduled time
+        return (
+          meeting.status === 'completed' ||
+          (meeting.status === 'scheduled' && studentAttended && now > oneHourAfter)
+        );
+      })
       .map(meeting => {
-        const dateObj = new Date(meeting.scheduled_time);
-        const date = dateObj.toISOString().split('T')[0];
+        const dateObj = getMeetingTime(meeting);
+        const date = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
         const time = dateObj.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: true
+          hour12: true,
+          timeZoneName: 'short'
         });
-        
         const mentorName = meeting.mentor_name || 'Unknown Mentor';
-
         return {
           id: meeting.meeting_id,
           mentor: mentorName,
@@ -244,7 +289,49 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           status: meeting.status
         };
       })
-      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
+      .sort((a, b) => getMeetingTime(b) - getMeetingTime(a)); // Most recent first
+  };
+
+  const formatMissedSessions = (meetings = []) => {
+    return meetings
+      .filter(meeting => {
+        const meetingTime = getMeetingTime(meeting);
+        const attendedRoles = attendanceStatus[meeting.meeting_id] || [];
+        const studentAttended = attendedRoles.includes('student');
+        const oneHourAfter = new Date(meetingTime.getTime() + 60 * 60 * 1000);
+        // Missed if status is scheduled, not attended, and now > 1hr after scheduled time
+        return (
+          meeting.status === 'scheduled' && !studentAttended && now > oneHourAfter
+        );
+      })
+      .map(meeting => {
+        const dateObj = getMeetingTime(meeting);
+        const date = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        const time = dateObj.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZoneName: 'short'
+        });
+        const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ')
+          ? meeting.student.split(' - ')[1]
+          : meeting.student;
+        return {
+          id: meeting.meeting_id,
+          mentee: studentName,
+          date: date,
+          time: `${time} (${meeting.duration} mins)`,
+          topic: meeting.title,
+          description: meeting.description,
+          meeting_link: meeting.meeting_link,
+          status: 'missed'
+        };
+      })
+      .sort((a, b) => getMeetingTime(b) - getMeetingTime(a));
   };
 
   useEffect(() => {
@@ -266,6 +353,24 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 
     fetchNotes();
   }, []);
+
+  useEffect(() => {
+    const fetchAllAttendance = async () => {
+      const status = {};
+      if (mentor?.meetings) {
+        for (const meeting of mentor.meetings) {
+          try {
+            const res = await fetchMeetingAttendance(meeting.meeting_id);
+            status[meeting.meeting_id] = res.attended_roles || [];
+          } catch {
+            status[meeting.meeting_id] = [];
+          }
+        }
+      }
+      setAttendanceStatus(status);
+    };
+    if (mentor?.meetings && mentor.meetings.length > 0) fetchAllAttendance();
+  }, [mentor]);
 
 
   // Format current date
@@ -365,12 +470,75 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   const studentNotifications = formatNotifications(notifications);
   const upcomingSessions = formatUpcomingSessions(mentor?.meetings || []);
   const completedSessions = formatCompletedSessions(mentor?.meetings || []);
+  const missedSessions = formatMissedSessions(mentor?.meetings || []);
   
   // Check if all completed sessions have feedback
   const hasUnfeedbackedSessions = completedSessions.some(session => !feedbackStatus[session.id]?.exists);
   
   const topNotifications = studentNotifications.slice(0, 3);
   const hasMoreNotifications = studentNotifications.length > 3;
+
+  // Helper to determine if Mark Attendance should be enabled
+  const canMarkAttendance = (meeting) => {
+    if (!meeting || !meeting.scheduled_time) return false;
+    const scheduledTime = new Date(meeting.scheduled_time);
+    const now = new Date();
+    // Enable 2 minutes before scheduled time
+    return now >= new Date(scheduledTime.getTime() - 2 * 60 * 1000);
+  };
+
+  // Handler to open the meeting link for the student
+  const handleJoinMeeting = (meeting) => {
+    if (meeting && meeting.meeting_link) {
+      window.open(meeting.meeting_link, '_blank', 'noopener,noreferrer');
+    } else {
+      alert('Meeting link is not available.');
+    }
+  };
+
+  const openAttendanceModal = (meeting) => {
+    setAttendanceMeeting(meeting);
+    setAttendanceKey('');
+    setAttendanceStatusMsg('');
+    setAttendanceError('');
+    setShowAttendanceModal(true);
+  };
+  const submitAttendanceKey = async () => {
+    if (!attendanceMeeting || !attendanceMeeting.meeting_id) {
+      setAttendanceError('Meeting ID is missing. Please refresh and try again.');
+      return;
+    }
+    if (!attendanceKey) {
+      setAttendanceError('Please enter the mentor\'s attendance key.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await postMeetingAttendance({
+        meeting_id: attendanceMeeting.meeting_id,
+        role: 'student',
+        attendance_key: attendanceKey
+      }, token);
+      if (res.success) {
+        setAttendanceStatusMsg('Attendance marked successfully!');
+        setAttendanceError('');
+        setShowAttendanceModal(false);
+        // Refresh attendance status for this meeting
+        const attRes = await fetchMeetingAttendance(attendanceMeeting.meeting_id);
+        setAttendanceStatus(prev => ({
+          ...prev,
+          [attendanceMeeting.meeting_id]: attRes.attended_roles || []
+        }));
+      } else if (res.message) {
+        setAttendanceStatusMsg(res.message);
+        setAttendanceError('');
+      } else {
+        setAttendanceError(res.error || 'Failed to mark attendance.');
+      }
+    } catch (err) {
+      setAttendanceError('Failed to mark attendance.');
+    }
+  };
 
   return (
     <>
@@ -388,33 +556,53 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         <h2>Upcoming Sessions</h2>
         <div className="sessions-list">
           {upcomingSessions.length > 0 ? (
-            upcomingSessions.map(session => (
-              <div key={session.id} className="session-card">
-                <div className="session-date">
-                  <p className="day">{new Date(session.date).getDate()}</p>
-                  <p className="month">{new Date(session.date).toLocaleString('default', { month: 'short' })}</p>
+            upcomingSessions.map(session => {
+              const attendedRoles = attendanceStatus[session.id] || [];
+              const studentAttended = attendedRoles.includes('student');
+              const mentorAttended = attendedRoles.includes('mentor');
+              const scheduledTime = getMeetingTime(session);
+              const canJoin = now >= scheduledTime;
+              return (
+                <div key={session.id} className="session-card">
+                  <div className="session-info">
+                    <div className="mentee-avatar">{session.mentee && session.mentee[0]}</div>
+                    <div className="session-details">
+                      <h3>{session.topic}</h3>
+                      <p>With {session.mentee}</p>
+                      <div className="session-time">
+                        <span>{session.date}</span>
+                        <span>{session.time}</span>
+                      </div>
+                      {session.description && (
+                        <p className="session-description">{session.description}</p>
+                      )}
+                      <div className="attendance-status-bar">
+                        <span className={studentAttended ? 'attended-badge' : 'not-attended-badge'}>
+                          Student {studentAttended ? '✓ Attended' : 'Not Attended'}
+                        </span>
+                        <span className={mentorAttended ? 'attended-badge' : 'not-attended-badge'}>
+                          Mentor {mentorAttended ? '✓ Attended' : 'Not Attended'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="session-actions">
+                    <button
+                      className="primary-button small"
+                      onClick={() => canMarkAttendance(session.meetingObj) && handleJoinMeeting(session)}
+                      disabled={!canMarkAttendance(session.meetingObj) || studentAttended}
+                    >
+                      {studentAttended ? '\u2713 Attended' : (canMarkAttendance(session.meetingObj) ? 'Join Session' : 'Join Disabled')}
+                    </button>
+                    {(session.status === 'scheduled' || session.status === 'ongoing' || session.status === 'completed') && !attendanceStatus[session.id]?.includes('student') && (
+                      <button className="secondary-button small" onClick={() => openAttendanceModal(session.meetingObj || session)}>
+                        Mark Attendance
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="session-details">
-                  <h3>{session.topic}</h3>
-                  <p>With {session.mentee}</p>
-                  <p className="session-time">{session.time}</p>
-                  {session.description && (
-                    <p className="session-description">{session.description}</p>
-                  )}
-                </div>
-                <div className="session-actions">
-                  <a 
-                    href={session.meeting_link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="primary-button"
-                  >
-                    {session.status === 'ongoing' ? 'Join Now' : 'Prepare'}
-                  </a>
-                  <button className="secondary-button">Reschedule</button>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <p className="no-sessions">No upcoming sessions scheduled</p>
           )}
@@ -466,6 +654,34 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                     </button>
                   )}
                   <button className="secondary-button">View Details</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Missed Sessions */}
+      {missedSessions.length > 0 && (
+        <section className="missed-sessions">
+          <h2>Missed Sessions</h2>
+          <div className="sessions-list">
+            {missedSessions.map(session => (
+              <div key={session.id} className="session-card missed">
+                <div className="session-date">
+                  <p className="day">{new Date(session.date).getDate()}</p>
+                  <p className="month">{new Date(session.date).toLocaleString('default', { month: 'short' })}</p>
+                </div>
+                <div className="session-details">
+                  <h3>{session.topic}</h3>
+                  <p>With {session.mentee}</p>
+                  <p className="session-time">{session.time}</p>
+                  {session.description && (
+                    <p className="session-description">{session.description}</p>
+                  )}
+                </div>
+                <div className="session-actions">
+                  <button className="primary-button">View Details</button>
                 </div>
               </div>
             ))}
@@ -670,6 +886,36 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           setSelectedSession(null);
         }}
       />
+
+      <Modal isOpen={showAttendanceModal} onClose={() => setShowAttendanceModal(false)} title="Mark Attendance">
+        <form style={{ display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 260 }} onSubmit={e => { e.preventDefault(); submitAttendanceKey(); }}>
+          <div style={{ fontSize: '1rem', color: '#333', marginBottom: 0 }}>
+            Enter the <b>mentor's attendance key</b> to mark your attendance for this meeting.
+          </div>
+          <input
+            type="text"
+            value={attendanceKey}
+            onChange={e => setAttendanceKey(e.target.value)}
+            placeholder="Enter mentor's attendance key"
+            className="attendance-key-input"
+            style={{
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1.5px solid #bcdffb',
+              fontSize: '1rem',
+              outline: 'none',
+              marginBottom: 0
+            }}
+            autoFocus
+          />
+          {attendanceError && <div className="error-message" style={{ color: '#d32f2f', fontSize: '0.95rem' }}>{attendanceError}</div>}
+          {attendanceStatusMsg && <div className="success-message" style={{ color: '#388e3c', fontSize: '0.95rem' }}>{attendanceStatusMsg}</div>}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: 0 }}>
+            <button type="button" className="secondary-button" onClick={() => setShowAttendanceModal(false)} style={{ minWidth: 90 }}>Cancel</button>
+            <button type="submit" className="primary-button" style={{ minWidth: 110 }}>Submit</button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 };
@@ -740,64 +986,44 @@ const Calendar = ({ meetings }) => {
         </div>
       );
     });
-    
+
     // Add empty cells for days before first day of month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
     }
-    
+
     // Add cells for each day of the month
     for (let day = 1; day <= totalDays; day++) {
       const date = new Date(year, month, day);
       const isToday = date.toDateString() === new Date().toDateString();
       const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
       const hasMeeting = hasMeetings(date);
-      
       days.push(
         <div
           key={`day-${day}`}
-          className={`calendar-day 
-            ${isToday ? 'today' : ''} 
-            ${isSelected ? 'selected' : ''}
-            ${hasMeeting ? 'has-meeting' : ''}`}
+          className={`calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${hasMeeting ? 'has-meeting' : ''}`}
           onClick={() => setSelectedDate(date)}
         >
           <span className="day-number">{day}</span>
           {hasMeeting && (
-            <div className="meeting-indicator">
-              {getMeetingsForDate(date).length > 1 && 
-                <span className="meeting-count">{getMeetingsForDate(date).length}</span>}
-            </div>
+            <span className="meeting-indicator">•</span>
           )}
         </div>
       );
     }
-    
     return days;
   };
-
-  // Format month and year for display
-  const monthYearString = currentDate.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric'
-  });
 
   return (
     <div className="calendar-container">
       <div className="calendar-header">
-        <button onClick={prevMonth} className="calendar-nav-button">
-          &lt;
-        </button>
-        <h3>{monthYearString}</h3>
-        <button onClick={nextMonth} className="calendar-nav-button">
-          &gt;
-        </button>
+        <button onClick={prevMonth}>&lt;</button>
+        <h3>{currentDate.toLocaleDateString('en-US', { month: 'numeric', year: 'numeric' })}</h3>
+        <button onClick={nextMonth}>&gt;</button>
       </div>
-      
       <div className="calendar-grid">
         {renderDays()}
       </div>
-      
       {selectedDate && (
         <div className="calendar-meetings-detail">
           <h4>Meetings on {selectedDate.toLocaleDateString()}</h4>
@@ -805,7 +1031,7 @@ const Calendar = ({ meetings }) => {
             <ul>
               {getMeetingsForDate(selectedDate).map((meeting, index) => (
                 <li key={index}>
-                  <strong>{meeting.title}</strong> with {meeting.student}<br/>
+                  <strong>{meeting.title}</strong> with {meeting.mentor_name || meeting.mentor || 'Mentor'}<br/>
                   {new Date(meeting.scheduled_time).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit'
@@ -821,4 +1047,3 @@ const Calendar = ({ meetings }) => {
     </div>
   );
 };
-

@@ -2,13 +2,28 @@ import React, { useState } from 'react';
 import API from '../../BackendConn/api';
 import styled from 'styled-components';
 import { useNavigate } from "react-router-dom";
+import Modal from '../../components/ui/Modal';
+
+const LICENSE_AGREEMENT = `
+User License Agreement\n\nEffective Date: 2024-07-09\n\nWelcome to AspireX! Please read this User License Agreement (“Agreement”) carefully before using our platform. By accessing or using AspireX, you agree to be bound by the terms of this Agreement.\n\n1. License Grant\nAspireX grants you a limited, non-exclusive, non-transferable, and revocable license to use the platform for your personal, non-commercial educational purposes, subject to the terms of this Agreement.\n\n2. User Roles\n- Student: An individual seeking to learn, book sessions, and interact with mentors on AspireX.\n- Mentor: An individual providing educational sessions, guidance, and support to students via AspireX.\n- Administrator: AspireX staff responsible for managing the platform, resolving disputes, and ensuring compliance.\n\n3. User Obligations\n- You agree to use AspireX in compliance with all applicable laws and regulations.\n- You will not misuse the platform, attempt unauthorized access, or disrupt the service.\n\n4. Session Conduct\n- All users must maintain professionalism and respect during sessions.\n- Harassment, discrimination, or inappropriate behavior is strictly prohibited and may result in suspension or termination of your account.\n- Sessions must be conducted through AspireX’s approved communication channels, including the in-platform chat and video tools. Communication outside these channels is discouraged and AspireX is not responsible for any issues arising from such interactions.\n\n5. Payment and Refund Policy\n- Students are required to pay session fees in advance through approved payment gateways.\n- AspireX is not responsible for any failed or delayed transactions; if a payment fails, it is the user’s responsibility to resolve the issue with their payment provider.\n- If a scheduled meeting/session is cancelled by the mentor or AspireX, the student will receive a full refund within 5-7 business days.\n- No refunds will be issued for completed sessions or for cancellations initiated by the student, except as outlined in AspireX’s refund policy.\n- Mentors will receive payments for completed sessions as per the payout schedule.\n\n6. Age Restriction\n- You must be at least 16 years old to use AspireX. By registering, you confirm that you meet this age requirement.\n\n7. Intellectual Property\nAll content, trademarks, and data on AspireX are the property of AspireX or its licensors. You may not copy, modify, distribute, or create derivative works without express written permission.\n\n8. Privacy\nYour use of AspireX is also governed by our Privacy Policy. Please review it to understand our practices.\n\n9. Termination\nAspireX reserves the right to suspend or terminate your access at any time for violation of this Agreement.\n\n10. Disclaimer\nAspireX is provided “as is” without warranties of any kind. We do not guarantee the accuracy, completeness, or reliability of the platform.\n\n11. Limitation of Liability\nAspireX shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.\n\n12. Arbitration Clause\nAny disputes arising out of or relating to this Agreement or your use of AspireX shall be resolved through binding arbitration in accordance with the Arbitration and Conciliation Act, 1996. The decision of the arbitrator shall be final and binding on both parties.\n\n13. Governing Law and Jurisdiction\nThis Agreement shall be governed by and construed in accordance with the laws of India. Any legal action or proceeding arising under this Agreement shall be subject to the exclusive jurisdiction of the courts located in India.\n\n14. Changes to Agreement\nWe may update this Agreement from time to time. Continued use of AspireX after changes constitutes acceptance of the new terms.\n\nContact Us\nIf you have any questions about this Agreement, please contact us at [support@aspirex.com].
+`;
+
+const TERMS_AND_CONDITIONS = `\nTerms & Conditions\n\nBy using AspireX, you agree to abide by all platform rules, policies, and applicable laws. You must not use AspireX for any unlawful or prohibited purpose. For full details, please refer to the User License Agreement.\n\nContact support@aspirex.com for any questions.`;
 
 function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('')
-  const [token, setToken] = useState(null)
+  const [message, setMessage] = useState('');
+  const [token, setToken] = useState(null);
+  const [showLicense, setShowLicense] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
+
+  function isStrongPassword(password) {
+    // At least 8 chars, 1 upper, 1 lower, 1 digit, 1 special char
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(password);
+  }
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,23 +31,27 @@ function Register() {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('You must accept the Terms & Conditions to register.');
+      return;
+    }
+    if (!isStrongPassword(form.password)) {
+      setError('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.');
+      return;
+    }
     try {
-      
-      const res = await API.post('mentor/register/', form);
+      const res = await API.post('mentor/register/', { ...form, accepted_terms: true });
       localStorage.setItem('Mentortoken', res.data.token);
       alert('Registration successful! \nYour Mentor ID : ' + res.data.mentor.mentor_id);
       navigate('/mentor/login');
-      
-      
     } catch (err) {
       setError('Error during registration');
     }
   };
 
   const handleNavigation = (path) => {
-      // alert("clicked");
-        navigate(path);
-      };
+    navigate(path);
+  };
 
   return (
     <StyledPageWrapper>
@@ -46,6 +65,25 @@ function Register() {
             <input placeholder="Email" id="email" name="email" type="email" className="input" onChange={handleChange} required />
             <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required />
             <span className="forgot-password"><a href="#">Forgot Password ?</a></span>
+            <div style={{ marginTop: '12px', fontSize: '11px' }}>
+              <input
+                type="checkbox"
+                id="terms"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                required
+                style={{ marginRight: '6px' }}
+              />
+              I accept the{' '}
+              <a href="#" onClick={e => { e.preventDefault(); setShowTerms(true); }} style={{ color: '#0099ff', textDecoration: 'underline' }}>
+                Terms & Conditions
+              </a>
+              {' '}and{' '}
+              <a href="#" onClick={e => { e.preventDefault(); setShowLicense(true); }} style={{ color: '#0099ff', textDecoration: 'underline' }}>
+                User License Agreement
+              </a>
+              .
+            </div>
             <input defaultValue="Sign Up" type="submit" className="login-button" />
           </form>
           <div className="social-account-container">
@@ -68,8 +106,14 @@ function Register() {
               </button>
             </div>
           </div>
-          <span className="agreement"><a href="/mentor/login" onClick={() => handleNavigation("/mentor/login")}>Already have an Account? Log In</a></span>
+          <span className="agreement"><a href="#" onClick={e => { e.preventDefault(); setShowLicense(true); }}>Learn user licence agreement</a></span>
         </div>
+        <Modal isOpen={showLicense} onClose={() => setShowLicense(false)} title="User License Agreement">
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', maxHeight: '60vh', overflowY: 'auto' }}>{LICENSE_AGREEMENT}</pre>
+        </Modal>
+        <Modal isOpen={showTerms} onClose={() => setShowTerms(false)} title="Terms & Conditions">
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', maxHeight: '60vh', overflowY: 'auto' }}>{TERMS_AND_CONDITIONS}</pre>
+        </Modal>
       </StyledWrapper>
     </StyledPageWrapper>
   );

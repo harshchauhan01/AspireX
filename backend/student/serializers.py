@@ -6,17 +6,32 @@ from .models import *
 
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    accepted_terms = serializers.BooleanField(write_only=True)
     
     class Meta:
         model = Student
-        fields = ('email', 'name', 'password')
+        fields = ('email', 'name', 'password', 'accepted_terms')
+    
+    def validate_password(self, value):
+        from django.core.exceptions import ValidationError
+        from django.contrib.auth.password_validation import validate_password
+        if not isinstance(value, str):
+            raise serializers.ValidationError("Password must be a string.")
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages)
+        return value
     
     def create(self, validated_data):
-        return Student.objects.create_user(
+        accepted_terms = validated_data.pop('accepted_terms', False)
+        student = Student.objects.create_user(
             email=validated_data['email'],
             name=validated_data['name'],
-            password=validated_data['password']
+            password=validated_data['password'],
+            accepted_terms=accepted_terms
         )
+        return student
 
 
 
@@ -27,7 +42,8 @@ class StudentLoginSerializer(serializers.Serializer):
     def validate(self, data):
         student_id = data.get('student_id')
         password = data.get('password')
-        
+        if not isinstance(password, str):
+            raise serializers.ValidationError({"password": "Password must be a string."})
         if student_id and password:
             student = authenticate(student_id=student_id, password=password)
             if student:
@@ -38,7 +54,6 @@ class StudentLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Unable to log in with provided credentials.")
         else:
             raise serializers.ValidationError("Must include 'student_id' and 'password'.")
-        
         return data
     
 
@@ -261,3 +276,10 @@ class FeedbackSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['student'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class PublicStudentSerializer(serializers.ModelSerializer):
+    details = StudentDetailSerializer()
+    class Meta:
+        model = Student
+        fields = ('student_id', 'email', 'name', 'details')

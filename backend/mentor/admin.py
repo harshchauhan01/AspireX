@@ -136,12 +136,22 @@ class MentorMessageAdmin(admin.ModelAdmin):
         return render(request, 'admin/send_message.html', context)
     
 
+@admin.register(MeetingAttendance)
+class MeetingAttendanceAdmin(admin.ModelAdmin):
+    list_display = ('meeting', 'user_id', 'role', 'attended_at')
+    list_filter = ('role', 'attended_at')
+    search_fields = ('meeting__meeting_id', 'user_id', 'role')
+    date_hierarchy = 'attended_at'
+
 @admin.register(Meeting)
 class MeetingAdmin(admin.ModelAdmin):
-    list_display = ('meeting_id', 'mentor', 'student', 'title', 'scheduled_time', 'status', 'duration')
-    list_filter = ('status', 'mentor')
+    list_display = (
+        'meeting_id', 'mentor', 'student', 'title', 'scheduled_time', 'status', 'duration',
+        'mentor_attended', 'student_attended', 'mentor_attendance_time', 'student_attendance_time'
+    )
+    list_filter = ('status', 'mentor', 'mentor_attended', 'student_attended')
     search_fields = ('meeting_id', 'title', 'mentor__name', 'student__name')
-    readonly_fields = ('meeting_id', 'created_at', 'updated_at')
+    readonly_fields = ('meeting_id', 'created_at', 'updated_at', 'mentor_attended', 'student_attended', 'mentor_attendance_time', 'student_attendance_time')
     date_hierarchy = 'scheduled_time'
     list_select_related = ('mentor', 'student')
     autocomplete_fields = ('mentor', 'student')
@@ -152,6 +162,9 @@ class MeetingAdmin(admin.ModelAdmin):
         }),
         ('Meeting Details', {
             'fields': ('scheduled_time', 'duration', 'meeting_link', 'status')
+        }),
+        ('Attendance', {
+            'fields': ('mentor_attended', 'student_attended', 'mentor_attendance_time', 'student_attendance_time')
         }),
         ('Additional Information', {
             'fields': ('notes', 'created_at', 'updated_at'),

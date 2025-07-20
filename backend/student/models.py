@@ -36,6 +36,7 @@ class Student(AbstractUser):
     email = models.EmailField(unique=True)
     student_id = models.CharField(max_length=10, unique=True, blank=True)
     name = models.CharField(max_length=100)
+    accepted_terms = models.BooleanField(default=False)
 
     username = None
 
@@ -63,12 +64,15 @@ class Student(AbstractUser):
         return f"{self.student_id} - {self.name}"
 
     def save(self, *args, **kwargs):
+        # Use transaction.atomic as a context manager if needed
         if not self.student_id and not kwargs.get('update_fields') == ['student_id']:
             with transaction.atomic():
                 max_id = Student.objects.aggregate(
                     max_id=models.Max('id')
                 )['max_id'] or 0
-                self.student_id = f"S{str(max_id + 1).zfill(6)}"
+                self.student_id = f"S{str(max_id).zfill(6)}"
+                super().save(*args, **kwargs)
+                return
         super().save(*args, **kwargs)
 
 @receiver(post_save, sender=Student)
@@ -124,7 +128,7 @@ class StudentDetail(models.Model):
     first_name = models.CharField(max_length=100, default="", blank=True)
     last_name = models.CharField(max_length=100, default="", blank=True)
     dob = models.DateField(null=True, blank=True, default=None)
-    age = models.PositiveIntegerField(default=0)
+    age = models.PositiveIntegerField()
     GENDER_CHOICES = (
         ('male', 'Male'),
         ('female', 'Female'),
@@ -135,8 +139,8 @@ class StudentDetail(models.Model):
     phone_number = models.CharField(max_length=15, unique=False, default="", blank=True)
 
     college = models.CharField(max_length=200, default="", blank=True)
-    cgpa = models.FloatField(default=0, blank=True)
-    batch = models.PositiveIntegerField(default=2024)
+    cgpa = models.FloatField(blank=True)
+    batch = models.PositiveIntegerField()
     
     professions = models.ManyToManyField(Profession, related_name='students', blank=True)
     skills = models.ManyToManyField(Skill, related_name='students', blank=True)
@@ -147,10 +151,10 @@ class StudentDetail(models.Model):
     profile_photo = models.ImageField(upload_to='student/profile_photos/', null=True, blank=True, default=None)
     cv = models.FileField(upload_to='student/cvs/', max_length=255, null=True, blank=True, default=None)
 
-    is_approved = models.BooleanField(default=False)
+    is_approved = models.BooleanField()
 
     # total_students = models.PositiveIntegerField(default=0)
-    total_sessions = models.PositiveIntegerField(default=0)
+    total_sessions = models.PositiveIntegerField()
     # average_rating = models.FloatField(default=0.0)
     # years_of_experience = models.PositiveIntegerField(default=0)
 
@@ -298,18 +302,10 @@ class Feedback(models.Model):
         self.update_mentor_rating()
 
     def update_mentor_rating(self):
-        """Update mentor's average rating based on all approved feedback"""
-        approved_feedback = Feedback.objects.filter(
-            mentor=self.mentor,
-            is_approved=True
-        )
-        
-        if approved_feedback.exists():
-            avg_rating = approved_feedback.aggregate(
-                avg=models.Avg('rating')
-            )['avg']
-            
-            # Update mentor's average rating in MentorDetail
+        """Update mentor's average rating based on all feedback (approved or not)"""
+        all_feedback = Feedback.objects.filter(mentor=self.mentor)
+        if all_feedback.exists():
+            avg_rating = all_feedback.aggregate(avg=models.Avg('rating'))['avg']
             mentor_detail = self.mentor.details
             mentor_detail.average_rating = round(avg_rating, 2)
             mentor_detail.save(update_fields=['average_rating'])

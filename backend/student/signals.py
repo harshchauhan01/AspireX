@@ -14,7 +14,12 @@ def create_student_detail(sender, instance, created, **kwargs):
             student=instance,
             email=instance.email,  # Copy email from student
             first_name=instance.name.split()[0] if instance.name else "",
-            last_name=" ".join(instance.name.split()[1:]) if instance.name and len(instance.name.split()) > 1 else ""
+            last_name=" ".join(instance.name.split()[1:]) if instance.name and len(instance.name.split()) > 1 else "",
+            age=0,  # Set default age to 0
+            cgpa=0.0,  # Set default cgpa to 0.0
+            batch=0,  # Set default batch to 0
+            is_approved=False,  # Set default is_approved to False
+            total_sessions=0  # Set default total_sessions to 0
         )
 
 @receiver(post_save, sender=Student)
@@ -80,15 +85,38 @@ def handle_booking_payment(sender, instance, created, **kwargs):
         # Ensure we don't create duplicate meetings/messages
         if not Meeting.objects.filter(student=instance.student, mentor=instance.mentor, title=instance.subject).exists():
 
+            # Parse the time_slot as IST and convert to UTC
+            from django.utils import timezone
+            import datetime
+            import pytz
+            IST = pytz.timezone('Asia/Kolkata')
+            scheduled_time = None
+            try:
+                # Try ISO format first
+                scheduled_time = datetime.datetime.fromisoformat(instance.time_slot)
+                if scheduled_time.tzinfo is None:
+                    scheduled_time = IST.localize(scheduled_time)
+                scheduled_time = scheduled_time.astimezone(pytz.UTC)
+            except Exception:
+                try:
+                    # Try common string format
+                    scheduled_time = datetime.datetime.strptime(instance.time_slot, "%Y-%m-%d %H:%M")
+                    if scheduled_time.tzinfo is None:
+                        scheduled_time = IST.localize(scheduled_time)
+                    scheduled_time = scheduled_time.astimezone(pytz.UTC)
+                except Exception:
+                    # Fallback to now + 1 day (in UTC)
+                    scheduled_time = timezone.now() + datetime.timedelta(days=1)
+
             # Create meeting
             meeting = Meeting.objects.create(
                 mentor=instance.mentor,
                 student=instance.student,
                 title=instance.subject,
                 description=f"Meeting for subject: {instance.subject}",
-                scheduled_time=timezone.now() + timedelta(days=1),  # Or use instance.time_slot if it's a datetime
-                duration=60,
-                meeting_link="https://your-meeting-platform.com/room-id"
+                scheduled_time=scheduled_time,
+                duration=60
+                # Do not set meeting_link here so the model auto-generates it
             )
 
             # Create message for mentor
@@ -98,10 +126,16 @@ def handle_booking_payment(sender, instance, created, **kwargs):
                 message=(
                     f"You have a new booking with {instance.student.name}.\n\n"
                     f"Subject: {instance.subject}\n"
-                    f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')}\n"
-                    f"Meeting Link: {meeting.meeting_link}"
+                    f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
+                    f"Meeting ID: {meeting.meeting_id}\n"
+                    f"Meeting Link: {meeting.meeting_link}\n"
+                    f"Your attendance key: {meeting.mentor_attendance_key}\n"
+                    f"You will need to provide this key to your student after the meeting to mark attendance.\n\n"
+                    f"Please join the meeting a few minutes before the scheduled time. "
+                    f"For the best experience, set up a free account at https://meet.jit.si/ if you want moderator controls or to avoid any joining issues.\n\n"
+                    f"Warning: If you want to reschedule the meeting, you must do it at least 2 hours before the start of the meeting."
                 ),
-                sender=None  # You can also use instance.student.user if sender needs to be student's User
+                admin_sender=None  # You can also use instance.student.user if sender needs to be student's User
             )
 
             # Create message for student
@@ -111,8 +145,11 @@ def handle_booking_payment(sender, instance, created, **kwargs):
                 message=(
                     f"Your booking with {instance.mentor.name} is confirmed.\n\n"
                     f"Subject: {instance.subject}\n"
-                    f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')}\n"
-                    f"Meeting Link: {meeting.meeting_link}"
+                    f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
+                    f"Meeting ID: {meeting.meeting_id}\n"
+                    f"Meeting Link: {meeting.meeting_link}\n"
+                    f"Your attendance key: {meeting.student_attendance_key}\n"
+                    f"You will need to provide this key to your mentor after the meeting to mark attendance."
                 ),
                 sender=None  # You can also use instance.mentor.user if sender needs to be mentor's User
             )

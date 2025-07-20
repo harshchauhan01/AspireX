@@ -3,6 +3,7 @@ import './CSS/PageStyles.css';
 import './CSS/Sessions.css';
 import FeedbackModal from '../components/FeedbackModal';
 import API from '../../BackendConn/api';
+import { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
 
 const SessionsPage = ({ sessions = [] }) => {
   const [activeTab, setActiveTab] = useState('scheduled');
@@ -10,6 +11,7 @@ const SessionsPage = ({ sessions = [] }) => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [feedbackStatus, setFeedbackStatus] = useState({});
+  const [attendanceStatus, setAttendanceStatus] = useState({});
 
   // Check feedback status for completed sessions
   useEffect(() => {
@@ -38,6 +40,27 @@ const SessionsPage = ({ sessions = [] }) => {
     if (sessions.length > 0) {
       checkFeedbackStatus();
     }
+  }, [sessions]);
+
+  // Fetch attendance status for all sessions
+  useEffect(() => {
+    const fetchAllAttendance = async () => {
+      const status = {};
+      for (const session of sessions) {
+        if (!session.meeting_id) {
+          status[session.meeting_id || 'unknown'] = [];
+          continue;
+        }
+        try {
+          const res = await fetchMeetingAttendance(session.meeting_id);
+          status[session.meeting_id] = res.attended_roles || [];
+        } catch {
+          status[session.meeting_id] = [];
+        }
+      }
+      setAttendanceStatus(status);
+    };
+    if (sessions.length > 0) fetchAllAttendance();
   }, [sessions]);
 
   // Categorize sessions based on status
@@ -86,33 +109,81 @@ const SessionsPage = ({ sessions = [] }) => {
     };
   };
 
-  const renderSessionActions = (session) => {
+  const now = new Date();
+
+  const renderSessionCard = (session) => {
+    const formattedSession = formatSession(session);
+    const attendedRoles = attendanceStatus[session.meeting_id] || [];
+    const studentAttended = attendedRoles.includes('student');
+    const mentorAttended = attendedRoles.includes('mentor');
+    const scheduledTime = new Date(session.scheduled_time);
+    // Enable 2 minutes before scheduled time
+    const canJoin = now >= new Date(scheduledTime.getTime() - 2 * 60 * 1000);
+    return (
+      <div key={session.meeting_id} className="session-card">
+        <div className="session-info">
+          <div className="mentee-avatar">{formattedSession.mentorAvatar}</div>
+          <div className="session-details">
+            <h3>{session.title}</h3>
+            <p>With {formattedSession.mentorName !== 'Unknown Mentor' ? formattedSession.mentorName : ''}</p>
+            <div className="session-time">
+              <span>{formattedSession.displayDate}</span>
+              <span>{formattedSession.displayTime}</span>
+            </div>
+            {session.description && (
+              <p className="session-description">{session.description}</p>
+            )}
+            <div className="attendance-status-bar">
+              <span className={studentAttended ? 'attended-badge' : 'not-attended-badge'}>
+                Student {studentAttended ? '✓ Attended' : 'Not Attended'}
+              </span>
+              <span className={mentorAttended ? 'attended-badge' : 'not-attended-badge'}>
+                Mentor {mentorAttended ? '✓ Attended' : 'Not Attended'}
+              </span>
+            </div>
+          </div>
+        </div>
+        {renderSessionActions(session, canJoin, studentAttended)}
+      </div>
+    );
+  };
+
+  const handleJoinSession = async (session) => {
+    const scheduledTime = new Date(session.scheduled_time);
+    if (now < scheduledTime) return; // Prevent joining early
+    try {
+      // Do not mark attendance here, just open the meeting link
+      window.open(session.meeting_link, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      alert('Failed to open meeting link. Please try again.');
+    }
+  };
+
+  const renderSessionActions = (session, canJoin, studentAttended) => {
     switch (session.status) {
       case 'scheduled':
         return (
           <div className="session-actions">
-            <a
-              href={session.meeting_link}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
               className="primary-button small"
+              onClick={() => canJoin && handleJoinSession(session)}
+              disabled={!canJoin || studentAttended}
             >
-              Join Session
-            </a>
+              {studentAttended ? '✓ Attended' : canJoin ? 'Join Session' : 'Join Disabled'}
+            </button>
             <button className="secondary-button small">Reschedule</button>
           </div>
         );
       case 'ongoing':
         return (
           <div className="session-actions">
-            <a
-              href={session.meeting_link}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
               className="primary-button small"
+              onClick={() => canJoin && handleJoinSession(session)}
+              disabled={!canJoin || studentAttended}
             >
-              Join Now
-            </a>
+              {studentAttended ? '✓ Attended' : canJoin ? 'Join Now' : 'Join Disabled'}
+            </button>
             <button className="secondary-button small">Cancel</button>
           </div>
         );
@@ -149,6 +220,11 @@ const SessionsPage = ({ sessions = [] }) => {
                 }}
               >
                 Give Feedback
+              </button>
+            )}
+            {!studentAttended && (
+              <button className="primary-button small" style={{ marginLeft: 8 }} onClick={() => window.openAttendanceModal && window.openAttendanceModal(session)}>
+                Mark Attendance
               </button>
             )}
             <button className="secondary-button small">View Details</button>
@@ -233,30 +309,7 @@ const SessionsPage = ({ sessions = [] }) => {
 
       <div className="sessions-list">
         {categorizedSessions[activeTab].length > 0 ? (
-          categorizedSessions[activeTab].map(session => {
-            const formattedSession = formatSession(session);
-            return (
-              <div key={session.meeting_id} className="session-card">
-                <div className="session-info">
-                  <div className="mentee-avatar">
-                    {formattedSession.mentorAvatar}
-                  </div>
-                  <div className="session-details">
-                    <h3>{session.title}</h3>
-                    <p>With {formattedSession.mentorName !== 'Unknown Mentor' ? formattedSession.mentorName : ''}</p>
-                    <div className="session-time">
-                      <span>{formattedSession.displayDate}</span>
-                      <span>{formattedSession.displayTime}</span>
-                    </div>
-                    {session.description && (
-                      <p className="session-description">{session.description}</p>
-                    )}
-                  </div>
-                </div>
-                {renderSessionActions(session)}
-              </div>
-            );
-          })
+          categorizedSessions[activeTab].map(renderSessionCard)
         ) : (
           <div className="no-sessions">
             <p>No {activeTab} sessions found</p>

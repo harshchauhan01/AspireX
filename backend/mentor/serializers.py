@@ -6,17 +6,32 @@ from student.models import Student, Feedback
 
 class MentorRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    accepted_terms = serializers.BooleanField(write_only=True)
     
     class Meta:
         model = Mentor
-        fields = ('email', 'name', 'password')
+        fields = ('email', 'name', 'password', 'accepted_terms')
+    
+    def validate_password(self, value):
+        from django.core.exceptions import ValidationError
+        from django.contrib.auth.password_validation import validate_password
+        if not isinstance(value, str):
+            raise serializers.ValidationError("Password must be a string.")
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages)
+        return value
     
     def create(self, validated_data):
-        return Mentor.objects.create_user(
+        accepted_terms = validated_data.pop('accepted_terms', False)
+        mentor = Mentor.objects.create_user(
             email=validated_data['email'],
             name=validated_data['name'],
-            password=validated_data['password']
+            password=validated_data['password'],
+            accepted_terms=accepted_terms
         )
+        return mentor
 
 # mentor/serializers.py
 class MentorLoginSerializer(serializers.Serializer):
@@ -26,7 +41,8 @@ class MentorLoginSerializer(serializers.Serializer):
     def validate(self, data):
         mentor_id = data.get('mentor_id')
         password = data.get('password')
-        
+        if not isinstance(password, str):
+            raise serializers.ValidationError({"password": "Password must be a string."})
         if mentor_id and password:
             mentor = authenticate(mentor_id=mentor_id, password=password)
             if mentor:
@@ -37,7 +53,6 @@ class MentorLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Unable to log in with provided credentials.")
         else:
             raise serializers.ValidationError("Must include 'mentor_id' and 'password'.")
-        
         return data
 
 # class MentorSerializer(serializers.ModelSerializer):
@@ -230,3 +245,18 @@ class WithdrawalSerializer(serializers.ModelSerializer):
             'transaction_id', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'request_date', 'processed_date', 'transaction_id', 'created_at', 'updated_at', 'mentor']
+
+
+class PublicMentorSerializer(serializers.ModelSerializer):
+    details = MentorDetailSerializer()
+    feedback_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Mentor
+        fields = (
+            'mentor_id', 'email', 'name', 'details', 'feedback_count'
+        )
+
+    def get_feedback_count(self, obj):
+        from student.models import Feedback
+        return Feedback.objects.filter(mentor=obj).count()
