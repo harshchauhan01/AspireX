@@ -1,5 +1,10 @@
 import requests
 import json
+import pytest
+from django.utils import timezone
+from datetime import timedelta
+from backend.student.models import Booking, Student
+from backend.mentor.models import Mentor, Meeting
 
 def test_dashboard_feedback():
     print("Testing Feedback Duplicate Prevention in Dashboard and Sessions")
@@ -54,6 +59,28 @@ def test_dashboard_feedback():
         print("❌ CONNECTION ERROR: Make sure the Django server is running on localhost:8000")
     except Exception as e:
         print(f"❌ ERROR: {e}")
+
+@pytest.mark.django_db
+def test_meeting_booking_creates_jitsi_link():
+    # Create test student and mentor
+    student = Student.objects.create(student_id='teststudent', email='teststudent@example.com', name='Test Student', password='testpass')
+    mentor = Mentor.objects.create(mentor_id='testmentor', email='testmentor@example.com', name='Test Mentor', password='testpass')
+
+    # Book a meeting 5 minutes from now
+    booking = Booking.objects.create(
+        student=student,
+        mentor=mentor,
+        subject='Test Subject',
+        time_slot=(timezone.now() + timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M'),
+        is_paid=True
+    )
+
+    # Meeting should be created automatically by signal
+    meeting = Meeting.objects.filter(student=student, mentor=mentor, title='Test Subject').first()
+    assert meeting is not None, 'Meeting was not created.'
+    assert meeting.meeting_link.startswith('https://meet.jit.si/'), f'Meeting link is not a Jitsi link: {meeting.meeting_link}'
+    assert 'your-meeting-platform.com' not in meeting.meeting_link, 'Old placeholder link was used.'
+    print('Meeting created:', meeting.meeting_link)
 
 if __name__ == "__main__":
     test_dashboard_feedback() 

@@ -1,0 +1,225 @@
+.customer-service-container {
+  max-width: 700px;
+  margin: 32px auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(16,137,211,0.08), 0 1.5px 6px rgba(16,137,211,0.06);
+  padding: 20px 12px 28px 12px;
+}
+.customer-service-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1089d3;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.customer-service-form {
+  margin-bottom: 20px;
+}
+.form-group {
+  margin-bottom: 12px;
+}
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #145af2;
+  font-size: 0.98rem;
+}
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d0d7de;
+  font-size: 0.98rem;
+  background: #f4f7fb;
+  transition: border 0.2s;
+}
+.form-input:focus, .form-textarea:focus {
+  border: 1.5px solid #12b1d1;
+  background: #fff;
+  outline: none;
+}
+.form-textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+.submit-btn {
+  background: linear-gradient(45deg, #1089d3 0%, #12b1d1 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.2s, transform 0.2s;
+}
+.submit-btn:hover {
+  background: linear-gradient(45deg, #12b1d1 0%, #1089d3 100%);
+  transform: scale(1.02);
+}
+.error-message {
+  color: #e74c3c;
+  background: #ffeaea;
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 0.98rem;
+}
+.success-message {
+  color: #27ae60;
+  background: #eafaf1;
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 0.98rem;
+}
+.queries-title {
+  font-size: 1.08rem;
+  font-weight: 600;
+  margin: 20px 0 10px 0;
+  color: #145af2;
+}
+.queries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.query-card {
+  background: #f8fafd;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px #cff0ff33;
+  padding: 10px 12px 8px 12px;
+  border-left: 3px solid #1089d3;
+}
+.query-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: #b2bec3;
+}
+.status-badge.resolved {
+  background: #27ae60;
+}
+.status-badge.pending {
+  background: #e67e22;
+}
+.query-date {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+.query-message {
+  font-size: 0.98rem;
+  margin-bottom: 6px;
+  color: #222f3e;
+}
+.replies-section {
+  margin-top: 6px;
+  background: #eaf6fb;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.replies-list {
+  margin: 0;
+  padding: 0 0 0 10px;
+  list-style: disc;
+}
+.reply-item {
+  font-size: 0.95rem;
+  color: #145af2;
+  margin-bottom: 2px;
+}
+.reply-date {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin-left: 6px;
+}
+.loading {
+  text-align: center;
+  color: #1089d3;
+  font-size: 1rem;
+  margin-top: 12px;
+}
+.queries-table-wrapper {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+.queries-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #f8fafd;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px #cff0ff33;
+  font-size: 0.97rem;
+}
+.queries-table th, .queries-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+.queries-table th {
+  background: #f4f7fb;
+  color: #145af2;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.queries-table tr:last-child td {
+  border-bottom: none;
+}
+.query-row:hover {
+  background: #eaf6fb;
+}
+.query-message-cell {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.expand-btn {
+  background: #12b1d1;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 3px 12px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.expand-btn:hover {
+  background: #1089d3;
+}
+.replies-row td {
+  background: #eaf6fb;
+  border-bottom: none;
+}
+.replies-section-table {
+  padding: 6px 0 0 0;
+}
+@media (max-width: 600px) {
+  .customer-service-container {
+    padding: 8px 1vw 14px 1vw;
+  }
+  .query-card {
+    padding: 8px 3px 6px 6px;
+  }
+  .queries-table th, .queries-table td {
+    padding: 6px 4px;
+    font-size: 0.93rem;
+  }
+  .query-message-cell {
+    max-width: 100px;
+  }
+} 

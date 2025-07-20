@@ -1677,3 +1677,21 @@ header {
   font-size: 0.8rem;
   font-weight: 500;
 }
+
+.meeting-item {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  background: #f5f7fa;
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #333;
+  word-break: break-word;
+}
+.meeting-time {
+  font-weight: bold;
+  margin-right: 4px;
+}
+.meeting-title {
+  font-weight: normal;
+}

@@ -194,7 +194,7 @@ const MentorProfile = ({ mentorId, onBack }) => {
         <div className="mentor-basic-info">
           <h1>{mentor.name}</h1>
           <h2>{mentor.profession}</h2>
-          <div className="price-tag">${mentor.price}/hour</div>
+          <div className="price-tag">₹{mentor.price}/hour</div>
           
           <button 
         className={`book-button ${isBooking ? 'loading' : ''}`} 
@@ -285,7 +285,7 @@ const MentorProfile = ({ mentorId, onBack }) => {
               </div>
               
               <div className="payment-section">
-                <h3>Complete Payment: ${mentor.price}</h3>
+                <h3>Complete Payment: ₹{mentor.price}</h3>
                 <div className="slider-container">
                   <input
                     type="range"
@@ -325,7 +325,7 @@ const MentorProfile = ({ mentorId, onBack }) => {
                   alt="Payment QR Code" 
                   className="qr-code"
                 />
-                <p className="payment-amount">Amount: ${mentor.price}</p>
+                <p className="payment-amount">Amount: ₹{mentor.price}</p>
               </div>
               
               <div className="form-group">

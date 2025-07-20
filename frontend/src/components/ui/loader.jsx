@@ -35,6 +35,13 @@ const Loader = () => {
 }
 
 const StyledWrapper = styled.div`
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  box-sizing: border-box;
+
   .boxes {
     --size: 32px;
     --duration: 800ms;
@@ -43,7 +50,7 @@ const StyledWrapper = styled.div`
     position: relative;
     transform-style: preserve-3d;
     transform-origin: 50% 50%;
-    margin-top: calc(var(--size) * 1.5 * -1);
+    margin-top: 0;
     transform: rotateX(60deg) rotateZ(45deg) rotateY(0deg) translateZ(0px);
   }
 

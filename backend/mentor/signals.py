@@ -2,6 +2,8 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from .models import Meeting, Mentor, MentorDetail, MentorMessage
 from student.models import Student
+from mentor.models import Earning, MentorMessage, Meeting
+from student.models import Booking
 
 @receiver(pre_save, sender=Meeting)
 def update_meeting_status(sender, instance, **kwargs):
@@ -74,6 +76,38 @@ P.S. Don't forget to check your dashboard regularly for new opportunities!""",
             admin_sender=admin_user,
             is_read=False
         )
+
+@receiver(post_save, sender=Meeting)
+def handle_meeting_completed(sender, instance, created, **kwargs):
+    # Only act if meeting is completed and wasn't just created
+    if instance.status == 'completed' and not created:
+        # Check if an earning already exists for this meeting
+        if not Earning.objects.filter(mentor=instance.mentor, source__icontains=instance.meeting_id).exists():
+            # Find the booking for this meeting
+            booking = Booking.objects.filter(
+                student=instance.student,
+                mentor=instance.mentor,
+                time_slot=str(instance.scheduled_time)
+            ).first()
+            amount = instance.mentor.details.fees if hasattr(instance.mentor, 'details') else 0
+            transaction_id = booking.transaction_id if booking else None
+
+            # Create earning
+            earning = Earning.objects.create(
+                mentor=instance.mentor,
+                amount=amount,
+                source=f"Session with {instance.student.name} (Meeting {instance.meeting_id})",
+                transaction_id=transaction_id,
+                status='completed'
+            )
+
+            # Send mentor message
+            MentorMessage.objects.create(
+                mentor=instance.mentor,
+                subject="💰 Payment Received for Completed Meeting",
+                message=f"You received a payment of ₹{amount} from {instance.student.name} for meeting '{instance.title}'.",
+                is_read=False
+            )
 
 
 

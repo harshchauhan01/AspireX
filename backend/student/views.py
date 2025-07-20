@@ -9,6 +9,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.authentication import TokenAuthentication
 from django.utils import timezone
 from utils import send_credentials_email
+from .serializers import PublicStudentSerializer
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -189,7 +190,7 @@ from .serializers import StudentSerializer
 
 class PublicStudentListView(generics.ListAPIView):
     queryset = Student.objects.all().order_by('student_id')
-    serializer_class = StudentSerializer
+    serializer_class = PublicStudentSerializer
     permission_classes = [AllowAny]
     pagination_class = PageNumberPagination
     page_size = 20
@@ -210,7 +211,7 @@ class PublicStudentListView(generics.ListAPIView):
 
 class PublicStudentDetailView(RetrieveAPIView):
     queryset = Student.objects.all()
-    serializer_class = StudentSerializer
+    serializer_class = PublicStudentSerializer
     permission_classes = [AllowAny]
     lookup_field = 'student_id'
     lookup_url_kwarg = 'student_id'

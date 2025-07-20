@@ -73,7 +73,7 @@ const EarningsPage = () => {
   // Handle withdrawal request
   const handleWithdrawal = async () => {
     if (!withdrawalAmount || parseFloat(withdrawalAmount) < 50) {
-      setWithdrawalError('Minimum withdrawal amount is $50.00');
+      setWithdrawalError('Minimum withdrawal amount is ₹50.00');
       return;
     }
 
@@ -125,17 +125,15 @@ const EarningsPage = () => {
 
   // Generate CSV content
   const generateCSV = (earnings) => {
-    const headers = ['Date', 'Source', 'Amount', 'Status', 'Transaction ID'];
+    const headers = ['Date', 'Source', 'Amount (INR)', 'Status', 'Transaction ID'];
     const rows = earnings.map(earning => [
       earning.date,
       earning.source,
-      earning.amount,
+      `₹${earning.amount}`,
       earning.status,
       earning.transaction_id
     ]);
-    return [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+    return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
   };
 
   // Load data on component mount
@@ -224,7 +222,7 @@ const EarningsPage = () => {
             </div>
             <div className="stat-info">
               <h3>Earnings</h3>
-              <p>${(stats.totalEarnings || 0).toFixed(2)}</p>
+              <p>₹{(stats.totalEarnings || 0).toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -232,8 +230,8 @@ const EarningsPage = () => {
         {/* Available Balance */}
         <div className="balance-card">
           <h3>Available Balance</h3>
-          <p className="balance-amount">${(stats.availableBalance || 0).toFixed(2)}</p>
-          <p className="balance-note">Minimum withdrawal amount is $50.00</p>
+          <p className="balance-amount">₹{(stats.availableBalance || 0).toFixed(2)}</p>
+          <p className="balance-note">Minimum withdrawal amount is ₹50.00</p>
         </div>
 
         {/* Tab Navigation */}
@@ -295,7 +293,7 @@ const EarningsPage = () => {
                       <td>{(pagination.current_page - 1) * 10 + index + 1}</td>
                       <td>{item.source}</td>
                       <td>{new Date(item.date).toLocaleDateString()}</td>
-                      <td>${(parseFloat(item.amount) || 0).toFixed(2)}</td>
+                      <td>₹{(parseFloat(item.amount) || 0).toFixed(2)}</td>
                       <td>
                         <span className={`status-badge status-${item.status}`}>
                           {item.status}
@@ -378,7 +376,7 @@ const EarningsPage = () => {
                       withdrawalsData.map((item, index) => (
                         <tr key={item.id}>
                           <td>{index + 1}</td>
-                          <td>${(parseFloat(item.amount) || 0).toFixed(2)}</td>
+                          <td>₹{(parseFloat(item.amount) || 0).toFixed(2)}</td>
                           <td>{new Date(item.request_date).toLocaleDateString()}</td>
                           <td>
                             <span className={`status-badge status-${item.status}`}>
@@ -413,7 +411,7 @@ const EarningsPage = () => {
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label htmlFor="withdrawal-amount">Amount ($)</label>
+                <label htmlFor="withdrawal-amount">Amount (INR)</label>
                 <input
                   type="number"
                   id="withdrawal-amount"
@@ -421,7 +419,7 @@ const EarningsPage = () => {
                   onChange={(e) => setWithdrawalAmount(e.target.value)}
                   min="50"
                   step="0.01"
-                  placeholder="Enter amount (minimum $50)"
+                  placeholder="Enter amount (minimum ₹50)"
                 />
               </div>
               {withdrawalError && (

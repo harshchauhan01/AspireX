@@ -37,7 +37,7 @@ const MenteesPage = () => {
             bio: m.details?.about || 'No bio provided.',
             availability: m.details?.availability_timings?.split(',') || ['Not specified'],
             sessions: m.details?.total_sessions || 0,
-            price: `$${parseFloat(m.details?.fees || 0).toFixed(2)}/hr`
+            price: `₹${parseFloat(m.details?.fees || 0).toFixed(2)}/hr`
           }));
         setMentors(mappedMentors);
       })

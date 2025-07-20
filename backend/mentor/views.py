@@ -15,12 +15,25 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.db import models
 from django.utils import timezone
 from utils import send_credentials_email
+from .serializers import PublicMentorSerializer
+from rest_framework.authentication import TokenAuthentication as DRFTokenAuthentication
+from rest_framework.authentication import get_authorization_header
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from django.db.models import Q
+from rest_framework import generics
+from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import RetrieveAPIView
+from django.db.models import Q
+from .models import Mentor
+from .serializers import MentorSerializer
+from mentor.models import Meeting, MeetingAttendance, Mentor
+from rest_framework.permissions import IsAuthenticated
+from student.models import Student
+from student.models import StudentMessage
 
-class MentorViewSet(viewsets.ModelViewSet):
-    queryset = Mentor.objects.all()
-    serializer_class = MentorSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
+from django.utils.dateparse import parse_datetime
+from django.utils import timezone
 
 class MentorTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
@@ -39,8 +52,47 @@ class MentorTokenAuthentication(BaseAuthentication):
 
 
 
+class MentorMeetingRescheduleAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
-from rest_framework.authentication import TokenAuthentication
+    def post(self, request, meeting_id):
+        mentor = request.user
+        new_time_str = request.data.get('new_time')
+        if not new_time_str:
+            return Response({'error': 'New time is required.'}, status=400)
+        new_time = parse_datetime(new_time_str)
+        if not new_time:
+            return Response({'error': 'Invalid datetime format.'}, status=400)
+        new_time = timezone.make_aware(new_time) if timezone.is_naive(new_time) else new_time
+        try:
+            meeting = Meeting.objects.get(meeting_id=meeting_id, mentor=mentor)
+        except Meeting.DoesNotExist:
+            return Response({'error': 'Meeting not found.'}, status=404)
+        now = timezone.now()
+        if (meeting.scheduled_time - now).total_seconds() < 2 * 60 * 60:
+            return Response({'error': 'Cannot reschedule less than 2 hours before the meeting.'}, status=400)
+        if (new_time - now).total_seconds() < 2 * 60 * 60:
+            return Response({'error': 'New meeting time must be at least 2 hours from now.'}, status=400)
+        meeting.scheduled_time = new_time
+        meeting.save(update_fields=['scheduled_time'])
+        # Notify student
+        if meeting.student:
+            StudentMessage.objects.create(
+                student=meeting.student,
+                sender=None,  # Sender must be a Student instance; None for system/mentor
+                subject="Your meeting has been rescheduled",
+                message=f"Your meeting '{meeting.title}' with {mentor.name} has been rescheduled to {new_time.strftime('%Y-%m-%d %H:%M')}. If you have any problem, please contact customer support.",
+            )
+        return Response({'success': True, 'new_time': new_time}, status=200)
+
+
+class MentorViewSet(viewsets.ModelViewSet):
+    queryset = Mentor.objects.all()
+    serializer_class = MentorSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
 class MentorProfileAPIView(APIView):
     authentication_classes = [MentorTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
@@ -53,8 +105,6 @@ class MentorProfileAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
-
-from .models import *
 
 class MentorRegistrationAPIView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
@@ -97,17 +147,9 @@ class MentorLoginAPIView(APIView):
 
 
 
-from rest_framework import generics
-from rest_framework.permissions import AllowAny
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.generics import RetrieveAPIView
-from django.db.models import Q
-from .models import Mentor
-from .serializers import MentorSerializer
-
 class PublicMentorListView(generics.ListAPIView):
     queryset = Mentor.objects.all().order_by('mentor_id')
-    serializer_class = MentorSerializer
+    serializer_class = PublicMentorSerializer
     permission_classes = [AllowAny]
     pagination_class = PageNumberPagination
     page_size = 20
@@ -128,7 +170,7 @@ class PublicMentorListView(generics.ListAPIView):
 
 class PublicMentorDetailView(RetrieveAPIView):
     queryset = Mentor.objects.all()
-    serializer_class = MentorSerializer
+    serializer_class = PublicMentorSerializer
     permission_classes = [AllowAny]
     lookup_field = 'mentor_id'
     lookup_url_kwarg = 'mentor_id'
@@ -272,10 +314,6 @@ class MentorFileUploadAPIView(APIView):
         )
     
 
-
-
-from rest_framework.decorators import api_view, permission_classes
-from django.db.models import Q
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -549,3 +587,115 @@ class MentorFeedbackStatsAPIView(APIView):
         }
         
         return Response(stats, status=status.HTTP_200_OK)
+
+
+
+
+
+# Custom permission to allow both mentor and student tokens
+class IsMentorOrStudentAuthenticated(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated)
+
+class DualTokenAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        auth = get_authorization_header(request).split()
+        if not auth or auth[0].lower() != b'token':
+            return None
+        token_key = auth[1].decode() if len(auth) > 1 else None
+        # Try MentorTokenAuthentication
+        from mentor.models import MentorToken
+        try:
+            mentor_token = MentorToken.objects.get(key=token_key)
+            return (mentor_token.user, None)
+        except MentorToken.DoesNotExist:
+            pass
+        # Try DRF TokenAuthentication (for students)
+        user_auth_tuple = DRFTokenAuthentication().authenticate(request)
+        if user_auth_tuple:
+            return user_auth_tuple
+        return None
+
+@api_view(['GET', 'POST'])
+@authentication_classes([DualTokenAuthentication])
+@permission_classes([IsMentorOrStudentAuthenticated])
+def record_meeting_attendance(request):
+    if request.method == 'POST':
+        meeting_id = request.data.get('meeting_id')
+        role = request.data.get('role')  # 'mentor' or 'student'
+        entered_key = request.data.get('attendance_key')
+        if not meeting_id or role not in ['mentor', 'student'] or not entered_key:
+            return Response({'error': 'meeting_id, role, and attendance_key are required.'}, status=400)
+        try:
+            meeting = Meeting.objects.get(meeting_id=meeting_id)
+        except Meeting.DoesNotExist:
+            return Response({'error': 'Meeting not found.'}, status=404)
+        user = request.user
+        # Use isinstance for robust role validation
+        if role == 'mentor' and not isinstance(user, Mentor):
+            return Response({'error': 'Only mentors can record mentor attendance.'}, status=403)
+        if role == 'student' and not isinstance(user, Student):
+            return Response({'error': 'Only students can record student attendance.'}, status=403)
+        # Cross-verification: mentor must enter student's key, student must enter mentor's key
+        if role == 'mentor':
+            if entered_key != meeting.student_attendance_key:
+                return Response({'error': 'Invalid attendance key for mentor.'}, status=403)
+            if meeting.mentor_attended:
+                return Response({'message': 'Mentor attendance already marked.'}, status=200)
+            meeting.mentor_attended = True
+            meeting.mentor_attendance_time = timezone.now()
+            meeting.save(update_fields=['mentor_attended', 'mentor_attendance_time'])
+            # Create MeetingAttendance record
+            MeetingAttendance.objects.get_or_create(
+                meeting=meeting,
+                user_id=user.mentor_id,
+                role='mentor'
+            )
+            # If both attended, mark as completed
+            if meeting.student_attended and meeting.mentor_attended:
+                meeting.status = 'completed'
+                meeting.save(update_fields=['status'])
+            return Response({'success': True, 'message': 'Mentor attendance marked.'})
+        elif role == 'student':
+            if entered_key != meeting.mentor_attendance_key:
+                return Response({'error': 'Invalid attendance key for student.'}, status=403)
+            if meeting.student_attended:
+                return Response({'message': 'Student attendance already marked.'}, status=200)
+            meeting.student_attended = True
+            meeting.student_attendance_time = timezone.now()
+            meeting.save(update_fields=['student_attended', 'student_attendance_time'])
+            # Create MeetingAttendance record
+            MeetingAttendance.objects.get_or_create(
+                meeting=meeting,
+                user_id=user.student_id,
+                role='student'
+            )
+            # If both attended, mark as completed
+            if meeting.student_attended and meeting.mentor_attended:
+                meeting.status = 'completed'
+                meeting.save(update_fields=['status'])
+            return Response({'success': True, 'message': 'Student attendance marked.'})
+    elif request.method == 'GET':
+        meeting_id = request.GET.get('meeting_id')
+        if not meeting_id:
+            return Response({'error': 'meeting_id is required.'}, status=400)
+        try:
+            meeting = Meeting.objects.get(meeting_id=meeting_id)
+        except Meeting.DoesNotExist:
+            return Response({'error': 'Meeting not found.'}, status=404)
+        attended_roles = []
+        if meeting.mentor_attended:
+            attended_roles.append('mentor')
+        if meeting.student_attended:
+            attended_roles.append('student')
+        return Response({
+            'student_attended': meeting.student_attended,
+            'mentor_attended': meeting.mentor_attended,
+            'student_attendance_time': meeting.student_attendance_time,
+            'mentor_attendance_time': meeting.mentor_attendance_time,
+            'attended_roles': attended_roles
+        })
+
+
+
+

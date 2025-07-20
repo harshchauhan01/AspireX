@@ -1,13 +1,14 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import Conversation, Message, ContactMessage
-from .serializers import ConversationSerializer, MessageSerializer, ContactMessageSerializer
+from .models import Conversation, Message, ContactMessage, CustomerServiceMessage, CustomerServiceReply
+from .serializers import ConversationSerializer, MessageSerializer, ContactMessageSerializer, CustomerServiceMessageSerializer, CustomerServiceReplySerializer
 from mentor.models import Mentor
 from student.models import Student
 from django.shortcuts import get_object_or_404
 from rest_framework.authentication import TokenAuthentication
 from mentor.views import MentorTokenAuthentication
 from chat.authentication import DualTokenAuthentication
+from django.contrib.contenttypes.models import ContentType
 
 
 class ConversationListCreateView(generics.ListCreateAPIView):
@@ -196,6 +197,44 @@ class ContactMessageAPIView(APIView):
             serializer.save()
             return Response({'message': 'Message sent successfully!'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomerServiceMessageListCreateView(generics.ListCreateAPIView):
+    serializer_class = CustomerServiceMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [DualTokenAuthentication]
+
+    def get_queryset(self):
+        user = self.request.user
+        content_type = ContentType.objects.get_for_model(user.__class__)
+        return CustomerServiceMessage.objects.filter(user_content_type=content_type, user_object_id=str(user.pk)).order_by('-created_at')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        user_type = 'mentor' if hasattr(user, 'mentor_id') else 'student'
+        serializer.save(user=user, user_type=user_type)
+
+class CustomerServiceReplyCreateView(generics.CreateAPIView):
+    serializer_class = CustomerServiceReplySerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = CustomerServiceReply.objects.all()
+
+    def perform_create(self, serializer):
+        message_id = self.request.data.get('message_id')
+        message = CustomerServiceMessage.objects.get(id=message_id)
+        replied_by = self.request.user.username if self.request.user.is_staff else 'admin'
+        serializer.save(message=message, replied_by=replied_by)
+        CustomerServiceMessage.objects.filter(id=message_id).update(is_resolved=True)
+
+class CustomerServiceMessageAdminListView(generics.ListAPIView):
+    serializer_class = CustomerServiceMessageSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = CustomerServiceMessage.objects.all().order_by('-created_at')
 
 
 

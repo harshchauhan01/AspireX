@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Conversation, Message, ContactMessage
+from .models import Conversation, Message, ContactMessage, CustomerServiceMessage, CustomerServiceReply
 from mentor.models import Mentor
 from student.models import Student
 
@@ -81,6 +81,36 @@ class ContactMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactMessage
         fields = ['id', 'name', 'email', 'phone', 'query', 'created_at']
+
+class CustomerServiceReplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerServiceReply
+        fields = ['id', 'reply', 'replied_by', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+class CustomerServiceMessageSerializer(serializers.ModelSerializer):
+    replies = CustomerServiceReplySerializer(many=True, read_only=True)
+    user_type = serializers.CharField(read_only=True)
+    user_object_id = serializers.CharField(read_only=True)
+    user_content_type = serializers.CharField(read_only=True)
+    class Meta:
+        model = CustomerServiceMessage
+        fields = ['id', 'user_type', 'user_content_type', 'user_object_id', 'subject', 'message', 'is_resolved', 'created_at', 'replies']
+        read_only_fields = ['id', 'created_at', 'replies', 'is_resolved', 'user_type', 'user_content_type', 'user_object_id']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user
+        from django.contrib.contenttypes.models import ContentType
+        if hasattr(user, 'mentor_id'):
+            user_type = 'mentor'
+        else:
+            user_type = 'student'
+        content_type = ContentType.objects.get_for_model(user.__class__)
+        validated_data['user_type'] = user_type
+        validated_data['user_content_type'] = content_type
+        validated_data['user_object_id'] = str(user.pk)
+        return super().create(validated_data)
 
 
 

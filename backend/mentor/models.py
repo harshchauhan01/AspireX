@@ -13,10 +13,13 @@ from django.utils import timezone
 import uuid
 from django.db import models
 from django.conf import settings
+from django.contrib.auth import get_user_model
+# Remove DAILY_API_KEY, create_daily_room, and requests import
 
 
 class MentorManager(BaseUserManager):
     def create_user(self, email, name, password=None, **extra_fields):
+        # Use transaction.atomic as a context manager
         with transaction.atomic():
             user = self.model(
                 email=email,
@@ -32,7 +35,6 @@ class MentorManager(BaseUserManager):
                 )['max_id'] or 0
                 user.mentor_id = f"M{str(last_id).zfill(6)}"
                 user.save(update_fields=['mentor_id'])
-            
             return user
 
     def create_superuser(self, email, name, password=None, **extra_fields):
@@ -44,6 +46,7 @@ class Mentor(AbstractUser):
     email = models.EmailField(unique=True)
     mentor_id = models.CharField(max_length=10, unique=True, blank=True)
     name = models.CharField(max_length=100)
+    accepted_terms = models.BooleanField(default=False)
 
     username = None
 
@@ -72,6 +75,7 @@ class Mentor(AbstractUser):
 
     def save(self, *args, **kwargs):
         if not self.mentor_id and not kwargs.get('update_fields') == ['mentor_id']:
+            # Use transaction.atomic as a context manager
             with transaction.atomic():
                 max_id = Mentor.objects.aggregate(
                     max_id=models.Max('id')
@@ -149,7 +153,7 @@ class MentorDetail(models.Model):
     # Add Details     
     first_name = models.CharField(max_length=100, default="", blank=True)
     last_name = models.CharField(max_length=100, default="", blank=True)
-    dob = models.DateField(null=True, blank=True, default=None)
+    dob = models.DateField(null=True, blank=True)
     age = models.PositiveIntegerField(default=0)
     GENDER_CHOICES = (
         ('male', 'Male'),
@@ -198,7 +202,7 @@ class Earning(models.Model):
     amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Earning amount in USD"
+        help_text="Earning amount in INR (₹)"
     )
     date = models.DateField(
         default=timezone.now,
@@ -240,7 +244,7 @@ class Earning(models.Model):
         verbose_name_plural = "Mentor Earnings"
 
     def __str__(self):
-        return f"{self.mentor.mentor_id} - ${self.amount} - {self.date}"
+        return f"{self.mentor.mentor_id} - ₹{self.amount} - {self.date}"
 
     def save(self, *args, **kwargs):
         if not self.transaction_id:
@@ -287,6 +291,20 @@ class MentorMessage(models.Model):
         self.save(update_fields=['is_read'])
 
 
+class MeetingAttendance(models.Model):
+    meeting = models.ForeignKey('Meeting', on_delete=models.CASCADE, related_name='attendances')
+    user_id = models.CharField(max_length=100)  # Can be mentor_id or student_id
+    role = models.CharField(max_length=10, choices=[('mentor', 'Mentor'), ('student', 'Student')])
+    attended_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('meeting', 'user_id', 'role')
+        ordering = ['attended_at']
+
+    def __str__(self):
+        return f"{self.role} {self.user_id} attended {self.meeting.meeting_id} at {self.attended_at}"
+
+
 class Meeting(models.Model):
     MEETING_STATUS_CHOICES = [
         ('scheduled', 'Scheduled'),
@@ -322,6 +340,13 @@ class Meeting(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Attendance system fields
+    student_attendance_key = models.CharField(max_length=16, unique=True, null=True, blank=True)
+    mentor_attendance_key = models.CharField(max_length=16, unique=True, null=True, blank=True)
+    student_attended = models.BooleanField(default=False)
+    mentor_attended = models.BooleanField(default=False)
+    student_attendance_time = models.DateTimeField(null=True, blank=True)
+    mentor_attendance_time = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-scheduled_time']
@@ -338,15 +363,45 @@ class Meeting(models.Model):
         return f"{self.meeting_id} - {self.title} ({self.get_status_display()})"
 
     def save(self, *args, **kwargs):
+        # Ensure scheduled_time is timezone-aware
+        from django.utils import timezone
+        if self.scheduled_time and timezone.is_naive(self.scheduled_time):
+            self.scheduled_time = timezone.make_aware(self.scheduled_time)
+        # Generate unique student_attendance_key if missing
+        if not self.student_attendance_key:
+            while True:
+                key = secrets.token_urlsafe(8)
+                if not Meeting.objects.filter(student_attendance_key=key).exists():
+                    self.student_attendance_key = key
+                    break
+        # Generate unique mentor_attendance_key if missing
+        if not self.mentor_attendance_key:
+            while True:
+                key = secrets.token_urlsafe(8)
+                if not Meeting.objects.filter(mentor_attendance_key=key).exists():
+                    self.mentor_attendance_key = key
+                    break
+        # Set meeting_id if not set
         if not self.meeting_id:
+            # Save first to get pk
+            super().save(*args, **kwargs)
             self.meeting_id = self.generate_meeting_id()
+            # Now generate the meeting link using the new meeting_id
+            room_name = f"aspirex-{self.meeting_id}-{uuid.uuid4().hex[:8]}"
+            self.meeting_link = f"https://meet.jit.si/{room_name}"
+            super().save(update_fields=['meeting_id', 'meeting_link'])
+            return
+        # Ensure meeting_link is set if missing
+        if not self.meeting_link:
+            room_name = f"aspirex-{self.meeting_id}-{uuid.uuid4().hex[:8]}"
+            self.meeting_link = f"https://meet.jit.si/{room_name}"
         self.update_status_based_on_time()
         super().save(*args, **kwargs)
 
     def generate_meeting_id(self):
-        timestamp = timezone.now().strftime("%y%m%d")
+        timestamp = timezone.now().strftime("%d%m%y")
         random_str = secrets.token_hex(2).upper()
-        return f"MTG-{timestamp}-{random_str}"
+        return f"MTG-{timestamp}-{random_str}-{self.pk}"
 
     def update_status_based_on_time(self):
         now = timezone.now()
@@ -380,6 +435,9 @@ class Meeting(models.Model):
     @property
     def end_time(self):
         return self.scheduled_time + timezone.timedelta(minutes=self.duration)
+
+    def has_attended(self, role):
+        return self.attendances.filter(role=role).exists()
     
 
 

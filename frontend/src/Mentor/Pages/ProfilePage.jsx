@@ -493,7 +493,7 @@ const ProfilePage = ({ mentorProfile }) => {
               <h3>Hourly Rate</h3>
               {editMode ? (
                 <div className="rate-input">
-                  <span>$</span>
+                  <span>₹</span>
                   <input
                     type="number"
                     name="hourlyRate"
@@ -503,7 +503,7 @@ const ProfilePage = ({ mentorProfile }) => {
                   />
                 </div>
               ) : (
-                <p>${profileData.hourlyRate}/hr</p>
+                <p>₹{profileData.hourlyRate}/hr</p>
               )}
             </div>
 

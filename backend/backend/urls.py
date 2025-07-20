@@ -20,13 +20,18 @@ from rest_framework.routers import DefaultRouter
 from student import views as student_views
 from mentor import views as mentor_views
 from chat import views as chat_views
+from django.http import HttpResponse
 
 from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
 
+def aspirex_world(request):
+    return HttpResponse('AspireX World')
+
 urlpatterns = [
+    path('', aspirex_world, name='aspirex-world'),
     path('admin/', admin.site.urls),
     path('api/student/', include('student.urls')),
     path('api/mentor/', include('mentor.urls')),

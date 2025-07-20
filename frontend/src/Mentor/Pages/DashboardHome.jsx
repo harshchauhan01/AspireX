@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './CSS/Dashboard.css';
 import './CSS/PageStyles.css';
+import Modal from '../../components/ui/Modal';
+import { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
+import { useRef } from 'react';
 
 const DashboardHome = ({ mentorProfile, mentor }) => {
   // State for notes
@@ -12,6 +15,21 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   // State for conversations
   const [conversations, setConversations] = useState([]);
   const [pinnedConversations, setPinnedConversations] = useState([]);
+
+  // State for attendance
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [attendanceMeeting, setAttendanceMeeting] = useState(null);
+  const [attendanceKey, setAttendanceKey] = useState('');
+  const [attendanceStatusMsg, setAttendanceStatusMsg] = useState('');
+  const [attendanceError, setAttendanceError] = useState('');
+  const [attendanceStatus, setAttendanceStatus] = useState({});
+
+  // State for rescheduling
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleMeeting, setRescheduleMeeting] = useState(null);
+  const [rescheduleDateTime, setRescheduleDateTime] = useState('');
+  const [rescheduleError, setRescheduleError] = useState('');
+  const rescheduleInputRef = useRef();
 
   // Load notes from localStorage on component mount
   useEffect(() => {
@@ -270,6 +288,114 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     const topNotifications = notifications.slice(0, 3);
     const hasMoreNotifications = notifications.length > 3;
 
+  const openAttendanceModal = (meeting) => {
+    setAttendanceMeeting(meeting);
+    setAttendanceKey('');
+    setAttendanceStatusMsg('');
+    setAttendanceError('');
+    setShowAttendanceModal(true);
+  };
+  const submitAttendanceKey = async () => {
+    if (!attendanceMeeting || !attendanceMeeting.meeting_id) {
+      setAttendanceError('Meeting ID is missing. Please refresh and try again.');
+      return;
+    }
+    if (!attendanceKey) {
+      setAttendanceError('Please enter the student\'s attendance key.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('Mentortoken');
+      const res = await postMeetingAttendance({
+        meeting_id: attendanceMeeting.meeting_id,
+        role: 'mentor',
+        attendance_key: attendanceKey
+      }, token);
+      if (res.success) {
+        setAttendanceStatusMsg('Attendance marked successfully!');
+        setAttendanceError('');
+        setShowAttendanceModal(false);
+        // Refresh attendance status for this meeting
+        const attRes = await fetchMeetingAttendance(attendanceMeeting.meeting_id);
+        setAttendanceStatus(prev => ({
+          ...prev,
+          [attendanceMeeting.meeting_id]: attRes.attended_roles || []
+        }));
+      } else if (res.message) {
+        setAttendanceStatusMsg(res.message);
+        setAttendanceError('');
+      } else {
+        setAttendanceError(res.error || 'Failed to mark attendance.');
+      }
+    } catch (err) {
+      setAttendanceError('Failed to mark attendance.');
+    }
+  };
+
+  // Fetch attendance status for all meetings on mount or when mentor.meetings changes
+  useEffect(() => {
+    const fetchAllAttendance = async () => {
+      const status = {};
+      if (mentor?.meetings) {
+        for (const meeting of mentor.meetings) {
+          try {
+            const res = await fetchMeetingAttendance(meeting.meeting_id);
+            status[meeting.meeting_id] = res.attended_roles || [];
+          } catch {
+            status[meeting.meeting_id] = [];
+          }
+        }
+      }
+      setAttendanceStatus(status);
+    };
+    if (mentor?.meetings && mentor.meetings.length > 0) fetchAllAttendance();
+  }, [mentor]);
+
+  const openRescheduleModal = (meeting) => {
+    setRescheduleMeeting(meeting);
+    setRescheduleDateTime('');
+    setRescheduleError('');
+    setShowRescheduleModal(true);
+  };
+
+  const handleRescheduleSubmit = async () => {
+    if (!rescheduleMeeting || !rescheduleDateTime) {
+      setRescheduleError('Please select a new date and time.');
+      return;
+    }
+    const now = new Date();
+    const newTime = new Date(rescheduleDateTime);
+    const oldTime = new Date(rescheduleMeeting.scheduled_time || rescheduleMeeting.date + 'T' + rescheduleMeeting.time.split(' ')[0]);
+    if ((oldTime - now) / (1000 * 60 * 60) < 2) {
+      setRescheduleError('Cannot reschedule less than 2 hours before the meeting.');
+      return;
+    }
+    if ((newTime - now) / (1000 * 60 * 60) < 2) {
+      setRescheduleError('New meeting time must be at least 2 hours from now.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('Mentortoken');
+      const response = await fetch(`http://127.0.0.1:8000/api/mentor/meeting/${rescheduleMeeting.meeting_id || rescheduleMeeting.id}/reschedule/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify({ new_time: rescheduleDateTime })
+      });
+      if (response.ok) {
+        setShowRescheduleModal(false);
+        window.location.reload(); // Or refetch sessions
+      } else {
+        const data = await response.json();
+        setRescheduleError(data.error || 'Failed to reschedule.');
+      }
+    } catch (err) {
+      setRescheduleError('Server error. Try again.');
+    }
+  };
+
   return (
     <>
       <header>
@@ -297,6 +423,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                   {session.description && (
                     <p className="session-description">{session.description}</p>
                   )}
+                  <div className="attendance-status-bar">
+                    <span className={attendanceStatus[session.id]?.includes('mentor') ? 'attended-badge' : 'not-attended-badge'}>
+                      Mentor {attendanceStatus[session.id]?.includes('mentor') ? '✓ Attended' : 'Not Attended'}
+                    </span>
+                    <span className={attendanceStatus[session.id]?.includes('student') ? 'attended-badge' : 'not-attended-badge'}>
+                      Student {attendanceStatus[session.id]?.includes('student') ? '✓ Attended' : 'Not Attended'}
+                    </span>
+                  </div>
                 </div>
                 <div className="session-actions">
                   <a 
@@ -307,7 +441,22 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                   >
                     {session.status === 'ongoing' ? 'Join Now' : 'Prepare'}
                   </a>
-                  <button className="secondary-button">Reschedule</button>
+                  {session.status === 'scheduled' && (new Date(session.date + 'T' + session.time.split(' ')[0]) - new Date()) / (1000 * 60 * 60) > 2 && (
+                    <button className="secondary-button" onClick={() => {
+                      const meetingObj = (mentor.meetings || []).find(m => m.meeting_id === session.id) || session.meetingObj || session;
+                      openRescheduleModal(meetingObj);
+                    }}>
+                      Reschedule
+                    </button>
+                  )}
+                  {(session.status === 'scheduled' || session.status === 'ongoing' || session.status === 'completed') && !attendanceStatus[session.id]?.includes('mentor') && (
+                    <button className="secondary-button small" onClick={() => {
+                      const meetingObj = (mentor.meetings || []).find(m => m.meeting_id === session.id) || session.meetingObj || session;
+                      openAttendanceModal(meetingObj);
+                    }}>
+                      Mark Attendance
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -485,6 +634,54 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           </div>
         </section>
       </div>
+
+      <Modal isOpen={showAttendanceModal} onClose={() => setShowAttendanceModal(false)} title="Mark Attendance">
+        <form style={{ display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 260 }} onSubmit={e => { e.preventDefault(); submitAttendanceKey(); }}>
+          <div style={{ fontSize: '1rem', color: '#333', marginBottom: 0 }}>
+            Enter the <b>student's attendance key</b> to mark your attendance for this meeting.
+          </div>
+          <input
+            type="text"
+            value={attendanceKey}
+            onChange={e => setAttendanceKey(e.target.value)}
+            placeholder="Enter student's attendance key"
+            className="attendance-key-input"
+            style={{
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1.5px solid #bcdffb',
+              fontSize: '1rem',
+              outline: 'none',
+              marginBottom: 0
+            }}
+            autoFocus
+          />
+          {attendanceError && <div className="error-message" style={{ color: '#d32f2f', fontSize: '0.95rem' }}>{attendanceError}</div>}
+          {attendanceStatusMsg && <div className="success-message" style={{ color: '#388e3c', fontSize: '0.95rem' }}>{attendanceStatusMsg}</div>}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: 0 }}>
+            <button type="button" className="secondary-button" onClick={() => setShowAttendanceModal(false)} style={{ minWidth: 90 }}>Cancel</button>
+            <button type="submit" className="primary-button" style={{ minWidth: 110 }}>Submit</button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Reschedule Modal */}
+      <Modal isOpen={showRescheduleModal} onClose={() => setShowRescheduleModal(false)} title="Reschedule Meeting">
+        <div style={{ padding: '1rem' }}>
+          <label>New Date & Time:</label>
+          <input
+            type="datetime-local"
+            ref={rescheduleInputRef}
+            value={rescheduleDateTime}
+            onChange={e => setRescheduleDateTime(e.target.value)}
+            min={new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+            required
+            style={{ display: 'block', margin: '1rem 0' }}
+          />
+          {rescheduleError && <div style={{ color: 'red', marginBottom: '1rem' }}>{rescheduleError}</div>}
+          <button className="primary-button" onClick={handleRescheduleSubmit}>Submit</button>
+        </div>
+      </Modal>
     </>
   );
 };

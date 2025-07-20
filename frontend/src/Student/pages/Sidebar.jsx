@@ -14,6 +14,9 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
     }
   };
   
+  // Calculate total sessions from mentor.meetings if available
+  const totalSessions = mentor?.meetings ? mentor.meetings.filter(m => m.status !== 'cancelled').length : (mentorProfile.sessionsCompleted || 0);
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
@@ -49,7 +52,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
             <h3>{mentor?.name || mentorProfile.name}</h3>
             <p>{mentor?.email || mentorProfile.email}</p>
             <div className="mentor-stats">
-              <span>🎯 {mentor?.details?.total_sessions || mentorProfile.sessionsCompleted} sessions</span>
+              <span>🎯 {totalSessions} sessions</span>
             </div>
           </div>
         )}
@@ -72,6 +75,9 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           </li>
           <li className={activeTab === 'sessions' ? 'active' : ''} onClick={() => setActiveTab('sessions')}>
             <span>🗓️</span> {sidebarOpen && 'Sessions'}
+          </li>
+          <li className={activeTab === 'customerService' ? 'active' : ''} onClick={() => setActiveTab('customerService')}>
+            <span>🎧</span> {sidebarOpen && 'Customer Service'}
           </li>
         </ul>
       </nav>
