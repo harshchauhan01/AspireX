@@ -80,6 +80,23 @@ P.S. Don't forget to check your dashboard regularly for new opportunities and me
 
 @receiver(post_save, sender=Booking)
 def handle_booking_payment(sender, instance, created, **kwargs):
+    # Notify student if booking is created but not yet paid
+    if created and not instance.is_paid:
+        # Get admin user as sender
+        admin_user = Student.objects.filter(is_superuser=True).first()
+        # Compose message
+        amount = getattr(instance.mentor.details, 'fees', None)
+        amount_str = f"{amount}" if amount is not None else "the required"
+        StudentMessage.objects.create(
+            student=instance.student,
+            subject="Booking Payment Initiated",
+            message=(
+                f"You paid {amount_str} amount of money with transaction ID {instance.transaction_id} to book mentor {instance.mentor.name}. "
+                f"We will first confirm the payment and schedule the meeting for you."
+            ),
+            sender=admin_user,
+            is_read=False
+        )
     # Only act if the booking is marked as paid
     if instance.is_paid:
         # Ensure we don't create duplicate meetings/messages
