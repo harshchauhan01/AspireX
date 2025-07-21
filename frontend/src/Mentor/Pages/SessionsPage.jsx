@@ -41,12 +41,8 @@ const SessionsPage = ({ sessions = [] }) => {
   }, [sessions]);
 
   const getMeetingTime = (session) => {
-    if (session.scheduled_time) return new Date(session.scheduled_time);
-    if (session.date && session.time) {
-      const timePart = session.time.split(' ')[0];
-      return new Date(`${session.date}T${timePart}`);
-    }
-    return new Date();
+    // Always use UTC for consistency
+    return new Date(session.scheduled_time);
   };
 
   const now = new Date();
@@ -74,13 +70,14 @@ const SessionsPage = ({ sessions = [] }) => {
     const date = dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'
     });
     const time = dateObj.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
-      timeZoneName: 'short'
+      timeZone: 'UTC'
     });
 
     // Extract avatar initials with null check
@@ -172,27 +169,38 @@ const SessionsPage = ({ sessions = [] }) => {
     const now = new Date();
     const newTime = new Date(rescheduleDateTime);
     const oldTime = new Date(rescheduleMeeting.scheduled_time);
-    if ((oldTime - now) / (1000 * 60 * 60) < 2) {
-      setRescheduleError('Cannot reschedule less than 2 hours before the meeting.');
-      return;
+    // Only enforce the 2-hour rule for scheduled meetings in the future
+    if (rescheduleMeeting.status === 'scheduled' && (oldTime - now) / (1000 * 60 * 60) >= 2) {
+      if ((oldTime - now) / (1000 * 60 * 60) < 2) {
+        setRescheduleError('Cannot reschedule less than 2 hours before the meeting.');
+        return;
+      }
+      if ((newTime - now) / (1000 * 60 * 60) < 2) {
+        setRescheduleError('New meeting time must be at least 2 hours from now.');
+        return;
+      }
     }
-    if ((newTime - now) / (1000 * 60 * 60) < 2) {
-      setRescheduleError('New meeting time must be at least 2 hours from now.');
-      return;
-    }
+    // For missed or pending meetings, allow rescheduling at any time
     try {
       const token = localStorage.getItem('Mentortoken');
-      const response = await postMeetingAttendance({
-        meeting_id: rescheduleMeeting.meeting_id,
-        role: 'mentor',
-        attendance_key: token // Assuming token is the attendance key for rescheduling
-      }, token);
-      if (response.success) {
+      if (!token) {
+        setRescheduleError('Mentor not authenticated. Please log in again.');
+        return;
+      }
+      const response = await fetch(`http://127.0.0.1:8000/api/mentor/meeting/${rescheduleMeeting.meeting_id}/reschedule/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify({ new_time: rescheduleDateTime })
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
         setShowRescheduleModal(false);
         window.location.reload(); // Or refetch sessions
       } else {
-        const data = await response.json();
-        setRescheduleError(data.error || 'Failed to reschedule.');
+        setRescheduleError(result.error || 'Failed to reschedule.');
       }
     } catch (err) {
       setRescheduleError('Server error. Try again.');
@@ -203,10 +211,18 @@ const SessionsPage = ({ sessions = [] }) => {
     const attendedRoles = attendanceStatus[session.meeting_id] || [];
     const mentorAttended = attendedRoles.includes('mentor');
     const studentAttended = attendedRoles.includes('student');
-    const canMark = !mentorAttended && (session.status === 'scheduled' || session.status === 'ongoing' || session.status === 'completed');
+    const canMark = !mentorAttended && (session.status === 'scheduled' || session.status === 'ongoing' || session.status === 'pending');
     const now = new Date();
     const meetingTime = getMeetingTime(session);
-    const canReschedule = session.status === 'scheduled' && (meetingTime - now) / (1000 * 60 * 60) > 2;
+
+    // Add Reschedule button for missed and scheduled meetings
+    if (session.status === 'missed' || session.status === 'scheduled') {
+      return (
+        <div className="session-actions">
+          <button className="primary-button small" onClick={() => openRescheduleModal(session)}>Reschedule</button>
+        </div>
+      );
+    }
     return (
       <div className="session-actions">
         <button
@@ -220,11 +236,7 @@ const SessionsPage = ({ sessions = [] }) => {
             Mark Attendance
           </button>
         )}
-        {canReschedule && (
-          <button className="secondary-button small" onClick={() => openRescheduleModal(session)}>
-            Reschedule
-          </button>
-        )}
+        {/* Reschedule button is now handled by the new logic */}
         <div className="attendance-status">
           <span className={mentorAttended ? 'attended' : ''}>Mentor {mentorAttended ? '\u2713' : ''}</span>
           <span className={studentAttended ? 'attended' : ''}>Student {studentAttended ? '\u2713' : ''}</span>

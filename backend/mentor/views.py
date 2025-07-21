@@ -70,12 +70,14 @@ class MentorMeetingRescheduleAPIView(APIView):
         except Meeting.DoesNotExist:
             return Response({'error': 'Meeting not found.'}, status=404)
         now = timezone.now()
-        if (meeting.scheduled_time - now).total_seconds() < 2 * 60 * 60:
+        # Only enforce the 2-hour rule for scheduled meetings
+        if meeting.status == 'scheduled' and (meeting.scheduled_time - now).total_seconds() < 2 * 60 * 60:
             return Response({'error': 'Cannot reschedule less than 2 hours before the meeting.'}, status=400)
         if (new_time - now).total_seconds() < 2 * 60 * 60:
             return Response({'error': 'New meeting time must be at least 2 hours from now.'}, status=400)
         meeting.scheduled_time = new_time
-        meeting.save(update_fields=['scheduled_time'])
+        meeting.status = 'scheduled'
+        meeting.save(update_fields=['scheduled_time', 'status'])
         # Notify student
         if meeting.student:
             StudentMessage.objects.create(

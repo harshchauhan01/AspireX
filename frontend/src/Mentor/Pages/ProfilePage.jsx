@@ -4,6 +4,7 @@ import './CSS/PageStyles.css';
 import './CSS/Profile.css';
 import Loader from '../../components/ui/loader';
 import API from '../../BackendConn/api';
+import { API_BASE_URL } from '../../BackendConn/api';
 
 const ProfilePage = ({ mentorProfile }) => {
   const [editMode, setEditMode] = useState(false);
@@ -293,8 +294,12 @@ const ProfilePage = ({ mentorProfile }) => {
     }
   };
 
-
-
+  // Helper to get full CV URL
+  const getCVUrl = (cv) => {
+    if (!cv) return '';
+    if (cv.startsWith('http')) return cv;
+    return `${API_BASE_URL.replace(/\/api\/?$/, '')}${cv}`;
+  };
 
 
   return (
@@ -714,7 +719,7 @@ const ProfilePage = ({ mentorProfile }) => {
               </div>
             ) : profileData.cv ? (
               <a 
-                href={profileData.cv} 
+                href={getCVUrl(profileData.cv)} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="cv-link"
