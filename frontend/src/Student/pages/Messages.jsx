@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../BackendConn/api';
 import './CSS/PageStyles.css';
 import './CSS/Messages.css';
 import Loader from '../../components/ui/loader';
@@ -18,18 +18,11 @@ const Messages = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
-  const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api/chat/',
-    headers: {
-      'Authorization': `Token ${localStorage.getItem('token')}`
-    }
-  });
-
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://127.0.0.1:8000/api/chat/get-user-info/', {
+        const res = await API.get('chat/get-user-info/', {
           headers: {
             'Authorization': `Token ${token}`
           }
@@ -54,7 +47,7 @@ const Messages = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await api.get('conversations/', {
+      const response = await API.get('chat/conversations/', {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -85,14 +78,13 @@ const Messages = () => {
 
     try {
       const endpoint = isPinned ? 'unpin' : 'pin';
-      const response = await fetch(`http://127.0.0.1:8000/api/chat/conversations/${conversationId}/${endpoint}/`, {
-        method: 'PUT',
+      const response = await API.put(`chat/conversations/${conversationId}/${endpoint}/`, {}, {
         headers: {
           'Authorization': `Token ${token}`
         }
       });
 
-      if (response.ok) {
+      if (response.status === 200) {
         // Refresh conversations to get updated order
         await fetchConversations();
       }
@@ -110,7 +102,7 @@ const Messages = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await api.get(`conversations/${conversationId}/messages/`, {
+      const response = await API.get(`chat/conversations/${conversationId}/messages/`, {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -153,7 +145,7 @@ const Messages = () => {
     const conversationId = activeConversation.id;
 
     try {
-      await axios.post(`http://127.0.0.1:8000/api/chat/conversations/${conversationId}/send/`, {
+      await API.post(`chat/conversations/${conversationId}/send/`, {
         content: messageInput.trim(),
         sender_type: currentUserType 
       }, {
@@ -224,10 +216,10 @@ const Messages = () => {
     try {
       const token = localStorage.getItem('token');
       const endpoint = isMentor 
-        ? `http://127.0.0.1:8000/api/mentor/public/${userId}/`
-        : `http://127.0.0.1:8000/api/student/public/${userId}/`;
+        ? `mentor/public/${userId}/`
+        : `student/public/${userId}/`;
       
-      const response = await axios.get(endpoint, {
+      const response = await API.get(endpoint, {
         headers: { Authorization: `Token ${token}` }
       });
       
@@ -265,7 +257,7 @@ const Messages = () => {
                 <div className="profile-avatar">
                   {profile?.details?.profile_photo ? (
                     <img 
-                      src={`http://127.0.0.1:8000${profile.details.profile_photo}`} 
+                      src={profile.details.profile_photo} 
                       alt="Profile" 
                       className="profile-avatar-image"
                     />
@@ -427,10 +419,10 @@ const Messages = () => {
       const token = localStorage.getItem('token');
 
       const [mentorRes, studentRes] = await Promise.all([
-        axios.get(`http://127.0.0.1:8000/api/mentor/public/?search=${encodeURIComponent(searchQuery)}`, {
+        API.get(`mentor/public/?search=${encodeURIComponent(searchQuery)}`, {
           headers: { Authorization: `Token ${token}` }
         }),
-        axios.get(`http://127.0.0.1:8000/api/student/public/?search=${encodeURIComponent(searchQuery)}`, {
+        API.get(`student/public/?search=${encodeURIComponent(searchQuery)}`, {
           headers: { Authorization: `Token ${token}` }
         })
       ]);
@@ -482,7 +474,7 @@ const Messages = () => {
         return;
       }
 
-      const response = await api.post('conversations/', payload);
+      const response = await API.post('chat/conversations/', payload);
 
       const newConversation = {
         ...response.data,

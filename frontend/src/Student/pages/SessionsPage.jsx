@@ -65,17 +65,18 @@ const SessionsPage = ({ sessions = [] }) => {
 
   // Categorize sessions based on status
   const categorizedSessions = sessions.reduce((acc, session) => {
-    if (session.status === 'scheduled') {
-      acc.scheduled.push(session);
-    } else if (session.status === 'ongoing') {
-      acc.ongoing.push(session);
-    } else if (session.status === 'completed') {
-      acc.completed.push(session);
-    } else if (session.status === 'missed' || session.status === 'cancelled') {
-      acc.pending.push(session);
+    const category = session.status || 'pending';
+    if (!acc[category]) {
+      acc[category] = [];
     }
+    acc[category].push(session);
     return acc;
   }, { scheduled: [], ongoing: [], pending: [], completed: [] });
+
+  // Sort each category by date in descending order
+  for (const category in categorizedSessions) {
+    categorizedSessions[category].sort((a, b) => new Date(b.scheduled_time) - new Date(a.scheduled_time));
+  }
   
   
 
@@ -326,7 +327,7 @@ const SessionsPage = ({ sessions = [] }) => {
         }}
         session={selectedSession}
         onSubmitSuccess={(feedbackData) => {
-          console.log('Feedback submitted successfully:', feedbackData);
+          // console.log('Feedback submitted successfully:', feedbackData);
           // Refresh feedback status
           setFeedbackStatus(prev => ({
             ...prev,
