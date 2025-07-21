@@ -3,6 +3,7 @@ import axios from 'axios';
 import './CSS/PageStyles.css';
 import './CSS/Profile.css';
 import Loader from '../../components/ui/loader';
+import API from '../../BackendConn/api';
 
 const ProfilePage = ({ mentorProfile }) => {
   const [editMode, setEditMode] = useState(false);
@@ -90,8 +91,8 @@ const ProfilePage = ({ mentorProfile }) => {
         }
       };
 
-      const response = await axios.put(
-        'http://127.0.0.1:8000/api/mentor/profile/update/', // Update this URL to match your Django endpoint
+      const response = await API.put(
+        'mentor/profile/update/', // Update this URL to match your Django endpoint
         payload,
         {
           headers: {
@@ -117,8 +118,8 @@ const ProfilePage = ({ mentorProfile }) => {
 
   const handleRemoveCV = async () => {
     try {
-      await axios.delete(
-        'http://127.0.0.1:8000/api/mentor/profile/cv/', // Update this URL
+      await API.delete(
+        'mentor/profile/cv/', // Update this URL
         {
           headers: {
             'Authorization': `Token ${getAuthToken()}`
@@ -149,12 +150,12 @@ const ProfilePage = ({ mentorProfile }) => {
     try {
       // In a real app, you would upload the file to your server here
       // This is a mock implementation
-      console.log("Uploading CV:", cvFile.name);
+      // console.log("Uploading CV:", cvFile.name);
       const formData = new FormData();
       formData.append('cv', cvFile);
 
-      const response = await axios.put(
-        'http://127.0.0.1:8000/api/mentor/profile/cv/', // Update this URL
+      const response = await API.put(
+        'mentor/profile/cv/', // Update this URL
         formData,
         {
           headers: {
@@ -178,7 +179,7 @@ const ProfilePage = ({ mentorProfile }) => {
         fileInputRef.current.value = null;  // Reset file input so same file can be reselected
       }
       
-      console.log("CV uploaded successfully");
+      // console.log("CV uploaded successfully");
     } catch (error) {
       console.error("CV upload failed:", error);
       setSaveError(error.response?.data?.message || "Failed to upload CV");
@@ -245,8 +246,8 @@ const ProfilePage = ({ mentorProfile }) => {
       const formData = new FormData();
       formData.append('profile_photo', profilePhoto);
 
-      const response = await axios.put(
-        'http://127.0.0.1:8000/api/mentor/profile/cv/', // Update this URL
+      const response = await API.put(
+        'mentor/profile/cv/', // Update this URL
         formData,
         {
           headers: {
@@ -274,8 +275,8 @@ const ProfilePage = ({ mentorProfile }) => {
 
   const handleRemovePhoto = async () => {
     try {
-      await axios.delete(
-        'http://127.0.0.1:8000/api/mentor/profile/cv/', // Update this URL
+      await API.delete(
+        'mentor/profile/cv/', // Update this URL
         {
           data: { type: 'profile_photo' },
           headers: {

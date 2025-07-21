@@ -70,7 +70,7 @@ const SessionsPage = ({ sessions = [] }) => {
   const formatSession = (session) => {
     const dateObj = getMeetingTime(session);
     // Debug logging
-    console.log('Session:', session.meeting_id, 'Raw scheduled_time:', session.scheduled_time, 'Parsed dateObj:', dateObj, 'Local:', dateObj.toString());
+    // console.log('Session:', session.meeting_id, 'Raw scheduled_time:', session.scheduled_time, 'Parsed dateObj:', dateObj, 'Local:', dateObj.toString());
     const date = dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -182,15 +182,12 @@ const SessionsPage = ({ sessions = [] }) => {
     }
     try {
       const token = localStorage.getItem('Mentortoken');
-      const response = await fetch(`http://127.0.0.1:8000/api/mentor/meeting/${rescheduleMeeting.meeting_id}/reschedule/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`
-        },
-        body: JSON.stringify({ new_time: rescheduleDateTime })
-      });
-      if (response.ok) {
+      const response = await postMeetingAttendance({
+        meeting_id: rescheduleMeeting.meeting_id,
+        role: 'mentor',
+        attendance_key: token // Assuming token is the attendance key for rescheduling
+      }, token);
+      if (response.success) {
         setShowRescheduleModal(false);
         window.location.reload(); // Or refetch sessions
       } else {

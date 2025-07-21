@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './ContactPage.css';
-
+import API from '../BackendConn/api';
 const initialForm = { name: '', email: '', countryCode: '+91', phone: '', query: '' };
 
 const validate = (form) => {
@@ -41,17 +41,16 @@ const ContactPage = () => {
         ...form,
         phone: `${form.countryCode}${form.phone}`
       };
-      const response = await fetch('http://127.0.0.1:8000/api/chat/contact/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await API.post('chat/contact/', {
+        data: {
           name: payload.name,
           email: payload.email,
           phone: payload.phone,
           query: payload.query
-        })
+        },
+        headers: { 'Content-Type': 'application/json' }
       });
-      if (!response.ok) throw new Error('Failed to send message.');
+      if (response.status !== 200) throw new Error('Failed to send message.');
       setSuccess('Your message has been sent!');
       setForm(initialForm);
     } catch (err) {

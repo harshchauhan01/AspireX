@@ -200,6 +200,23 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['mentor_id', 'subject', 'time_slot', 'transaction_id', 'is_paid']
 
+    def validate(self, data):
+        request = self.context.get('request')
+        student = request.user
+        mentor_id = data.get('mentor_id')
+        time_slot = data.get('time_slot')
+
+        from mentor.models import Mentor
+        try:
+            mentor = Mentor.objects.get(mentor_id=mentor_id)
+        except Mentor.DoesNotExist:
+            raise serializers.ValidationError({"mentor_id": "Mentor with this ID does not exist."})
+
+        if Booking.objects.filter(student=student, mentor=mentor, time_slot=time_slot).exists():
+            raise serializers.ValidationError("This time slot has already been booked with this mentor.")
+            
+        return data
+
     def create(self, validated_data):
         request = self.context.get('request')
         student = request.user  # If user is linked via OneToOneField in Student

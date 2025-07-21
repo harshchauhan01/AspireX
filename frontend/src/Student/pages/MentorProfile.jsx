@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import './CSS/MentorProfile.css';
 import Loader from '../../components/ui/loader';
+import API from '../../BackendConn/api';
 
 const MentorProfile = ({ mentorId, onBack }) => {
   const { id } = useParams();
@@ -25,9 +26,9 @@ const MentorProfile = ({ mentorId, onBack }) => {
   });
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/mentor/public/')
-      .then(res => res.json())
-      .then(data => {
+    API.get('mentor/public/')
+      .then(res => {
+        const data = res.data;
         const foundMentor = data.find(m => m.mentor_id === actualMentorId && m.details);
         if (foundMentor) {
           const mapped = {
@@ -97,17 +98,9 @@ const MentorProfile = ({ mentorId, onBack }) => {
     };
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/student/booking/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // ✅ Send authentication token for request.user
-          Authorization: `Token ${localStorage.getItem('token')}` // adjust if you store token differently
-        },
-        body: JSON.stringify(bookingData)
-      });
+      const response = await API.post('student/booking/', bookingData);
 
-      if (response.ok) {
+      if (response.status === 201) {
         setPaymentSuccess(true);
         setTimeout(() => {
           setPaymentSuccess(false);
@@ -115,12 +108,19 @@ const MentorProfile = ({ mentorId, onBack }) => {
           setBookingSuccess(true);
           setTimeout(() => setBookingSuccess(false), 3000);
         }, 2000);
-      } else {
-        const data = await response.json();
-        alert("Error: " + JSON.stringify(data));
       }
     } catch (err) {
-      alert("Server error. Try again.");
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        alert("Error: " + JSON.stringify(err.response.data));
+      } else if (err.request) {
+        // The request was made but no response was received
+        alert("Server did not respond. Please try again.");
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        alert("An error occurred. Please try again.");
+      }
     }
   };
   const closeModal = () => {

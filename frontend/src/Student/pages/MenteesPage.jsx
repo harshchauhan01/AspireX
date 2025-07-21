@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CSS/PageStyles.css';
+import API from '../../BackendConn/api';
 
 
 const MenteesPage = () => {
@@ -20,10 +21,9 @@ const MenteesPage = () => {
   };
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/mentor/public/')
-      .then(res => res.json())
-      .then(data => {
-        const mappedMentors = data
+    API.get('mentor/public/')
+      .then(res => {
+        const mappedMentors = res.data
           .filter(m => m.details && m.details.is_approved) // ensure approved and has details
           .map((m, index) => ({
             id: m.mentor_id || index,
@@ -43,6 +43,7 @@ const MenteesPage = () => {
       })
       .catch(err => {
         // Handle error silently or show user-friendly message
+        console.error("Error fetching mentors:", err);
       });
   }, []);
 
