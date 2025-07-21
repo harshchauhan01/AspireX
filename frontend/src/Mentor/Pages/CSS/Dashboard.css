@@ -1092,3 +1092,68 @@ header {
   font-weight: 600;
   display: inline-block;
 }
+
+/* Sidebar overlay for mobile */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  z-index: 99;
+  display: block;
+}
+
+.sidebar.sidebar-mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  max-width: 90vw;
+  background: var(--white);
+  box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+  z-index: 100;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+.sidebar.sidebar-mobile.sidebar-open {
+  transform: translateX(0);
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    z-index: 100;
+    width: var(--sidebar-width);
+    max-width: 90vw;
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 992px) {
+  .sidebar-backdrop {
+    display: block;
+  }
+}
+
+@media (min-width: 993px) {
+  .sidebar-backdrop {
+    display: none !important;
+  }
+  .sidebar.sidebar-mobile {
+    position: relative;
+    transform: none;
+    box-shadow: none;
+    z-index: 10;
+  }
+}

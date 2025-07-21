@@ -277,32 +277,34 @@ const EarningsPage = () => {
             </div>
           ) : (
             <>
-              <table className="earnings-table">
-                <thead>
-                  <tr>
-                    <th>S.No.</th>
-                    <th>Source</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {earningsData.map((item, index) => (
-                    <tr key={item.transaction_id}>
-                      <td>{(pagination.current_page - 1) * 10 + index + 1}</td>
-                      <td>{item.source}</td>
-                      <td>{new Date(item.date).toLocaleDateString()}</td>
-                      <td>₹{(parseFloat(item.amount) || 0).toFixed(2)}</td>
-                      <td>
-                        <span className={`status-badge status-${item.status}`}>
-                          {item.status}
-                        </span>
-                      </td>
+              <div className="table-responsive">
+                <table className="earnings-table">
+                  <thead>
+                    <tr>
+                      <th>S.No.</th>
+                      <th>Source</th>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {earningsData.map((item, index) => (
+                      <tr key={item.transaction_id}>
+                        <td>{(pagination.current_page - 1) * 10 + index + 1}</td>
+                        <td>{item.source}</td>
+                        <td>{new Date(item.date).toLocaleDateString()}</td>
+                        <td>₹{(parseFloat(item.amount) || 0).toFixed(2)}</td>
+                        <td>
+                          <span className={`status-badge status-${item.status}`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               
               <div className="table-footer">
                 <span>
@@ -354,42 +356,44 @@ const EarningsPage = () => {
               </div>
             ) : (
               <>
-                <table className="earnings-table">
-                  <thead>
-                    <tr>
-                      <th>S.No.</th>
-                      <th>Amount</th>
-                      <th>Request Date</th>
-                      <th>Status</th>
-                      <th>Payment Method</th>
-                      <th>Transaction ID</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {withdrawalsData.length === 0 ? (
+                <div className="table-responsive">
+                  <table className="earnings-table">
+                    <thead>
                       <tr>
-                        <td colSpan="6" className="no-data">
-                          No withdrawal requests found
-                        </td>
+                        <th>S.No.</th>
+                        <th>Amount</th>
+                        <th>Request Date</th>
+                        <th>Status</th>
+                        <th>Payment Method</th>
+                        <th>Transaction ID</th>
                       </tr>
-                    ) : (
-                      withdrawalsData.map((item, index) => (
-                        <tr key={item.id}>
-                          <td>{index + 1}</td>
-                          <td>₹{(parseFloat(item.amount) || 0).toFixed(2)}</td>
-                          <td>{new Date(item.request_date).toLocaleDateString()}</td>
-                          <td>
-                            <span className={`status-badge status-${item.status}`}>
-                              {item.status}
-                            </span>
+                    </thead>
+                    <tbody>
+                      {withdrawalsData.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="no-data">
+                            No withdrawal requests found
                           </td>
-                          <td>{item.payment_method}</td>
-                          <td>{item.transaction_id}</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        withdrawalsData.map((item, index) => (
+                          <tr key={item.id}>
+                            <td>{index + 1}</td>
+                            <td>₹{(parseFloat(item.amount) || 0).toFixed(2)}</td>
+                            <td>{new Date(item.request_date).toLocaleDateString()}</td>
+                            <td>
+                              <span className={`status-badge status-${item.status}`}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td>{item.payment_method}</td>
+                            <td>{item.transaction_id}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </>
             )}
           </div>

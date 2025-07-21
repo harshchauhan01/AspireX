@@ -171,28 +171,37 @@ function Home() {
     }
   ];
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('mobile-menu-open');
+    } else {
+      document.body.classList.remove('mobile-menu-open');
+    }
+    return () => document.body.classList.remove('mobile-menu-open');
+  }, [isOpen]);
+
   return (
     <>
       {/* Navigation */}
-      <nav className="navbar">
-        <div className="nav-logo">AspireX</div>
-        
-        <ul className={`nav-links ${isOpen ? "mobile-open" : ""}`}>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#mentors">Mentors</a></li>
-          <li><a href="#testimonials">Testimonials</a></li>
-          <li><a href="#contact">Contact</a></li>
+      <nav className={`navbar${isOpen ? ' mobile-open' : ''}`} aria-label="Main Navigation">
+        <div className="nav-logo" tabIndex={0} onClick={() => navigate("/")}>AspireX</div>
+        <ul className={`nav-links${isOpen ? " mobile-open" : ""}`} role="menu">
+          <li><a href="#home" role="menuitem" onClick={() => setIsOpen(false)}>Home</a></li>
+          <li><a href="#about" role="menuitem" onClick={() => setIsOpen(false)}>About</a></li>
+          <li><a href="#mentors" role="menuitem" onClick={() => setIsOpen(false)}>Mentors</a></li>
+          <li><a href="#testimonials" role="menuitem" onClick={() => setIsOpen(false)}>Testimonials</a></li>
+          <li><a href="#contact" role="menuitem" onClick={() => setIsOpen(false)}>Contact</a></li>
         </ul>
-        
         <div className="nav-buttons">
-          <button className="btn-login" onClick={() => navigate("/student/login")}>Login</button>
-          <button className="btn-signup" onClick={() => navigate("/student/signup")}>Sign Up</button>
+          <button className="btn-login" onClick={() => { setIsOpen(false); navigate("/student/login"); }}>Login</button>
+          <button className="btn-signup" onClick={() => { setIsOpen(false); navigate("/student/signup"); }}>Sign Up</button>
         </div>
-        
-        <div className="hamburger" onClick={toggleNav}>
+        {/* Hamburger always last, outside flex containers */}
+        <div className="hamburger" aria-label="Open navigation menu" aria-expanded={isOpen} aria-controls="nav-links" tabIndex={0} onClick={toggleNav}>
           {isOpen ? <IoMdClose /> : <GiHamburgerMenu />}
         </div>
+        {/* Overlay for mobile menu */}
+        {isOpen && <div className="nav-overlay" onClick={() => setIsOpen(false)} aria-hidden="true"></div>}
       </nav>
 
       {/* Hero Section */}

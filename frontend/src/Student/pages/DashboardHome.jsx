@@ -481,15 +481,6 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 
   return (
     <>
-      <header>
-        <div className="header-left-container">
-          <div className="header-left">
-            <h1>Welcome Back <span>{mentor?.name}</span></h1>
-            <p className="welcome-message">Manage all the things from single Dashboard. See latest info sessions, recent conversations and update your recommendations.</p>
-          </div>
-        </div>
-      </header>
-
       {/* Upcoming Sessions */}
       <section className="upcoming-sessions">
         <h2>Upcoming Sessions</h2>

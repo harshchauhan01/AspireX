@@ -20,7 +20,8 @@ const StuDashboard = () => {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 992);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const [mentor, setMentor] = useState(null);
   const [error, setError] = useState('');
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
@@ -47,6 +48,19 @@ const StuDashboard = () => {
     };
 
     fetchMentorProfile();
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 992);
+      if (window.innerWidth >= 992) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Set active tab based on URL
@@ -159,17 +173,32 @@ const StuDashboard = () => {
   };
 
   return (
-    <div className={`mentor-dashboard ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
-      <Sidebar 
+    <div className="mentor-dashboard">
+      {/* Sidebar */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        mentorProfile={mentorProfile}
+        mentorProfile={mentor || {}}
         mentor={mentor}
+        isMobile={isMobile}
       />
-      
+      {/* Main Content */}
       <div className="main-content">
+        {/* Header */}
+        <header>
+          <div className="header-left">
+            {/* Hamburger for mobile */}
+            {isMobile && (
+              <button className="toggle-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)} style={{marginRight: 12}}>
+                {sidebarOpen ? '\u25c0' : '\u2630'}
+              </button>
+            )}
+            <h1>Welcome, <span>{mentor?.name || 'Student'}!</span></h1>
+            <div className="welcome-message">Manage all the things from single dashboard. See latest info sessions, recent conversation and update your recommendations.</div>
+          </div>
+        </header>
         {renderPage()}
       </div>
       <Modal isOpen={showAttendanceModal} onClose={() => setShowAttendanceModal(false)} title="Mark Attendance">
