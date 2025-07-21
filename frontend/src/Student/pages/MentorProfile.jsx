@@ -38,7 +38,7 @@ const MentorProfile = ({ mentorId, onBack }) => {
             skills: foundMentor.details.skills?.map(s => s.name) || [],
             price: foundMentor.details.fees || 0,
             rating: foundMentor.details.average_rating || 0,
-            reviews: 0, // ← No review count in API; update if needed
+            reviews: foundMentor.feedback_count || 0,
             experience: `${foundMentor.details.years_of_experience || 0} years`,
             qualification: foundMentor.details.qualification || 'N/A',
             availability: foundMentor.details.availability_timings || 'N/A',

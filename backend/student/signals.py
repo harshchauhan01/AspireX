@@ -80,8 +80,10 @@ P.S. Don't forget to check your dashboard regularly for new opportunities and me
 
 @receiver(post_save, sender=Booking)
 def handle_booking_payment(sender, instance, created, **kwargs):
+    print(f"[SIGNAL] Booking post_save triggered: id={instance.id}, created={created}, is_paid={instance.is_paid}")
     # Notify student if booking is created but not yet paid
     if created and not instance.is_paid:
+        print(f"[SIGNAL] Booking created and not paid: id={instance.id}")
         # Get admin user as sender
         admin_user = Student.objects.filter(is_superuser=True).first()
         # Compose message
@@ -99,77 +101,82 @@ def handle_booking_payment(sender, instance, created, **kwargs):
         )
     # Only act if the booking is marked as paid
     if instance.is_paid:
-        # Ensure we don't create duplicate meetings/messages
-        if not Meeting.objects.filter(student=instance.student, mentor=instance.mentor, title=instance.subject).exists():
-
-            # Parse the time_slot as IST and convert to UTC
-            from django.utils import timezone
-            import datetime
-            import pytz
-            IST = pytz.timezone('Asia/Kolkata')
-            scheduled_time = None
-            try:
-                # Try ISO format first
-                scheduled_time = datetime.datetime.fromisoformat(instance.time_slot)
-                if scheduled_time.tzinfo is None:
-                    scheduled_time = IST.localize(scheduled_time)
-                scheduled_time = scheduled_time.astimezone(pytz.UTC)
-            except Exception:
+        print(f"[SIGNAL] Booking is paid: id={instance.id}")
+        try:
+            # Ensure we don't create duplicate meetings/messages
+            if not Meeting.objects.filter(student=instance.student, mentor=instance.mentor, title=instance.subject).exists():
+                print(f"[SIGNAL] No existing meeting found, creating new meeting for booking id={instance.id}")
+                # Parse the time_slot as IST and convert to UTC
+                from django.utils import timezone
+                import datetime
+                import pytz
+                IST = pytz.timezone('Asia/Kolkata')
+                scheduled_time = None
                 try:
-                    # Try common string format
-                    scheduled_time = datetime.datetime.strptime(instance.time_slot, "%Y-%m-%d %H:%M")
+                    # Try ISO format first
+                    scheduled_time = datetime.datetime.fromisoformat(instance.time_slot)
                     if scheduled_time.tzinfo is None:
                         scheduled_time = IST.localize(scheduled_time)
                     scheduled_time = scheduled_time.astimezone(pytz.UTC)
                 except Exception:
-                    # Fallback to now + 1 day (in UTC)
-                    scheduled_time = timezone.now() + datetime.timedelta(days=1)
-
-            # Create meeting
-            meeting = Meeting.objects.create(
-                mentor=instance.mentor,
-                student=instance.student,
-                title=instance.subject,
-                description=f"Meeting for subject: {instance.subject}",
-                scheduled_time=scheduled_time,
-                duration=60
-                # Do not set meeting_link here so the model auto-generates it
-            )
-
-            # Create message for mentor
-            msg = MentorMessage.objects.create(
-                mentor=instance.mentor,
-                subject="New Booking Confirmed",
-                message=(
-                    f"You have a new booking with {instance.student.name}.\n\n"
-                    f"Subject: {instance.subject}\n"
-                    f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
-                    f"Meeting ID: {meeting.meeting_id}\n"
-                    f"Meeting Link: {meeting.meeting_link}\n"
-                    f"Your attendance key: {meeting.mentor_attendance_key}\n"
-                    f"You will need to provide this key to your student after the meeting to mark attendance.\n\n"
-                    f"Please join the meeting a few minutes before the scheduled time. "
-                    f"For the best experience, set up a free account at https://meet.jit.si/ if you want moderator controls or to avoid any joining issues.\n\n"
-                    f"Warning: If you want to reschedule the meeting, you must do it at least 2 hours before the start of the meeting."
-                ),
-                admin_sender=None  # You can also use instance.student.user if sender needs to be student's User
-            )
-
-            # Create message for student
-            student_msg = StudentMessage.objects.create(
-                student=instance.student,
-                subject="Booking Confirmed with Mentor",
-                message=(
-                    f"Your booking with {instance.mentor.name} is confirmed.\n\n"
-                    f"Subject: {instance.subject}\n"
-                    f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
-                    f"Meeting ID: {meeting.meeting_id}\n"
-                    f"Meeting Link: {meeting.meeting_link}\n"
-                    f"Your attendance key: {meeting.student_attendance_key}\n"
-                    f"You will need to provide this key to your mentor after the meeting to mark attendance."
-                ),
-                sender=None  # You can also use instance.mentor.user if sender needs to be mentor's User
-            )
+                    try:
+                        # Try common string format
+                        scheduled_time = datetime.datetime.strptime(instance.time_slot, "%Y-%m-%d %H:%M")
+                        if scheduled_time.tzinfo is None:
+                            scheduled_time = IST.localize(scheduled_time)
+                        scheduled_time = scheduled_time.astimezone(pytz.UTC)
+                    except Exception:
+                        # Fallback to now + 1 day (in UTC)
+                        scheduled_time = timezone.now() + datetime.timedelta(days=1)
+                # Create meeting
+                meeting = Meeting.objects.create(
+                    mentor=instance.mentor,
+                    student=instance.student,
+                    title=instance.subject,
+                    description=f"Meeting for subject: {instance.subject}",
+                    scheduled_time=scheduled_time,
+                    duration=60
+                    # Do not set meeting_link here so the model auto-generates it
+                )
+                print(f"[SIGNAL] Meeting created: id={meeting.id}, meeting_id={meeting.meeting_id}")
+                # Create message for mentor
+                msg = MentorMessage.objects.create(
+                    mentor=instance.mentor,
+                    subject="New Booking Confirmed",
+                    message=(
+                        f"You have a new booking with {instance.student.name}.\n\n"
+                        f"Subject: {instance.subject}\n"
+                        f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
+                        f"Meeting ID: {meeting.meeting_id}\n"
+                        f"Meeting Link: {meeting.meeting_link}\n"
+                        f"Your attendance key: {meeting.mentor_attendance_key}\n"
+                        f"You will need to provide this key to your student after the meeting to mark attendance.\n\n"
+                        f"Please join the meeting a few minutes before the scheduled time. "
+                        f"For the best experience, set up a free account at https://meet.jit.si/ if you want moderator controls or to avoid any joining issues.\n\n"
+                        f"Warning: If you want to reschedule the meeting, you must do it at least 2 hours before the start of the meeting."
+                    ),
+                    admin_sender=None  # You can also use instance.student.user if sender needs to be student's User
+                )
+                # Create message for student
+                student_msg = StudentMessage.objects.create(
+                    student=instance.student,
+                    subject="Booking Confirmed with Mentor",
+                    message=(
+                        f"Your booking with {instance.mentor.name} is confirmed.\n\n"
+                        f"Subject: {instance.subject}\n"
+                        f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
+                        f"Meeting ID: {meeting.meeting_id}\n"
+                        f"Meeting Link: {meeting.meeting_link}\n"
+                        f"Your attendance key: {meeting.student_attendance_key}\n"
+                        f"You will need to provide this key to your mentor after the meeting to mark attendance."
+                    ),
+                    sender=None  # You can also use instance.mentor.user if sender needs to be mentor's User
+                )
+                print(f"[SIGNAL] Mentor and student messages created for meeting id={meeting.id}")
+            else:
+                print(f"[SIGNAL] Meeting already exists for booking id={instance.id}")
+        except Exception as e:
+            print(f"[SIGNAL][ERROR] Exception in handle_booking_payment: {e}")
 
 
 

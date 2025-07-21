@@ -71,14 +71,27 @@ const SessionsPage = ({ sessions = [] }) => {
     }
     acc[category].push(session);
     return acc;
-  }, { scheduled: [], ongoing: [], pending: [], completed: [] });
+  }, { scheduled: [], ongoing: [], pending: [], completed: [], missed: [] });
 
   // Sort each category by date in descending order
   for (const category in categorizedSessions) {
     categorizedSessions[category].sort((a, b) => new Date(b.scheduled_time) - new Date(a.scheduled_time));
   }
-  
-  
+
+  // Combine scheduled, ongoing, and missed for the 'pending' tab
+  const pendingSessions = [
+    ...(categorizedSessions.scheduled || []),
+    ...(categorizedSessions.ongoing || []),
+    ...(categorizedSessions.missed || [])
+  ];
+
+  // Helper to determine which sessions to show based on activeTab
+  const getSessionsForTab = () => {
+    if (activeTab === 'pending') return pendingSessions;
+    if (activeTab === 'completed') return categorizedSessions.completed || [];
+    // Add more tabs if needed
+    return [];
+  };
 
   // Format session data for display
   const formatSession = (session) => {
@@ -86,12 +99,14 @@ const SessionsPage = ({ sessions = [] }) => {
     const date = dateObj.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: 'UTC'
     });
     const time = dateObj.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: 'UTC'
     });
 
     // Extract avatar initials - for students, show mentor info
@@ -163,6 +178,8 @@ const SessionsPage = ({ sessions = [] }) => {
   const renderSessionActions = (session, canJoin, studentAttended) => {
     switch (session.status) {
       case 'scheduled':
+      case 'pending':
+      case 'ongoing':
         return (
           <div className="session-actions">
             <button
@@ -172,26 +189,16 @@ const SessionsPage = ({ sessions = [] }) => {
             >
               {studentAttended ? '✓ Attended' : canJoin ? 'Join Session' : 'Join Disabled'}
             </button>
-            <button className="secondary-button small">Reschedule</button>
-          </div>
-        );
-      case 'ongoing':
-        return (
-          <div className="session-actions">
-            <button
-              className="primary-button small"
-              onClick={() => canJoin && handleJoinSession(session)}
-              disabled={!canJoin || studentAttended}
-            >
-              {studentAttended ? '✓ Attended' : canJoin ? 'Join Now' : 'Join Disabled'}
-            </button>
-            <button className="secondary-button small">Cancel</button>
+            {!studentAttended && (
+              <button className="secondary-button small" onClick={() => openAttendanceModal(session)}>
+                Mark Attendance
+              </button>
+            )}
           </div>
         );
       case 'missed':
         return (
           <div className="session-actions">
-            <button className="primary-button small">Reschedule</button>
             <button className="secondary-button small">Mark Completed</button>
           </div>
         );
@@ -206,14 +213,13 @@ const SessionsPage = ({ sessions = [] }) => {
                   className="secondary-button small"
                   onClick={() => {
                     // Show existing feedback details
-                    alert(`Your feedback: ${feedbackStatus[session.meeting_id].feedback.feedback_text}\nRating: ${feedbackStatus[session.meeting_id].feedback.rating}/5`);
                   }}
                 >
                   View Feedback
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 className="primary-button small"
                 onClick={() => {
                   setSelectedSession(session);
@@ -223,17 +229,16 @@ const SessionsPage = ({ sessions = [] }) => {
                 Give Feedback
               </button>
             )}
-            {!studentAttended && (
-              <button className="primary-button small" style={{ marginLeft: 8 }} onClick={() => window.openAttendanceModal && window.openAttendanceModal(session)}>
-                Mark Attendance
-              </button>
-            )}
-            <button className="secondary-button small">View Details</button>
           </div>
         );
       default:
         return null;
     }
+  };
+
+  // Placeholder for reschedule handler
+  const handleReschedule = (session) => {
+    alert(`Reschedule requested for meeting: ${session.title}`);
   };
 
   return (
@@ -298,7 +303,7 @@ const SessionsPage = ({ sessions = [] }) => {
           className={activeTab === 'pending' ? 'active' : ''}
           onClick={() => setActiveTab('pending')}
         >
-          Pending ({categorizedSessions.pending.length})
+          Pending ({pendingSessions.length})
         </button>
         <button
           className={activeTab === 'completed' ? 'active' : ''}
@@ -309,11 +314,11 @@ const SessionsPage = ({ sessions = [] }) => {
       </div>
 
       <div className="sessions-list">
-        {categorizedSessions[activeTab].length > 0 ? (
-          categorizedSessions[activeTab].map(renderSessionCard)
+        {getSessionsForTab().length > 0 ? (
+          getSessionsForTab().map(renderSessionCard)
         ) : (
           <div className="no-sessions">
-            <p>No {activeTab} sessions found</p>
+            No sessions found.
           </div>
         )}
       </div>
