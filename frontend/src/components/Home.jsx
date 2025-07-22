@@ -15,9 +15,20 @@ function Home() {
     sessions: 0,
     mentors: 0
   });
-  const toggleNav = () => {
-    setIsOpen(!isOpen);
-  };
+  // const toggleNav = () => {
+  //   setIsOpen(!isOpen);
+  // };
+const toggleNav = () => {
+  setIsOpen(!isOpen);
+  // Prevent background scrolling
+  if (!isOpen) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = 'auto';
+  }
+};
+
+
   const navigate = useNavigate();
 
 
@@ -174,26 +185,65 @@ function Home() {
   return (
     <>
       {/* Navigation */}
-      <nav className="navbar">
-        <div className="nav-logo">AspireX</div>
-        
-        <ul className={`nav-links ${isOpen ? "mobile-open" : ""}`}>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#mentors">Mentors</a></li>
-          <li><a href="#testimonials">Testimonials</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-        
-        <div className="nav-buttons">
-          <button className="btn-login" onClick={() => navigate("/student/login")}>Login</button>
-          <button className="btn-signup" onClick={() => navigate("/student/signup")}>Sign Up</button>
-        </div>
-        
-        <div className="hamburger" onClick={toggleNav}>
-          {isOpen ? <IoMdClose /> : <GiHamburgerMenu />}
-        </div>
-      </nav>
+      {/* new nav done for fixing the responsive issue */}
+<nav className="navbar">
+  <div className="nav-logo">AspireX</div>
+  
+  {/* Desktop Navigation */}
+  <ul className="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#mentors">Mentors</a></li>
+    <li><a href="#testimonials">Testimonials</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  
+  <div className="nav-buttons">
+    <button className="btn-login" onClick={() => navigate("/student/login")}>Login</button>
+    <button className="btn-signup" onClick={() => navigate("/student/signup")}>Sign Up</button>
+  </div>
+  
+  <div className="hamburger" onClick={toggleNav}>
+    {isOpen ? <IoMdClose /> : <GiHamburgerMenu />}
+  </div>
+</nav>
+
+{/* Premium Mobile Menu Overlay */}
+<div className={`mobile-menu-overlay ${isOpen ? "active" : ""}`}>
+  <div className="mobile-menu-brand">
+    <h3>AspireX</h3>
+  </div>
+  
+  <div className="mobile-menu-links">
+    <a href="#home" onClick={toggleNav}>Home</a>
+    <a href="#about" onClick={toggleNav}>About</a>
+    <a href="#mentors" onClick={toggleNav}>Mentors</a>
+    <a href="#testimonials" onClick={toggleNav}>Testimonials</a>
+    <a href="#contact" onClick={toggleNav}>Contact</a>
+  </div>
+  
+  <div className="mobile-menu-buttons">
+    <button 
+      className="mobile-btn-login" 
+      onClick={() => {
+        toggleNav();
+        navigate("/student/login");
+      }}
+    >
+      Login
+    </button>
+    <button 
+      className="mobile-btn-signup"
+      onClick={() => {
+        toggleNav();
+        navigate("/student/signup");
+      }}
+    >
+      Sign Up
+    </button>
+  </div>
+</div>
+
 
       {/* Hero Section */}
       <section className="hero" id="home">
