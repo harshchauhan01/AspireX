@@ -41,16 +41,16 @@ const ContactPage = () => {
         ...form,
         phone: `${form.countryCode}${form.phone}`
       };
-      const response = await API.post('chat/contact/', {
-        data: {
+      const response = await API.post(
+        'chat/contact/',
+        {
           name: payload.name,
           email: payload.email,
           phone: payload.phone,
           query: payload.query
         },
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (response.status !== 200) throw new Error('Failed to send message.');
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       setSuccess('Your message has been sent!');
       setForm(initialForm);
     } catch (err) {

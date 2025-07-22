@@ -164,7 +164,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   };
 
   const getMeetingTime = (meeting) => {
-    // Always use scheduled_time if available, fallback to date+time
+    if (!meeting) return new Date();
     if (meeting.scheduled_time) return new Date(meeting.scheduled_time);
     if (meeting.date && meeting.time) {
       // Remove any extra text after the time (e.g., ' (60 mins)')
@@ -191,13 +191,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         const date = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
-          day: 'numeric'
+          day: 'numeric',
+          timeZone: 'UTC'
         });
         const time = dateObj.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: true,
-          timeZoneName: 'short'
+          timeZone: 'UTC'
         });
         const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ')
           ? meeting.student.split(' - ')[1]
@@ -235,13 +236,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         const date = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
-          day: 'numeric'
+          day: 'numeric',
+          timeZone: 'UTC'
         });
         const time = dateObj.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: true,
-          timeZoneName: 'short'
+          timeZone: 'UTC'
         });
         const mentorName = meeting.mentor_name || 'Unknown Mentor';
         return {
@@ -277,13 +279,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         const date = dateObj.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'short',
-          day: 'numeric'
+          day: 'numeric',
+          timeZone: 'UTC'
         });
         const time = dateObj.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: true,
-          timeZoneName: 'short'
+          timeZone: 'UTC'
         });
         const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ')
           ? meeting.student.split(' - ')[1]

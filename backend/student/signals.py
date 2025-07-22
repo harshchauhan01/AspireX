@@ -5,6 +5,7 @@ from student.models import Booking, Student, StudentDetail, StudentMessage
 from mentor.models import Meeting, MentorMessage
 from datetime import timedelta
 from student.models import StudentMessage
+import traceback
 
 @receiver(post_save, sender=Student)
 def create_student_detail(sender, instance, created, **kwargs):
@@ -103,31 +104,31 @@ def handle_booking_payment(sender, instance, created, **kwargs):
     if instance.is_paid:
         print(f"[SIGNAL] Booking is paid: id={instance.id}")
         try:
-            # Ensure we don't create duplicate meetings/messages
-            if not Meeting.objects.filter(student=instance.student, mentor=instance.mentor, title=instance.subject).exists():
-                print(f"[SIGNAL] No existing meeting found, creating new meeting for booking id={instance.id}")
-                # Parse the time_slot as IST and convert to UTC
-                from django.utils import timezone
-                import datetime
-                import pytz
-                IST = pytz.timezone('Asia/Kolkata')
-                scheduled_time = None
+            # Parse the time_slot as IST and convert to UTC
+            from django.utils import timezone
+            import datetime
+            import pytz
+            IST = pytz.timezone('Asia/Kolkata')
+            scheduled_time = None
+            try:
+                # Try ISO format first
+                scheduled_time = datetime.datetime.fromisoformat(instance.time_slot)
+                if scheduled_time.tzinfo is None:
+                    scheduled_time = IST.localize(scheduled_time)
+                scheduled_time = scheduled_time.astimezone(pytz.UTC)
+            except Exception:
                 try:
-                    # Try ISO format first
-                    scheduled_time = datetime.datetime.fromisoformat(instance.time_slot)
+                    # Try common string format
+                    scheduled_time = datetime.datetime.strptime(instance.time_slot, "%Y-%m-%d %H:%M")
                     if scheduled_time.tzinfo is None:
                         scheduled_time = IST.localize(scheduled_time)
                     scheduled_time = scheduled_time.astimezone(pytz.UTC)
                 except Exception:
-                    try:
-                        # Try common string format
-                        scheduled_time = datetime.datetime.strptime(instance.time_slot, "%Y-%m-%d %H:%M")
-                        if scheduled_time.tzinfo is None:
-                            scheduled_time = IST.localize(scheduled_time)
-                        scheduled_time = scheduled_time.astimezone(pytz.UTC)
-                    except Exception:
-                        # Fallback to now + 1 day (in UTC)
-                        scheduled_time = timezone.now() + datetime.timedelta(days=1)
+                    # Fallback to now + 1 day (in UTC)
+                    scheduled_time = timezone.now() + datetime.timedelta(days=1)
+            # Ensure we don't create duplicate meetings/messages
+            if not Meeting.objects.filter(student=instance.student, mentor=instance.mentor, scheduled_time=scheduled_time).exists():
+                print(f"[SIGNAL] No existing meeting found, creating new meeting for booking id={instance.id}")
                 # Create meeting
                 meeting = Meeting.objects.create(
                     mentor=instance.mentor,
@@ -177,6 +178,7 @@ def handle_booking_payment(sender, instance, created, **kwargs):
                 print(f"[SIGNAL] Meeting already exists for booking id={instance.id}")
         except Exception as e:
             print(f"[SIGNAL][ERROR] Exception in handle_booking_payment: {e}")
+            traceback.print_exc()  # Print the full traceback for debugging
 
 
 
