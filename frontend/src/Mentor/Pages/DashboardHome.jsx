@@ -129,11 +129,17 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
       .filter(meeting => meeting.status === 'scheduled' || meeting.status === 'ongoing')
       .map(meeting => {
         const dateObj = new Date(meeting.scheduled_time);
-        const date = dateObj.toISOString().split('T')[0];
+        const date = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'UTC'
+        });
         const time = dateObj.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: true
+          hour12: true,
+          timeZone: 'UTC'
         });
         
         const studentName = meeting.student.includes(' - ') 

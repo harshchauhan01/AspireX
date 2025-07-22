@@ -1,3 +1,7 @@
+body, html {
+  overflow-x: hidden;
+}
+
 .feedback-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -344,5 +348,69 @@
   
   .bar-container {
     width: 100%;
+  }
+} 
+
+@media (max-width: 600px) {
+  .feedback-cards {
+    display: block;
+    gap: 12px;
+  }
+  .feedback-card,
+  .feedback-header,
+  .student-info,
+  .feedback-meta,
+  .meeting-info,
+  .feedback-content,
+  .feedback-status {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+  }
+  .feedback-card {
+    padding: 10px;
+    margin-bottom: 10px;
+    min-width: 0;
+    max-width: 100vw;
+    font-size: 0.97rem;
+  }
+  .feedback-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .meeting-info, .feedback-content {
+    padding: 6px 0;
+    font-size: 0.95rem;
+  }
+  .feedback-status {
+    justify-content: flex-start;
+  }
+  .stat-card {
+    padding: 10px;
+    font-size: 0.97rem;
+  }
+  .feedback-modal {
+    max-width: 98vw;
+    padding: 8px;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 10px !important;
+    font-size: 1rem !important;
+    min-width: 0;
+    max-width: 100vw;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .stat-number {
+    font-size: 1.5rem !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 } 
