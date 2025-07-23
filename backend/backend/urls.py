@@ -30,10 +30,14 @@ from django.conf import settings
 def aspirex_world(request):
     return HttpResponse('AspireX World')
 
+def test_cors(request):
+    return HttpResponse('CORS OK')
+
 urlpatterns = [
     path('', aspirex_world, name='aspirex-world'),
     path('admin/', admin.site.urls),
     path('api/student/', include('student.urls')),
     path('api/mentor/', include('mentor.urls')),
     path('api/chat/', include('chat.urls')),
+    path('api/test-cors/', test_cors, name='test-cors'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -332,7 +332,6 @@ const SessionsPage = ({ sessions = [] }) => {
         }}
         session={selectedSession}
         onSubmitSuccess={(feedbackData) => {
-          // console.log('Feedback submitted successfully:', feedbackData);
           // Refresh feedback status
           setFeedbackStatus(prev => ({
             ...prev,

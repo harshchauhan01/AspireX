@@ -4,6 +4,9 @@ from .models import Meeting, Mentor, MentorDetail, MentorMessage
 from student.models import Student
 from mentor.models import Earning, MentorMessage, Meeting
 from student.models import Booking
+from utils import send_credentials_email, send_mentor_approved_email
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
 
 @receiver(pre_save, sender=Meeting)
 def update_meeting_status(sender, instance, **kwargs):
@@ -108,6 +111,33 @@ def handle_meeting_completed(sender, instance, created, **kwargs):
                 message=f"You received a payment of ₹{amount} from {instance.student.name} for meeting '{instance.title}'.",
                 is_read=False
             )
+
+@receiver(pre_save, sender=MentorDetail)
+def cache_old_is_approved(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            old_instance = MentorDetail.objects.get(pk=instance.pk)
+            instance._old_is_approved = old_instance.is_approved
+        except MentorDetail.DoesNotExist:
+            instance._old_is_approved = None
+    else:
+        instance._old_is_approved = None
+
+@receiver(post_save, sender=MentorDetail)
+def notify_mentor_approved(sender, instance, created, **kwargs):
+    print("[DEBUG] MentorDetail post_save signal fired. created=", created, "is_approved=", instance.is_approved)
+    old_is_approved = getattr(instance, '_old_is_approved', None)
+    if not created and old_is_approved is not None:
+        if not old_is_approved and instance.is_approved:
+            print(f"[DEBUG] Mentor {instance.mentor} just got approved! Sending notification and email...")
+            MentorMessage.objects.create(
+                mentor=instance.mentor,
+                subject="🎉 Your Profile is Now Public!",
+                message=f"Dear {instance.mentor.name},\n\nCongratulations! Your mentor profile has been approved and is now public on AspireX. You are ready to go and can start receiving student bookings.\n\nBest of luck!\n\nThe AspireX Team",
+                is_read=False
+            )
+            print(f"[DEBUG] Calling send_mentor_approved_email for {instance.email}")
+            send_mentor_approved_email(instance)
 
 
 

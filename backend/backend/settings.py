@@ -175,7 +175,7 @@ SECRET_KEY = 'django-insecure-sa9co(d(sd!fjr^1=v62p-5-e4o&00af((dbjbz6mbrc98xz=g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -232,8 +232,8 @@ AUTH_USER_MODEL = 'student.Student'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default port
 ]
-
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True  # TEMPORARY for debugging, remove in production
 
 AUTHENTICATION_BACKENDS = [
     'backend.backends.MultiUserBackend',  # Custom backend for both

@@ -49,8 +49,6 @@ const ProfilePage = ({ mentorProfile }) => {
     }
   }, [mentorProfile]);
   
-  // console.log(photoPreview);
-  
 
 
 
@@ -103,14 +101,12 @@ const ProfilePage = ({ mentorProfile }) => {
         }
       );
 
-      // console.log("Profile updated successfully:", response.data);
       setSaveSuccess(true);
       setEditMode(false);
       
       // Hide success message after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      console.error("Error updating profile:", error);
       setSaveError(error.response?.data?.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
@@ -131,7 +127,6 @@ const ProfilePage = ({ mentorProfile }) => {
       setProfileData(prev => ({ ...prev, cv: null }));
       setCvFile(null);
     } catch (error) {
-      console.error("Error removing CV:", error);
       setSaveError(error.response?.data?.message || "Failed to remove CV");
     }
   };
@@ -151,7 +146,6 @@ const ProfilePage = ({ mentorProfile }) => {
     try {
       // In a real app, you would upload the file to your server here
       // This is a mock implementation
-      // console.log("Uploading CV:", cvFile.name);
       const formData = new FormData();
       formData.append('cv', cvFile);
 
@@ -180,9 +174,7 @@ const ProfilePage = ({ mentorProfile }) => {
         fileInputRef.current.value = null;  // Reset file input so same file can be reselected
       }
       
-      // console.log("CV uploaded successfully");
     } catch (error) {
-      console.error("CV upload failed:", error);
       setSaveError(error.response?.data?.message || "Failed to upload CV");
     } finally {
       setCvUploading(false);
@@ -267,7 +259,6 @@ const ProfilePage = ({ mentorProfile }) => {
         photoInputRef.current.value = null;
       }
     } catch (error) {
-      console.error("Photo upload failed:", error);
       setSaveError(error.response?.data?.message || "Failed to upload photo");
     } finally {
       setPhotoUploading(false);
@@ -289,7 +280,6 @@ const ProfilePage = ({ mentorProfile }) => {
 
       setPhotoPreview(null);
     } catch (error) {
-      console.error("Error removing photo:", error);
       setSaveError(error.response?.data?.message || "Failed to remove photo");
     }
   };
