@@ -267,3 +267,78 @@ def send_credentials_email(email, username, password, name=None):
     
     # Send the email
     email.send() 
+
+def send_mentor_approved_email(mentor_detail):
+    subject = "Your AspireX Mentor Profile is Now Public! 🎉"
+    name = mentor_detail.first_name or mentor_detail.mentor.name or "Mentor"
+    email_address = mentor_detail.email
+
+    # Try to read and encode the logo
+    logo_base64 = ""
+    try:
+        logo_path = os.path.join(settings.MEDIA_ROOT, 'logo.png')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as logo_file:
+                logo_data = logo_file.read()
+                logo_base64 = base64.b64encode(logo_data).decode('utf-8')
+    except Exception as e:
+        print(f"Error reading logo: {e}")
+        logo_base64 = ""
+
+    email_html = f"""
+    <!DOCTYPE html>
+    <html lang=\"en\">
+    <head>
+        <meta charset=\"UTF-8\">
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+        <title>Mentor Profile Approved</title>
+        <style>
+            body {{ background-color: #000; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+            .email-container {{ max-width: 600px; margin: 0 auto; background: #000; padding: 20px; }}
+            .header {{ text-align: center; padding: 30px 0; border-bottom: 2px solid #333; margin-bottom: 30px; }}
+            .logo {{ max-width: 200px; height: auto; margin-bottom: 20px; }}
+            .title {{ font-size: 28px; font-weight: 700; color: #00ff00; margin-bottom: 15px; }}
+            .message {{ font-size: 16px; color: #cccccc; margin-bottom: 20px; line-height: 1.8; }}
+            .footer {{ text-align: center; padding: 20px 0; color: #666; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class=\"email-container\">
+            <div class=\"header\">
+                {f'<img src="data:image/png;base64,{logo_base64}" alt="AspireX Logo" class="logo">' if logo_base64 else '<div class="logo" style="font-size: 32px; font-weight: bold; color: #00ff00;">🚀 AspireX</div>'}
+            </div>
+            <div class=\"title\">Your Profile is Now Public!</div>
+            <div class=\"message\">
+                Dear {name},<br><br>
+                Congratulations! Your mentor profile has been <b>approved</b> and is now <b>public</b> on AspireX.<br>
+                You are ready to go and can start receiving student bookings.<br><br>
+                <b>Best of luck!</b><br>
+                The AspireX Team
+            </div>
+            <div class=\"footer\">
+                © 2025 AspireX. All rights reserved.<br>
+                Empowering minds, connecting futures.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    text_content = f"""
+    Dear {name},
+
+    Congratulations! Your mentor profile has been approved and is now public on AspireX.
+    You are ready to go and can start receiving student bookings.
+
+    Best of luck!
+    The AspireX Team
+    """
+
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=strip_tags(text_content),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[email_address]
+    )
+    email.attach_alternative(email_html, "text/html")
+    email.send() 

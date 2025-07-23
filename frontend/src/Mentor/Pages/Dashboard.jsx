@@ -106,7 +106,6 @@ const Dashboard = () => {
             Authorization: `Token ${token}`,
           }
         });
-        // console.log(response.data);
         
         setMentor(response.data);
       } catch (err) {

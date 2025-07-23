@@ -65,8 +65,6 @@ const SessionsPage = ({ sessions = [] }) => {
   // Format session data for display
   const formatSession = (session) => {
     const dateObj = getMeetingTime(session);
-    // Debug logging
-    // console.log('Session:', session.meeting_id, 'Raw scheduled_time:', session.scheduled_time, 'Parsed dateObj:', dateObj, 'Local:', dateObj.toString());
     const date = dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
