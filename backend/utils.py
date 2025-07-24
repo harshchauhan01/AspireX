@@ -342,3 +342,195 @@ def send_mentor_approved_email(mentor_detail):
     )
     email.attach_alternative(email_html, "text/html")
     email.send() 
+
+def send_styled_notification_email(email, subject, message, name=None, user_id=None):
+    # Try to read and encode the logo
+    logo_base64 = ""
+    try:
+        logo_path = os.path.join(settings.MEDIA_ROOT, 'logo.png')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as logo_file:
+                logo_data = logo_file.read()
+                logo_base64 = base64.b64encode(logo_data).decode('utf-8')
+    except Exception as e:
+        print(f"Error reading logo: {e}")
+        logo_base64 = ""
+
+    # HTML Email Template (same layout as credentials, but with custom content)
+    email_html = f"""
+    <!DOCTYPE html>
+    <html lang=\"en\">
+    <head>
+        <meta charset=\"UTF-8\">
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+        <title>{subject}</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #000000;
+                color: #ffffff;
+                line-height: 1.6;
+            }}
+            .email-container {{
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #000000;
+                padding: 20px;
+            }}
+            .header {{
+                text-align: center;
+                padding: 30px 0;
+                border-bottom: 2px solid #333333;
+                margin-bottom: 30px;
+            }}
+            .logo {{
+                max-width: 200px;
+                height: auto;
+                margin-bottom: 20px;
+            }}
+            .welcome-section {{
+                text-align: center;
+                margin-bottom: 40px;
+                padding: 0 20px;
+            }}
+            .welcome-title {{
+                font-size: 28px;
+                font-weight: 700;
+                color: #ffffff;
+                margin-bottom: 15px;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }}
+            .welcome-message {{
+                font-size: 16px;
+                color: #cccccc;
+                margin-bottom: 20px;
+                line-height: 1.8;
+            }}
+            .notification-section {{
+                background-color: #111111;
+                border: 1px solid #333333;
+                border-radius: 8px;
+                padding: 25px;
+                margin: 30px 0;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            }}
+            .notification-title {{
+                font-size: 18px;
+                font-weight: 600;
+                color: #ffffff;
+                margin-bottom: 20px;
+                text-align: center;
+            }}
+            .notification-content {{
+                color: #00ff00;
+                font-size: 15px;
+                background-color: #000000;
+                padding: 12px 16px;
+                border-radius: 4px;
+                border: 1px solid #00ff00;
+                margin-bottom: 10px;
+                white-space: pre-line;
+            }}
+            .divider {{
+                height: 1px;
+                background: linear-gradient(90deg, transparent, #333333, transparent);
+                margin: 30px 0;
+            }}
+            .footer {{
+                text-align: center;
+                padding: 20px 0;
+                color: #666666;
+                font-size: 12px;
+            }}
+            @media only screen and (max-width: 600px) {{
+                .email-container {{
+                    padding: 10px;
+                    margin: 0;
+                }}
+                .welcome-title {{
+                    font-size: 24px;
+                }}
+                .welcome-message {{
+                    font-size: 14px;
+                }}
+                .notification-section {{
+                    padding: 20px;
+                    margin: 20px 0;
+                }}
+                .notification-content {{
+                    width: 100%;
+                    text-align: center;
+                }}
+                .logo {{
+                    max-width: 150px;
+                }}
+            }}
+            @media only screen and (max-width: 480px) {{
+                .email-container {{
+                    padding: 5px;
+                }}
+                .welcome-title {{
+                    font-size: 20px;
+                }}
+                .notification-section {{
+                    padding: 15px;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <!-- Header with Logo -->
+            <div class="header">
+                {f'<img src="data:image/png;base64,{logo_base64}" alt="AspireX Logo" class="logo">' if logo_base64 else '<div class="logo" style="font-size: 32px; font-weight: bold; color: #00ff00;">🚀 AspireX</div>'}
+                <div class="divider"></div>
+            </div>
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">{subject}</h1>
+                <p class="welcome-message">
+                    Hi {name or user_id},<br>
+                    You have a new notification from AspireX Admin.
+                </p>
+            </div>
+            <!-- Notification Section -->
+            <div class="notification-section">
+                <h2 class="notification-title">🔔 Notification</h2>
+                <div class="notification-content">{message}</div>
+            </div>
+            <div class="divider"></div>
+            <!-- Footer -->
+            <div class="footer">
+                <p>© 2025 AspireX. All rights reserved.</p>
+                <p style="margin-top: 10px; color: #444444;">
+                    Empowering minds, connecting futures.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Plain text version
+    text_content = f"""
+    {subject}
+
+    Hi {name or user_id},
+
+    You have a new notification from AspireX Admin:
+    {message}
+
+    © 2025 AspireX. All rights reserved.
+    Empowering minds, connecting futures.
+    """
+
+    email_obj = EmailMultiAlternatives(
+        subject=subject,
+        body=strip_tags(text_content),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[email]
+    )
+    email_obj.attach_alternative(email_html, "text/html")
+    email_obj.send() 

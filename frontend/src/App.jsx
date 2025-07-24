@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { fetchSiteStatus } from './BackendConn/api';
 import './App.css';
 import Login from './Mentor/Authentication/Login';
 import Register from './Mentor/Authentication/Register';
@@ -14,6 +16,36 @@ import PrivateRoute from './components/PrivateRoute';
 
 
 function App() {
+  const [maintenance, setMaintenance] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    const checkStatus = async () => {
+      try {
+        const res = await fetchSiteStatus();
+        if (mounted) setMaintenance(!!res.maintenance_mode);
+      } catch {}
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
+
+  if (maintenance) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(255,255,255,0.98)',
+        zIndex: 99999,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <img src="/server-down.svg" alt="Server Down" style={{ maxWidth: 320, width: '90%', marginBottom: 32 }} />
+        <h1 style={{ fontSize: 48, color: '#5e72e4', marginBottom: 16 }}>🚧 Site Under Construction</h1>
+        <p style={{ fontSize: 20, color: '#333', marginBottom: 32 }}>We'll be back soon. Thank you for your patience!</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <Routes>

@@ -49,7 +49,7 @@ function Login() {
     <StyledPageWrapper>
       <StyledWrapper>
         <div className="container">
-          <StudentSwitch href="/student/login">Login as a Student</StudentSwitch>
+          <StudentSwitch href="">Login as a Mentor</StudentSwitch>
           <div className="heading">Sign In</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" onSubmit={handleSubmit}>

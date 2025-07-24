@@ -20,7 +20,8 @@ const StuDashboard = () => {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 992);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const [mentor, setMentor] = useState(null);
   const [error, setError] = useState('');
@@ -173,7 +174,7 @@ const StuDashboard = () => {
   };
 
   return (
-    <div className="mentor-dashboard">
+    <div className={`mentor-dashboard${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}> 
       {/* Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -183,6 +184,8 @@ const StuDashboard = () => {
         mentorProfile={mentor || {}}
         mentor={mentor}
         isMobile={isMobile}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
       />
       {/* Main Content */}
       <div className="main-content">
@@ -193,6 +196,12 @@ const StuDashboard = () => {
             {isMobile && (
               <button className="toggle-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)} style={{marginRight: 12}}>
                 {sidebarOpen ? '\u25c0' : '\u2630'}
+              </button>
+            )}
+            {/* Collapse button for desktop */}
+            {!isMobile && (
+              <button className="toggle-sidebar" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} style={{marginRight: 12}}>
+                {sidebarCollapsed ? '\u25b6' : '\u25c0'}
               </button>
             )}
             <h1>Welcome, <span>{mentor?.name || 'Student'}!</span></h1>

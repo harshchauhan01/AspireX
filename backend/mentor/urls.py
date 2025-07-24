@@ -28,4 +28,7 @@ urlpatterns = [
     path('feedback/stats/', MentorFeedbackStatsAPIView.as_view(), name='mentor-feedback-stats'),
     path('meeting/attendance/', record_meeting_attendance, name='record-meeting-attendance'),
     path('meeting/<str:meeting_id>/reschedule/', MentorMeetingRescheduleAPIView.as_view(), name='mentor-meeting-reschedule'),
+    path('create-order/', CreateOrderAPIView.as_view(), name='create-order'),
+    path('verify-payment/', VerifyPaymentAPIView.as_view(), name='verify-payment'),
+    path('razorpay-webhook/', RazorpayWebhookAPIView.as_view(), name='razorpay-webhook'),
 ]

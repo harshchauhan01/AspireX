@@ -62,7 +62,7 @@ function SLogin() {
       <div className="p-6 bg-white rounded shadow">
         <StyledWrapper>
           <div className="container">
-            <MentorSwitch href="/mentor/login">Login as a Mentor</MentorSwitch>
+            <MentorSwitch href="">Login as a Student</MentorSwitch>
             <div className="heading">Sign In</div>
             {error && <p className="text-red-500">{error}</p>}
             <form className="form" action onSubmit={handleSubmit}>
