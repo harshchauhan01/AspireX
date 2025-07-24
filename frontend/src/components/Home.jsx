@@ -6,15 +6,18 @@ import { GiHamburgerMenu } from "react-icons/gi";
 import { useNavigate } from "react-router-dom";
 import "./CSS/Home.css";
 import ContactPage from "./ContactPage";
-import logo from "../assets/logo.png";
+import logo from "../../public/logoBlack.png";
+import { fetchPlatformStats, fetchSiteStatus } from "../BackendConn/api";
+import { subscribeNewsletter } from "../BackendConn/api";
 
 function Home() {
   const [isOpen, setIsOpen] = useState(false);
   const [counts, setCounts] = useState({
-    students: 0,
-    sessions: 0,
-    mentors: 0
+    students: null,
+    sessions: null,
+    mentors: null
   });
+  const [loadingStats, setLoadingStats] = useState(true);
   // const toggleNav = () => {
   //   setIsOpen(!isOpen);
   // };
@@ -31,57 +34,39 @@ const toggleNav = () => {
 
   const navigate = useNavigate();
 
-
-  // Animated counting effect
+  // Fetch actual stats from backend
   useEffect(() => {
-    const targetCounts = {
-      students: 12500,
-      sessions: 8560,
-      mentors: 980
-    };
-    
-    const duration = 3000; // 3 seconds
-    const increment = 50; // ms
-    
-    const steps = duration / increment;
-    const increments = {
-      students: targetCounts.students / steps,
-      sessions: targetCounts.sessions / steps,
-      mentors: targetCounts.mentors / steps
-    };
-    
-    let current = { students: 0, sessions: 0, mentors: 0 };
-    
-    const counter = setInterval(() => {
-      current.students = Math.min(
-        current.students + increments.students,
-        targetCounts.students
-      );
-      current.sessions = Math.min(
-        current.sessions + increments.sessions,
-        targetCounts.sessions
-      );
-      current.mentors = Math.min(
-        current.mentors + increments.mentors,
-        targetCounts.mentors
-      );
-      
-      setCounts({
-        students: Math.floor(current.students),
-        sessions: Math.floor(current.sessions),
-        mentors: Math.floor(current.mentors)
+    let mounted = true;
+    fetchPlatformStats()
+      .then((data) => {
+        if (mounted) {
+          setCounts({
+            students: data.total_students,
+            sessions: data.total_sessions,
+            mentors: data.total_mentors,
+          });
+          setLoadingStats(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) setLoadingStats(false);
       });
-      
-      if (
-        current.students >= targetCounts.students &&
-        current.sessions >= targetCounts.sessions &&
-        current.mentors >= targetCounts.mentors
-      ) {
-        clearInterval(counter);
-      }
-    }, increment);
-    
-    return () => clearInterval(counter);
+    return () => { mounted = false; };
+  }, []);
+
+  // Maintenance mode (global, backend-controlled)
+  const [maintenance, setMaintenance] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    const checkStatus = async () => {
+      try {
+        const res = await fetchSiteStatus();
+        if (mounted) setMaintenance(!!res.maintenance_mode);
+      } catch {}
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000); // check every 30s
+    return () => { mounted = false; clearInterval(interval); };
   }, []);
 
   // Use more mentors and randomuser.me images
@@ -181,6 +166,11 @@ const toggleNav = () => {
       rating: 4
     }
   ];
+
+  // Newsletter state
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState("");
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
 
   return (
     <>
@@ -282,7 +272,9 @@ const toggleNav = () => {
             <div className="stat-icon">
               <FiUsers />
             </div>
-            <div className="stat-number">{counts.students}+</div>
+            <div className="stat-number">
+              {loadingStats ? '...' : (counts.students !== null ? counts.students : '--')}+
+            </div>
             <div className="stat-label">Students Enrolled</div>
           </div>
           
@@ -290,7 +282,9 @@ const toggleNav = () => {
             <div className="stat-icon">
               <FiClock />
             </div>
-            <div className="stat-number">{counts.sessions}+</div>
+            <div className="stat-number">
+              {loadingStats ? '...' : (counts.sessions !== null ? counts.sessions : '--')}+
+            </div>
             <div className="stat-label">Sessions Completed</div>
           </div>
           
@@ -298,7 +292,9 @@ const toggleNav = () => {
             <div className="stat-icon">
               <FiAward />
             </div>
-            <div className="stat-number">{counts.mentors}+</div>
+            <div className="stat-number">
+              {loadingStats ? '...' : (counts.mentors !== null ? counts.mentors : '--')}+
+            </div>
             <div className="stat-label">Expert Mentors</div>
           </div>
         </div>
@@ -308,7 +304,7 @@ const toggleNav = () => {
       <section className="about-section" id="about">
         <div className="about-container">
           <div className="about-image">
-            <img src="https://randomuser.me/api/portraits/women/19.jpg" alt="People discussing" />
+            <img src="/team-spirit.svg" alt="Team spirit illustration" />
           </div>
           <div className="about-content">
             <h2>About AspireX</h2>
@@ -413,9 +409,9 @@ const toggleNav = () => {
             <h2>Contact Our Team</h2>
             <p>Have questions, suggestions, or need help? Reach out and we'll respond promptly!</p>
             <ul className="home-contact-info">
-              <li><span role="img" aria-label="location">📍</span> 123 Mentor St, Knowledge City</li>
-              <li><span role="img" aria-label="phone">📞</span> +1 (234) 567-8900</li>
-              <li><span role="img" aria-label="email">✉️</span> hello@aspirex.com</li>
+              <li><span role="img" aria-label="location">📍</span> India</li>
+              {/* <li><span role="img" aria-label="phone">📞</span> +1 (234) 567-8900</li> */}
+              <li><span role="img" aria-label="email">✉️</span> contactaspirexdigital@gmail.com</li>
             </ul>
             <div className="home-contact-illustration">
               <img src={logo} alt="Contact Illustration" style={{maxWidth: '180px', marginTop: '4px'}} />
@@ -454,7 +450,7 @@ const toggleNav = () => {
             <div className="social-icons">
               <a href="#"><i className="fab fa-facebook"></i></a>
               <a href="#"><i className="fab fa-twitter"></i></a>
-              <a href="#"><i className="fab fa-linkedin"></i></a>
+              <a href="https://www.linkedin.com/company/aspirexdigital/"><i className="fab fa-linkedin"></i></a>
               <a href="#"><i className="fab fa-instagram"></i></a>
             </div>
           </div>
@@ -473,19 +469,51 @@ const toggleNav = () => {
           <div className="footer-contact" id="contact">
             <h4>Contact Us</h4>
             <ul>
-              <li><i className="fas fa-map-marker-alt"></i> 123 Mentor St, Knowledge City</li>
-              <li><i className="fas fa-phone"></i> +1 (234) 567-8900</li>
-              <li><i className="fas fa-envelope"></i> hello@aspirex.com</li>
+              <li><i className="fas fa-map-marker-alt"></i> India</li>
+              {/* <li><i className="fas fa-phone"></i> +1 (234) 567-8900</li> */}
+              <li><i className="fas fa-envelope"></i> contactaspirexdigital@gmail.com</li>
             </ul>
           </div>
           
           <div className="footer-newsletter">
             <h4>Subscribe to Newsletter</h4>
             <p>Get updates on new mentors and resources</p>
-            <form>
-              <input type="email" placeholder="Your email address" />
-              <button type="submit">Subscribe</button>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setNewsletterStatus("");
+                setNewsletterLoading(true);
+                try {
+                  const res = await subscribeNewsletter(newsletterEmail);
+                  if (res.success) {
+                    setNewsletterStatus(res.message || "Subscribed!");
+                    setNewsletterEmail("");
+                  } else {
+                    setNewsletterStatus(res.message || "Subscription failed.");
+                  }
+                } catch (err) {
+                  setNewsletterStatus("Subscription failed. Try again later.");
+                }
+                setNewsletterLoading(false);
+              }}
+            >
+              <input
+                type="email"
+                placeholder="Your email address"
+                value={newsletterEmail}
+                onChange={e => setNewsletterEmail(e.target.value)}
+                required
+                disabled={newsletterLoading}
+              />
+              <button type="submit" disabled={newsletterLoading || !newsletterEmail}>
+                {newsletterLoading ? "Subscribing..." : "Subscribe"}
+              </button>
             </form>
+            {newsletterStatus && (
+              <div style={{ marginTop: 8, color: newsletterStatus.includes('success') ? 'green' : 'crimson' }}>
+                {newsletterStatus}
+              </div>
+            )}
           </div>
         </div>
         

@@ -380,6 +380,7 @@ body {
   background: linear-gradient(120deg, #f5fafd 0%, #e3f2fd 100%);
   position: relative;
   overflow: hidden;
+  padding: 50px 0;
 }
 .about-section::before {
   content: '';

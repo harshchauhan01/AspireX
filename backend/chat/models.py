@@ -4,6 +4,10 @@ from student.models import Student
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from utils import send_styled_notification_email
 
 class Conversation(models.Model):
     mentor = models.ForeignKey(Mentor, on_delete=models.CASCADE)
@@ -66,3 +70,73 @@ class CustomerServiceReply(models.Model):
         if not self.message.is_resolved:
             self.message.is_resolved = True
             self.message.save(update_fields=["is_resolved"])
+
+class Notification(models.Model):
+    RECIPIENT_TYPE_CHOICES = [
+        ("student", "Student"),
+        ("mentor", "Mentor"),
+    ]
+    recipient_type = models.CharField(max_length=10, choices=RECIPIENT_TYPE_CHOICES)
+    recipient_formal_id = models.CharField(max_length=20)  # mentor_id or student_id
+    message = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+    is_email_sent = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"To {self.recipient_type} {self.recipient_formal_id}: {self.message[:30]}"
+
+@receiver(post_save, sender=Notification)
+def create_in_app_message(sender, instance, created, **kwargs):
+    if not created:
+        return
+    try:
+        if instance.recipient_type == "student":
+            from student.models import Student, StudentMessage
+            student = Student.objects.filter(student_id__iexact=instance.recipient_formal_id.strip()).first()
+            if student:
+                StudentMessage.objects.create(
+                    student=student,
+                    sender=None,
+                    subject="Admin Notification",
+                    message=instance.message
+                )
+                print(f"[Notification post_save] Created StudentMessage for {student}")
+                # Only send styled notification email (not credentials email)
+                send_styled_notification_email(
+                    email=student.email,
+                    subject="AspireX Admin Notification",
+                    message=instance.message,
+                    name=student.name,
+                    user_id=student.student_id
+                )
+        elif instance.recipient_type == "mentor":
+            from mentor.models import Mentor, MentorMessage
+            mentor = Mentor.objects.filter(mentor_id__iexact=instance.recipient_formal_id.strip()).first()
+            if mentor:
+                MentorMessage.objects.create(
+                    mentor=mentor,
+                    admin_sender=None,
+                    subject="Admin Notification",
+                    message=instance.message
+                )
+                print(f"[Notification post_save] Created MentorMessage for {mentor}")
+                # Only send styled notification email (not credentials email)
+                send_styled_notification_email(
+                    email=mentor.email,
+                    subject="AspireX Admin Notification",
+                    message=instance.message,
+                    name=mentor.name,
+                    user_id=mentor.mentor_id
+                )
+    except Exception as e:
+        import traceback
+        print(f"[Notification post_save] Error creating in-app message: {e}")
+        traceback.print_exc()
+
+class NewsletterSubscriber(models.Model):
+    email = models.EmailField(unique=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+
+class SiteStatus(models.Model):
+    maintenance_mode = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)

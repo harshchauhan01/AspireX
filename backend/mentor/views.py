@@ -34,6 +34,20 @@ from student.models import StudentMessage
 
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
+import razorpay
+from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import hmac
+import hashlib
+from .models import Earning
+from student.models import Booking
+from django.http import JsonResponse
+import json
 
 class MentorTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
@@ -697,6 +711,95 @@ def record_meeting_attendance(request):
             'mentor_attendance_time': meeting.mentor_attendance_time,
             'attended_roles': attended_roles
         })
+
+
+
+
+
+class CreateOrderAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        amount = request.data.get('amount')
+        booking_id = request.data.get('booking_id')
+        if not amount or float(amount) <= 0:
+            return Response({'error': 'Invalid amount'}, status=400)
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        order = client.order.create({
+            'amount': int(float(amount) * 100),  # paise
+            'currency': 'INR',
+            'payment_capture': 1
+        })
+        # Link order_id to Booking if booking_id is provided
+        if booking_id:
+            try:
+                booking = Booking.objects.get(id=booking_id, student=request.user)
+                booking.transaction_id = order['id']
+                booking.save()
+            except Booking.DoesNotExist:
+                return Response({'error': 'Invalid booking_id'}, status=400)
+        return Response({'order': order, 'key_id': settings.RAZORPAY_KEY_ID})
+
+class VerifyPaymentAPIView(APIView):
+    authentication_classes = [MentorTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        order_id = data.get('order_id')
+        payment_id = data.get('razorpay_payment_id')
+        signature = data.get('razorpay_signature')
+        booking_id = data.get('booking_id')
+        if not (order_id and payment_id and signature and booking_id):
+            return Response({'error': 'Missing data'}, status=400)
+        msg = f"{order_id}|{payment_id}"
+        generated_signature = hmac.new(
+            settings.RAZORPAY_KEY_SECRET.encode(),
+            msg.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        if generated_signature == signature:
+            # Mark Booking as paid, update transaction_id, and create Earning
+            try:
+                booking = Booking.objects.get(id=booking_id, student=request.user, transaction_id=order_id)
+                booking.is_paid = True
+                booking.transaction_id = order_id
+                booking.save()
+                # Create Earning for mentor if not already exists
+                from mentor.models import Earning
+                if not Earning.objects.filter(transaction_id=order_id).exists():
+                    Earning.objects.create(
+                        mentor=booking.mentor,
+                        amount=booking.mentor.details.fees if hasattr(booking.mentor, 'details') else 0,
+                        source=f"Session with {booking.student.name} (Booking {booking.id})",
+                        transaction_id=order_id,
+                        status='completed'
+                    )
+            except Booking.DoesNotExist:
+                return Response({'error': 'Invalid booking or order'}, status=400)
+            return Response({'status': 'Payment verified'})
+        else:
+            return Response({'status': 'Payment verification failed'}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class RazorpayWebhookAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        # Validate Razorpay webhook signature
+        webhook_secret = settings.RAZORPAY_KEY_SECRET  # Or use a separate webhook secret
+        received_sig = request.headers.get('X-Razorpay-Signature')
+        body = request.body
+        generated_sig = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
+        if received_sig != generated_sig:
+            return JsonResponse({'error': 'Invalid signature'}, status=400)
+        data = json.loads(body)
+        event = data.get('event')
+        # Handle events: payment.captured, payment.failed, refund.processed, etc.
+        # Update Earning/Booking as needed
+        return JsonResponse({'status': 'ok'})
 
 
 

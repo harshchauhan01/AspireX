@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import './CSS/MentorProfile.css';
 import Loader from '../../components/ui/loader';
 import API from '../../BackendConn/api';
-
+import upiQr from '../../assets/qrcode.jpeg'; // Make sure the path and file name are correct
 const MentorProfile = ({ mentorId, onBack }) => {
   const { id } = useParams();
   const actualMentorId = mentorId || id; // Use prop if provided, otherwise use URL param
@@ -321,7 +321,7 @@ const MentorProfile = ({ mentorId, onBack }) => {
             <form className="payment-form" onSubmit={handleTransactionSubmit}>
               <div className="qr-code-container">
                 <img 
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PaymentForMentorSession" 
+                  src={upiQr}
                   alt="Payment QR Code" 
                   className="qr-code"
                 />

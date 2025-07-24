@@ -53,7 +53,7 @@ function SRegister() {
     <StyledPageWrapper>
       <StyledWrapper>
         <div className="container">
-          <MentorSwitch href="/mentor/login">Login as a Mentor</MentorSwitch>
+          <MentorSwitch href="">Login as a Student</MentorSwitch>
           <div className="heading">Sign Up</div>
           {error && <p className="text-red-500">{error}</p>}
           <form className="form" onSubmit={handleSubmit}>

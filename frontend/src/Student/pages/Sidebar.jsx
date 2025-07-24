@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import './CSS/Dashboard.css';
 
-const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile, mentor, isMobile }) => {
+const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile, mentor, isMobile, sidebarCollapsed, setSidebarCollapsed }) => {
   const isVerified = mentor?.details?.is_approved || false;
   const profilePhoto = mentor?.details?.profile_photo || '';
 
@@ -37,8 +37,14 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
       <div className={`sidebar${isMobile ? ' sidebar-mobile' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}> 
         <div className="sidebar-header">
           <h2>AspireX</h2>
-          {/* Only show toggle in sidebar on desktop */}
+          {/* Only show collapse toggle in sidebar on desktop */}
           {!isMobile && (
+            <button className="toggle-sidebar" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+              {sidebarCollapsed ? '\u25b6' : '\u25c0'}
+            </button>
+          )}
+          {/* Only show open/close toggle in sidebar on mobile */}
+          {isMobile && (
             <button className="toggle-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}>
               {sidebarOpen ? '\u25c0' : '\u25b6'}
             </button>
@@ -61,7 +67,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
               {mentor?.name.split(' ').map(n => n[0]).join('') || mentorProfile.name.split(' ').map(n => n[0]).join('')}
             </div>}
           </div>
-          {sidebarOpen && (
+          {(!sidebarCollapsed && sidebarOpen) && (
             <div className="profile-info">
               <h3>{mentor?.name || mentorProfile.name}</h3>
               <p>{mentor?.email || mentorProfile.email}</p>
@@ -75,29 +81,29 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
         <nav>
           <ul>
             <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-              <span>📊</span> {sidebarOpen && 'Dashboard'}
+              <span>📊</span> {(!sidebarCollapsed && sidebarOpen) && 'Dashboard'}
             </li>
             <li className={activeTab === 'mentees' ? 'active' : ''} onClick={() => setActiveTab('mentees')}>
-              <span>👥</span> {sidebarOpen && 'Mentees'}
+              <span>👥</span> {(!sidebarCollapsed && sidebarOpen) && 'Mentees'}
             </li>
             <li className={activeTab === 'messages' ? 'active' : ''} onClick={() => setActiveTab('messages')}>
-              <span>✉️</span> {sidebarOpen && 'Messages'}
+              <span>✉️</span> {(!sidebarCollapsed && sidebarOpen) && 'Messages'}
             </li>
             <li className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
-              <span>👤</span> {sidebarOpen && 'Profile'}
+              <span>👤</span> {(!sidebarCollapsed && sidebarOpen) && 'Profile'}
             </li>
             <li className={activeTab === 'sessions' ? 'active' : ''} onClick={() => setActiveTab('sessions')}>
-              <span>🗓️</span> {sidebarOpen && 'Sessions'}
+              <span>🗓️</span> {(!sidebarCollapsed && sidebarOpen) && 'Sessions'}
             </li>
             <li className={activeTab === 'customerService' ? 'active' : ''} onClick={() => setActiveTab('customerService')}>
-              <span>🎧</span> {sidebarOpen && 'Customer Service'}
+              <span>🎧</span> {(!sidebarCollapsed && sidebarOpen) && 'Customer Service'}
             </li>
           </ul>
         </nav>
         {/* Logout */}
         <div className="logout-section">
           <button className="logout-button" onClick={handleLogout}>
-            <span>🚪</span> {sidebarOpen && 'Logout'}
+            <span>🚪</span> {(!sidebarCollapsed && sidebarOpen) && 'Logout'}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://127.0.0.1:8000';
+// export const API_BASE_URL = 'http://127.0.0.1:8000';
+export const API_BASE_URL = 'https://aspirexbackend.onrender.com';
 
 const API = axios.create({
   baseURL: `${API_BASE_URL}/api/`,
@@ -25,7 +26,8 @@ export const postMeetingAttendance = async (data, tokenOverride) => {
   const studentToken = localStorage.getItem('token');
   const token = tokenOverride || mentorToken || studentToken;
   if (!token) throw new Error('No auth token found');
-  const response = await fetch('http://127.0.0.1:8000/api/mentor/meeting/attendance/', {
+  // const response = await fetch('http://127.0.0.1:8000/api/mentor/meeting/attendance/', {
+  const response = await fetch('https://aspirexbackend.onrender.com/api/mentor/meeting/attendance/', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,7 +46,8 @@ export const fetchMeetingAttendance = async (meeting_id) => {
   const studentToken = localStorage.getItem('token');
   const token = mentorToken || studentToken;
   if (!token) throw new Error('No auth token found');
-  const response = await fetch(`http://127.0.0.1:8000/api/mentor/meeting/attendance/?meeting_id=${meeting_id}`, {
+  // const response = await fetch(`http://127.0.0.1:8000/api/mentor/meeting/attendance/?meeting_id=${meeting_id}`, {
+  const response = await fetch(`https://aspirexbackend.onrender.com/api/mentor/meeting/attendance/?meeting_id=${meeting_id}`, {
     headers: {
       'Authorization': `Token ${token}`
     }
@@ -52,5 +55,29 @@ export const fetchMeetingAttendance = async (meeting_id) => {
   if (!response.ok) throw new Error('Failed to fetch attendance');
   return response.json();
 };
+
+export async function fetchPlatformStats() {
+  // const response = await fetch('http://localhost:8000/api/platform-stats/');
+  const response = await fetch('https://aspirexbackend.onrender.com/api/platform-stats/');
+  if (!response.ok) throw new Error('Failed to fetch platform stats');
+  return response.json();
+}
+
+export async function subscribeNewsletter(email) {
+  // const response = await fetch('http://localhost:8000/api/newsletter/', {
+  const response = await fetch('https://aspirexbackend.onrender.com/api/newsletter/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  return response.json();
+}
+
+export async function fetchSiteStatus() {
+  // const response = await fetch('http://localhost:8000/api/site-status/');
+  const response = await fetch('https://aspirexbackend.onrender.com/api/site-status/');
+  if (!response.ok) throw new Error('Failed to fetch site status');
+  return response.json();
+}
 
 export default API;

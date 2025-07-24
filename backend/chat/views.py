@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import Conversation, Message, ContactMessage, CustomerServiceMessage, CustomerServiceReply
+from .models import Conversation, Message, ContactMessage, CustomerServiceMessage, CustomerServiceReply, Notification
 from .serializers import ConversationSerializer, MessageSerializer, ContactMessageSerializer, CustomerServiceMessageSerializer, CustomerServiceReplySerializer
 from mentor.models import Mentor
 from student.models import Student
@@ -235,6 +235,35 @@ class CustomerServiceMessageAdminListView(generics.ListAPIView):
     serializer_class = CustomerServiceMessageSerializer
     permission_classes = [permissions.IsAdminUser]
     queryset = CustomerServiceMessage.objects.all().order_by('-created_at')
+
+
+class UserNotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if hasattr(user, 'student_id'):
+            notifications = Notification.objects.filter(
+                recipient_type='student',
+                recipient_formal_id=user.student_id
+            ).order_by('-created_at')
+        elif hasattr(user, 'mentor_id'):
+            notifications = Notification.objects.filter(
+                recipient_type='mentor',
+                recipient_formal_id=user.mentor_id
+            ).order_by('-created_at')
+        else:
+            return Response({'detail': 'Unknown user type'}, status=400)
+        data = [
+            {
+                'id': n.id,
+                'message': n.message,
+                'created_at': n.created_at,
+                'is_email_sent': n.is_email_sent,
+            }
+            for n in notifications
+        ]
+        return Response(data)
 
 
 

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import *
-from .views import ContactMessageAPIView, CustomerServiceMessageListCreateView, CustomerServiceReplyCreateView, CustomerServiceMessageAdminListView
+from .views import ContactMessageAPIView, CustomerServiceMessageListCreateView, CustomerServiceReplyCreateView, CustomerServiceMessageAdminListView, UserNotificationListView
 
 urlpatterns = [
     path('conversations/', ConversationListCreateView.as_view(), name='conversation-list'),
@@ -13,4 +13,8 @@ urlpatterns = [
     path('customer-service/', CustomerServiceMessageListCreateView.as_view(), name='customer-service-list-create'),
     path('customer-service/admin/', CustomerServiceMessageAdminListView.as_view(), name='customer-service-admin-list'),
     path('customer-service/reply/', CustomerServiceReplyCreateView.as_view(), name='customer-service-reply'),
+]
+
+urlpatterns += [
+    path('notifications/', UserNotificationListView.as_view(), name='user-notifications'),
 ]
