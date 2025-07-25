@@ -107,6 +107,7 @@ USE_TZ = True
 
 # ✅ STATIC FILES - Using Cloudinary
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 if not DEBUG:
