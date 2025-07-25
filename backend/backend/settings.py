@@ -4,15 +4,17 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# ✅ SECURITY
 SECRET_KEY = config('SECRET_KEY', default='your-dev-secret-key')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
-
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com').split(',')
 
-# Application definition
+# Allow Render external hostname dynamically
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# ✅ APPLICATIONS
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -21,6 +23,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'cloudinary',
+    'cloudinary_storage',
+
+    'storages',
     'chat',
     'mentor',
     'student.apps.StudentConfig',
@@ -31,6 +37,7 @@ INSTALLED_APPS = [
     'channels',
 ]
 
+# ✅ ASGI / CHANNELS
 ASGI_APPLICATION = 'backend.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -42,9 +49,10 @@ CHANNEL_LAYERS = {
     },
 }
 
+# ✅ MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # 👈 Add this above session middleware
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Use only for fallback if needed
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -56,6 +64,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
+# ✅ TEMPLATES
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -73,6 +82,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
+# ✅ DATABASE
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -80,35 +90,39 @@ DATABASES = {
     }
 }
 
+# ✅ PASSWORD VALIDATORS
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# ✅ LANGUAGE / TIMEZONE
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# ✅ STATIC FILES CONFIG FOR RENDER
+# ✅ STATIC FILES - Using Cloudinary
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+if DEBUG:
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+else:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# ✅ MEDIA
+# ✅ MEDIA FILES - Using Cloudinary
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
+}
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # ✅ EMAIL CONFIG
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -119,7 +133,7 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# ✅ CORS
+# ✅ CORS & CSRF
 CORS_ALLOWED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "http://localhost:5173",
@@ -127,15 +141,15 @@ CORS_ALLOWED_ORIGINS = [
 
 CSRF_TRUSTED_ORIGINS = [
     "https://aspire-x.vercel.app",
-    "https://aspirexbackend.onrender.com"
+    "https://aspirexbackend.onrender.com",
+    "http://localhost:5173",
+    
 ]
 
+# ✅ SECURITY HEADERS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Optional - use if you want cookie security (if using session auth or CSRF):
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # ✅ AUTH
 AUTH_USER_MODEL = 'student.Student'
@@ -145,6 +159,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+# ✅ REST FRAMEWORK
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -204,11 +219,13 @@ REST_FRAMEWORK = {
 #     'django.contrib.staticfiles',
 #     'chat',
 #     'mentor',
+#     'storages',
 #     'corsheaders',
 #     'rest_framework',
 #     'rest_framework.authtoken',
 #     'student.apps.StudentConfig',
-
+#     'cloudinary',
+#     'cloudinary_storage',
 # ]
 
 
@@ -354,3 +371,19 @@ REST_FRAMEWORK = {
 # # Razorpay API keys (securely loaded from .env)
 # RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
 # RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
+
+# # MEDIA STORAGE CONFIGURATION
+# # Use Cloudinary in production, local storage in development
+# USE_CLOUDINARY = config('USE_CLOUDINARY', default=False, cast=bool)
+
+# if USE_CLOUDINARY:
+#     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+#     CLOUDINARY_STORAGE = {
+#         'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+#         'API_KEY': config('CLOUDINARY_API_KEY'),
+#         'API_SECRET': config('CLOUDINARY_API_SECRET'),
+#     }
+#     MEDIA_URL = f"https://res.cloudinary.com/{config('CLOUDINARY_CLOUD_NAME')}/"
+# else:
+#     MEDIA_URL = '/media/'
+#     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
