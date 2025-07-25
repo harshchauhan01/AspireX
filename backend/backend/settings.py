@@ -134,6 +134,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 CORS_ALLOWED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "http://localhost:5173",
+    "https://aspire-n8cn506nk-harsh-chauhans-projects-9fc7d68c.vercel.app",
     # "http://127.0.0.1",
 ]
 
@@ -141,6 +142,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "https://aspirexbackend.onrender.com",
     "http://localhost:5173",
+    "https://aspire-n8cn506nk-harsh-chauhans-projects-9fc7d68c.vercel.app",
     # "http://127.0.0.1",
     
 ]
