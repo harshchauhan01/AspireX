@@ -107,17 +107,13 @@ USE_TZ = True
 
 # ✅ STATIC FILES - Using Cloudinary
 STATIC_URL = '/static/'
-STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
 
-if DEBUG:
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-else:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# ✅ MEDIA FILES - Using Cloudinary
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 if not DEBUG:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
+else:
+    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -133,7 +129,12 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
 
-MEDIA_URL = '/media/'
+if not DEBUG:
+    MEDIA_URL = f"https://res.cloudinary.com/{config('CLOUDINARY_CLOUD_NAME')}/"
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 # ✅ EMAIL CONFIG
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -195,7 +196,6 @@ REST_FRAMEWORK = {
 
 # Boring Code
 
-if 1:
 
     # """
     # Django settings for backend project.
