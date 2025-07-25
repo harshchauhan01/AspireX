@@ -12,6 +12,7 @@ from utils import send_credentials_email
 from .serializers import PublicStudentSerializer
 import logging
 logger = logging.getLogger(__name__)
+from django.core.files.storage import default_storage
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -90,6 +91,7 @@ class StudentFileUploadAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def put(self, request):
+        logger.info(f"Current storage backend: {default_storage.__class__}")
         student = request.user
         cv_file = request.FILES.get('cv')
         profile_photo = request.FILES.get('profile_photo')
