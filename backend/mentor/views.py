@@ -57,6 +57,16 @@ SUPABASE_KEY = config('SUPABASE_KEY')
 SUPABASE_BUCKET = config('SUPABASE_BUCKET', default='user-uploads')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+def extract_supabase_path(url):
+    if not url:
+        return None
+    parts = url.split('/')
+    try:
+        idx = parts.index(SUPABASE_BUCKET)
+        return '/'.join(parts[idx+1:])
+    except ValueError:
+        return None
+
 class MentorTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
         # print("🚨 HEADERS:", request.headers)
@@ -284,6 +294,13 @@ class MentorFileUploadAPIView(APIView):
             content_type, _ = mimetypes.guess_type(cv_file.name)
             file_options = {"content-type": content_type or "application/octet-stream"}
             file_path = f"mentors/cvs/{cv_file.name}"
+            # Delete old file if exists (from the URL in the model)
+            if mentor.details.cv:
+                old_path = extract_supabase_path(mentor.details.cv)
+                if old_path:
+                    supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+            # Always try to delete the file at the target path before uploading
+            supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
             public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
             mentor.details.cv = public_url
@@ -303,6 +320,13 @@ class MentorFileUploadAPIView(APIView):
             content_type, _ = mimetypes.guess_type(profile_photo.name)
             file_options = {"content-type": content_type or "application/octet-stream"}
             file_path = f"mentors/profile_photos/{profile_photo.name}"
+            # Delete old file if exists (from the URL in the model)
+            if mentor.details.profile_photo:
+                old_path = extract_supabase_path(mentor.details.profile_photo)
+                if old_path:
+                    supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+            # Always try to delete the file at the target path before uploading
+            supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, profile_photo.read(), file_options=file_options)
             public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
             mentor.details.profile_photo = public_url
@@ -320,11 +344,20 @@ class MentorFileUploadAPIView(APIView):
         mentor = request.user
         file_type = request.query_params.get('type') or request.data.get('type')
         if not file_type:
-            return Response(
-                {"error": "Missing 'type' parameter. Use ?type=profile_photo or ?type=cv in the URL."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            file_type = 'cv'  # Default to 'cv' if not provided
+
         if file_type == 'cv' and mentor.details.cv:
+            # Remove from Supabase if possible
+            old_path = extract_supabase_path(mentor.details.cv)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Attempting to delete CV from Supabase: {old_path}")
+            if old_path:
+                try:
+                    res = supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+                    logger.info(f"Supabase remove result: {res}")
+                except Exception as e:
+                    logger.error(f"Error deleting CV from Supabase: {e}")
             mentor.details.cv = None
             mentor.details.save()
             return Response(status=status.HTTP_204_NO_CONTENT)

@@ -22,6 +22,18 @@ SUPABASE_BUCKET = config('SUPABASE_BUCKET', default='user-uploads')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 import mimetypes
 
+def extract_supabase_path(url):
+    # Example: https://<project>.supabase.co/storage/v1/object/public/user-uploads/student/cvs/filename.pdf
+    # Returns: student/cvs/filename.pdf
+    if not url:
+        return None
+    parts = url.split('/')
+    try:
+        idx = parts.index(SUPABASE_BUCKET)
+        return '/'.join(parts[idx+1:])
+    except ValueError:
+        return None
+
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
@@ -113,10 +125,16 @@ class StudentFileUploadAPIView(APIView):
                     {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            # Set content-type
             content_type, _ = mimetypes.guess_type(cv_file.name)
             file_options = {"content-type": content_type or "application/octet-stream"}
             file_path = f"student/cvs/{cv_file.name}"
+            # Delete old file if exists (from the URL in the model)
+            if student.details.cv:
+                old_path = extract_supabase_path(student.details.cv)
+                if old_path:
+                    supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+            # Always try to delete the file at the target path before uploading
+            supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
             public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
             student.details.cv = public_url
@@ -138,6 +156,13 @@ class StudentFileUploadAPIView(APIView):
             content_type, _ = mimetypes.guess_type(profile_photo.name)
             file_options = {"content-type": content_type or "application/octet-stream"}
             file_path = f"student/profile_photos/{profile_photo.name}"
+            # Delete old file if exists (from the URL in the model)
+            if student.details.profile_photo:
+                old_path = extract_supabase_path(student.details.profile_photo)
+                if old_path:
+                    supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+            # Always try to delete the file at the target path before uploading
+            supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, profile_photo.read(), file_options=file_options)
             public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
             student.details.profile_photo = public_url
@@ -163,6 +188,10 @@ class StudentFileUploadAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         if file_type == 'cv' and student.details.cv:
+            # Remove from Supabase if possible
+            old_path = extract_supabase_path(student.details.cv)
+            if old_path:
+                supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
             student.details.cv = None
             student.details.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
