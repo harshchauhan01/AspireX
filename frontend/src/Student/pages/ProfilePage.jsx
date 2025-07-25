@@ -135,14 +135,13 @@ const ProfilePage = ({ mentorProfile }) => {
   const handleRemoveCV = async () => {
     try {
       await API.delete(
-        'student/profile/file/', // Update this URL
+        'student/profile/file/?type=cv', // Send type as query param
         {
           headers: {
             'Authorization': `Token ${getAuthToken()}`
           }
         }
       );
-
       setProfileData(prev => ({ ...prev, cv: null }));
       setCvFile(null);
     } catch (error) {
@@ -287,16 +286,14 @@ const ProfilePage = ({ mentorProfile }) => {
   const handleRemovePhoto = async () => {
     try {
       await API.delete(
-        'student/profile/file/', // Update this URL
+        'student/profile/file/?type=profile_photo', // Send type as query param
         {
-          data: { type: 'profile_photo' },
           headers: {
             'Authorization': `Token ${getAuthToken()}`,
             'Content-Type': 'application/json'
           }
         }
       );
-
       setPhotoPreview(null);
     } catch (error) {
       setSaveError(error.response?.data?.message || "Failed to remove photo");

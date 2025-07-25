@@ -268,16 +268,14 @@ const ProfilePage = ({ mentorProfile }) => {
   const handleRemovePhoto = async () => {
     try {
       await API.delete(
-        'mentor/profile/cv/', // Update this URL
+        'mentor/profile/cv/?type=profile_photo', // Send type as query param
         {
-          data: { type: 'profile_photo' },
           headers: {
             'Authorization': `Token ${getAuthToken()}`,
             'Content-Type': 'application/json'
           }
         }
       );
-
       setPhotoPreview(null);
     } catch (error) {
       setSaveError(error.response?.data?.message || "Failed to remove photo");

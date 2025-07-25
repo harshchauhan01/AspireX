@@ -48,6 +48,14 @@ from .models import Earning
 from student.models import Booking
 from django.http import JsonResponse
 import json
+import os
+from decouple import config
+from supabase import create_client, Client
+import mimetypes
+SUPABASE_URL = config('SUPABASE_URL')
+SUPABASE_KEY = config('SUPABASE_KEY')
+SUPABASE_BUCKET = config('SUPABASE_BUCKET', default='user-uploads')
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 class MentorTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
@@ -266,45 +274,43 @@ class MentorFileUploadAPIView(APIView):
         profile_photo = request.FILES.get('profile_photo')
         
         if cv_file:
-            # Handle CV upload
             valid_extensions = ['.pdf', '.doc', '.docx']
-            if not any(cv_file.name.lower().endswith(ext) for ext in valid_extensions):
+            ext = os.path.splitext(cv_file.name)[1].lower()
+            if ext not in valid_extensions:
                 return Response(
                     {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
-            if mentor.details.cv:
-                mentor.details.cv.delete()
-                
-            mentor.details.cv = cv_file
+            content_type, _ = mimetypes.guess_type(cv_file.name)
+            file_options = {"content-type": content_type or "application/octet-stream"}
+            file_path = f"mentors/cvs/{cv_file.name}"
+            res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
+            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+            mentor.details.cv = public_url
             mentor.details.save()
-            
             return Response(
-                {"cv_url": mentor.details.cv.url},
+                {"cv_url": public_url},
                 status=status.HTTP_200_OK
             )
-            
         elif profile_photo:
-            # Handle profile photo upload
             valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
-            if not any(profile_photo.name.lower().endswith(ext) for ext in valid_extensions):
+            ext = os.path.splitext(profile_photo.name)[1].lower()
+            if ext not in valid_extensions:
                 return Response(
                     {"error": "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
-            if mentor.details.profile_photo:
-                mentor.details.profile_photo.delete()
-                
-            mentor.details.profile_photo = profile_photo
+            content_type, _ = mimetypes.guess_type(profile_photo.name)
+            file_options = {"content-type": content_type or "application/octet-stream"}
+            file_path = f"mentors/profile_photos/{profile_photo.name}"
+            res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, profile_photo.read(), file_options=file_options)
+            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+            mentor.details.profile_photo = public_url
             mentor.details.save()
-            
             return Response(
-                {"profile_photo_url": mentor.details.profile_photo.url},
+                {"profile_photo_url": public_url},
                 status=status.HTTP_200_OK
             )
-            
         return Response(
             {"error": "No file provided"}, 
             status=status.HTTP_400_BAD_REQUEST
@@ -312,18 +318,20 @@ class MentorFileUploadAPIView(APIView):
     
     def delete(self, request):
         mentor = request.user
-        file_type = request.data.get('type')  # 'cv' or 'profile_photo'
-        
+        file_type = request.query_params.get('type') or request.data.get('type')
+        if not file_type:
+            return Response(
+                {"error": "Missing 'type' parameter. Use ?type=profile_photo or ?type=cv in the URL."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if file_type == 'cv' and mentor.details.cv:
-            mentor.details.cv.delete()
+            mentor.details.cv = None
             mentor.details.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
-            
         elif file_type == 'profile_photo' and mentor.details.profile_photo:
-            mentor.details.profile_photo.delete()
+            mentor.details.profile_photo = None
             mentor.details.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
-            
         return Response(
             {"error": f"No {file_type} to delete"},
             status=status.HTTP_400_BAD_REQUEST
