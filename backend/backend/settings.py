@@ -7,9 +7,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ✅ SECURITY
 SECRET_KEY = config('SECRET_KEY', default='your-dev-secret-key')
 DEBUG = config('DEBUG', default=False, cast=bool)
-# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com,127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com,127.0.0.1,localhost').split(',')
 # ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com').split(',')
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = ['*']
 # Allow Render external hostname dynamically
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
