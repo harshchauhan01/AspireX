@@ -10,6 +10,8 @@ from rest_framework.authentication import TokenAuthentication
 from django.utils import timezone
 from utils import send_credentials_email
 from .serializers import PublicStudentSerializer
+import logging
+logger = logging.getLogger(__name__)
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -106,6 +108,7 @@ class StudentFileUploadAPIView(APIView):
                 
             student.details.cv = cv_file
             student.details.save()
+            logger.info(f"CV URL after upload: {student.details.cv.url}")
             
             return Response(
                 {"cv_url": student.details.cv.url},
@@ -126,6 +129,7 @@ class StudentFileUploadAPIView(APIView):
                 
             student.details.profile_photo = profile_photo
             student.details.save()
+            logger.info(f"Profile photo URL after upload: {student.details.profile_photo.url}")
             
             return Response(
                 {"profile_photo_url": student.details.profile_photo.url},
