@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import './CSS/Dashboard.css';
+import { API_BASE_URL } from '../../BackendConn/api'; // Added import for API_BASE_URL
 
 const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorProfile, mentor, isMobile, sidebarCollapsed, setSidebarCollapsed }) => {
   const isVerified = mentor?.details?.is_approved || false;
@@ -55,12 +56,14 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           <div className="profile-photo-container">
             {profilePhoto ? (
               <img 
-                src={`http://127.0.0.1:8000${profilePhoto}`} 
+                src={profilePhoto && (profilePhoto.startsWith('http') ? profilePhoto : `${API_BASE_URL}${profilePhoto}`)} 
                 alt="Profile" 
                 className="profile-photo"
                 onError={(e) => {
                   e.target.style.display = 'none';
-                  e.target.nextElementSibling.style.display = 'flex';
+                  if (e.target.nextElementSibling) {
+                    e.target.nextElementSibling.style.display = 'flex';
+                  }
                 }}
               />
             ) : <div className="profile-photo">
