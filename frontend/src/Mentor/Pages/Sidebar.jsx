@@ -56,7 +56,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           <div className="profile-photo-container">
             {profilePhoto ? (
               <img 
-                src={profilePhoto && (profilePhoto.startsWith('http') ? profilePhoto : `${API_BASE_URL}${profilePhoto}`)} 
+                src={profilePhoto} 
                 alt="Profile" 
                 className="profile-photo"
                 onError={(e) => {

@@ -353,7 +353,7 @@ const ProfilePage = ({ mentorProfile }) => {
           <div className="profile-avatar-container">
             {photoPreview ? (
               <img 
-                src={photoPreview && (photoPreview.startsWith('http') ? photoPreview : `${API_BASE_URL}${photoPreview}`)} 
+                src={photoPreview} 
                 alt="Profile" 
                 className="profile-avatar-image"
               />
