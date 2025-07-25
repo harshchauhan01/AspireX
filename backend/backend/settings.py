@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='your-dev-secret-key')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com').split(',')
+# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com').split(',')
 
 # Allow Render external hostname dynamically
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -137,12 +138,14 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 CORS_ALLOWED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "http://localhost:5173",
+    "http://127.0.0.1",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "https://aspirexbackend.onrender.com",
     "http://localhost:5173",
+    "http://127.0.0.1",
     
 ]
 
