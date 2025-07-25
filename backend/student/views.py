@@ -13,6 +13,14 @@ from .serializers import PublicStudentSerializer
 import logging
 logger = logging.getLogger(__name__)
 from django.core.files.storage import default_storage
+import os
+from decouple import config
+from supabase import create_client, Client
+SUPABASE_URL = config('SUPABASE_URL')
+SUPABASE_KEY = config('SUPABASE_KEY')
+SUPABASE_BUCKET = config('SUPABASE_BUCKET', default='user-uploads')
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+import mimetypes
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -97,47 +105,48 @@ class StudentFileUploadAPIView(APIView):
         profile_photo = request.FILES.get('profile_photo')
         
         if cv_file:
-            # Handle CV upload
             valid_extensions = ['.pdf', '.doc', '.docx']
-            if not any(cv_file.name.lower().endswith(ext) for ext in valid_extensions):
+            ext = os.path.splitext(cv_file.name)[1].lower()
+            if ext not in valid_extensions:
+                logger.warning(f"Rejected CV upload: {cv_file.name} (invalid extension)")
                 return Response(
                     {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
-            if student.details.cv:
-                student.details.cv.delete()
-                
-            student.details.cv = cv_file
+            # Set content-type
+            content_type, _ = mimetypes.guess_type(cv_file.name)
+            file_options = {"content-type": content_type or "application/octet-stream"}
+            file_path = f"student/cvs/{cv_file.name}"
+            res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
+            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+            student.details.cv = public_url
             student.details.save()
-            logger.info(f"CV URL after upload: {student.details.cv.url}")
-            
+            logger.info(f"CV URL after upload: {public_url}")
             return Response(
-                {"cv_url": student.details.cv.url},
+                {"cv_url": public_url},
                 status=status.HTTP_200_OK
             )
-            
         elif profile_photo:
-            # Handle profile photo upload
             valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
-            if not any(profile_photo.name.lower().endswith(ext) for ext in valid_extensions):
+            ext = os.path.splitext(profile_photo.name)[1].lower()
+            if ext not in valid_extensions:
+                logger.warning(f"Rejected profile photo upload: {profile_photo.name} (invalid extension)")
                 return Response(
                     {"error": "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
-            if student.details.profile_photo:
-                student.details.profile_photo.delete()
-                
-            student.details.profile_photo = profile_photo
+            content_type, _ = mimetypes.guess_type(profile_photo.name)
+            file_options = {"content-type": content_type or "application/octet-stream"}
+            file_path = f"student/profile_photos/{profile_photo.name}"
+            res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, profile_photo.read(), file_options=file_options)
+            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+            student.details.profile_photo = public_url
             student.details.save()
-            logger.info(f"Profile photo URL after upload: {student.details.profile_photo.url}")
-            
+            logger.info(f"Profile photo URL after upload: {public_url}")
             return Response(
-                {"profile_photo_url": student.details.profile_photo.url},
+                {"profile_photo_url": public_url},
                 status=status.HTTP_200_OK
             )
-            
         return Response(
             {"error": "No file provided"}, 
             status=status.HTTP_400_BAD_REQUEST
@@ -145,18 +154,23 @@ class StudentFileUploadAPIView(APIView):
     
     def delete(self, request):
         student = request.user
-        file_type = request.data.get('type')  # 'cv' or 'profile_photo'
-        
+        file_type = request.query_params.get('type') or request.data.get('type')  # Support both query param and body
+        logger.info(f"DELETE /api/student/profile/file/ called with type={file_type}")
+        if not file_type:
+            logger.warning("No 'type' parameter provided in DELETE request.")
+            return Response(
+                {"error": "Missing 'type' parameter. Use ?type=profile_photo or ?type=cv in the URL."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if file_type == 'cv' and student.details.cv:
-            student.details.cv.delete()
+            student.details.cv = None
             student.details.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
-            
         elif file_type == 'profile_photo' and student.details.profile_photo:
-            student.details.profile_photo.delete()
+            student.details.profile_photo = None
             student.details.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
-            
+        logger.warning(f"No {file_type} to delete for user {student}")
         return Response(
             {"error": f"No {file_type} to delete"},
             status=status.HTTP_400_BAD_REQUEST
