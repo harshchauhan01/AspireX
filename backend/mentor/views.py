@@ -141,6 +141,7 @@ class MentorProfileAPIView(APIView):
 
 
 class MentorRegistrationAPIView(generics.CreateAPIView):
+    authentication_classes = []
     permission_classes = (permissions.AllowAny,)
     serializer_class = MentorRegistrationSerializer
     
@@ -164,6 +165,7 @@ class MentorRegistrationAPIView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class MentorLoginAPIView(APIView):
+    authentication_classes = []
     permission_classes = (permissions.AllowAny,)
     
     def post(self, request):
@@ -182,6 +184,7 @@ class MentorLoginAPIView(APIView):
 
 
 class PublicMentorListView(generics.ListAPIView):
+    authentication_classes = []
     queryset = Mentor.objects.all().order_by('mentor_id')
     serializer_class = PublicMentorSerializer
     permission_classes = [AllowAny]
@@ -203,6 +206,7 @@ class PublicMentorListView(generics.ListAPIView):
         return queryset
 
 class PublicMentorDetailView(RetrieveAPIView):
+    authentication_classes = []
     queryset = Mentor.objects.all()
     serializer_class = PublicMentorSerializer
     permission_classes = [AllowAny]
@@ -217,13 +221,13 @@ class MentorProfileUpdateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def put(self, request):
-        # print("Received data:", request.data)
         mentor = request.user
         serializer = MentorSerializer(mentor, data=request.data, partial=True)
         
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        print("PROFILE UPDATE ERRORS:", serializer.errors)  # Debugging line
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MentorCVUpdateAPIView(APIView):
@@ -373,6 +377,7 @@ class MentorFileUploadAPIView(APIView):
 
 
 @api_view(['GET'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def filtered_mentor_list(request):
     search = request.GET.get('search')
