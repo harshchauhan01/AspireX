@@ -1,15 +1,16 @@
 from pathlib import Path
 import os
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ✅ SECURITY
 SECRET_KEY = config('SECRET_KEY', default='your-dev-secret-key')
 DEBUG = config('DEBUG', default=False, cast=bool)
-# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com,127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com,127.0.0.1,localhost').split(',')
 # ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com').split(',')
-ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = ['*']
 # Allow Render external hostname dynamically
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
@@ -82,10 +83,9 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # ✅ DATABASE
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
+    )
 }
 
 # ✅ PASSWORD VALIDATORS
@@ -135,7 +135,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "http://localhost:5173",
     "https://aspire-n8cn506nk-harsh-chauhans-projects-9fc7d68c.vercel.app",
-    # "http://127.0.0.1",
+    "http://127.0.0.1",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -143,7 +143,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://aspirexbackend.onrender.com",
     "http://localhost:5173",
     "https://aspire-n8cn506nk-harsh-chauhans-projects-9fc7d68c.vercel.app",
-    # "http://127.0.0.1",
+    "http://127.0.0.1",
     
 ]
 

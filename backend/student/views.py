@@ -40,6 +40,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 class StudentRegistrationAPIView(generics.CreateAPIView):
+    authentication_classes = []
     permission_classes = (permissions.AllowAny,)
     serializer_class = StudentRegistrationSerializer
     
@@ -65,6 +66,7 @@ class StudentRegistrationAPIView(generics.CreateAPIView):
 
 
 class StudentLoginAPIView(APIView):
+    authentication_classes = []
     permission_classes = (permissions.AllowAny,)
     
     def post(self, request):
@@ -238,6 +240,7 @@ from .models import Student
 from .serializers import StudentSerializer
 
 class PublicStudentListView(generics.ListAPIView):
+    authentication_classes = []
     queryset = Student.objects.all().order_by('student_id')
     serializer_class = PublicStudentSerializer
     permission_classes = [AllowAny]
@@ -259,6 +262,7 @@ class PublicStudentListView(generics.ListAPIView):
         return queryset
 
 class PublicStudentDetailView(RetrieveAPIView):
+    authentication_classes = []
     queryset = Student.objects.all()
     serializer_class = PublicStudentSerializer
     permission_classes = [AllowAny]
@@ -357,6 +361,7 @@ class MentorFeedbackListAPIView(generics.ListAPIView):
     """
     List all approved feedback for a specific mentor (public view)
     """
+    authentication_classes = []
     serializer_class = FeedbackSerializer
     permission_classes = [permissions.AllowAny]
 

@@ -6,6 +6,29 @@ import Loader from '../../components/ui/loader';
 import API from '../../BackendConn/api';
 import { API_BASE_URL } from '../../BackendConn/api';
 
+// Date validation and formatting functions
+const formatDateForBackend = (dateString) => {
+  if (!dateString) return null;
+  
+  // Try to parse various date formats
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return null; // Invalid date
+  }
+  
+  // Format as YYYY-MM-DD
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const validateDateInput = (dateString) => {
+  if (!dateString) return true; // Empty is OK
+  const formatted = formatDateForBackend(dateString);
+  return formatted !== null;
+};
+
 const ProfilePage = ({ mentorProfile }) => {
   const [editMode, setEditMode] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -71,27 +94,31 @@ const ProfilePage = ({ mentorProfile }) => {
       const payload = {
         name: profileData.name,
         details: {
-          dob: profileData.dob,
-          age: profileData.age,
-          gender: profileData.gender,
-          phone_number: profileData.phone,
-          college: profileData.college,
-          cgpa: profileData.cgpa,
-          batch: profileData.batch,
-          professions: [{ title: profileData.expertise }],
-          skills: profileData.skills.split(',').map(skill => ({ name: skill.trim() })),  // ✅ fixed here
-          fees: profileData.hourlyRate,
-          about: profileData.bio,
-          availability_timings: profileData.availability,
-          years_of_experience: profileData.yearsOfExperience,
-          linkedin_url: profileData.linkedin,
-          github_url: profileData.github,
-          portfolio_url: profileData.portfolio,
+          dob: formatDateForBackend(profileData.dob),
+          age: profileData.age !== '' && profileData.age !== null && profileData.age !== undefined ? Number(profileData.age) : 0,
+          gender: profileData.gender || '',
+          phone_number: profileData.phone || '',
+          college: profileData.college || '',
+          cgpa: profileData.cgpa !== '' && profileData.cgpa !== null && profileData.cgpa !== undefined ? Number(profileData.cgpa) : 0,
+          batch: profileData.batch || null,
+          professions: profileData.expertise ? [{ title: profileData.expertise }] : [],
+          skills: profileData.skills ? profileData.skills.split(',').map(skill => ({ name: skill.trim() })).filter(s => s.name) : [],
+          fees: profileData.hourlyRate || 0,
+          about: profileData.bio || '',
+          availability_timings: profileData.availability || '',
+          years_of_experience: profileData.yearsOfExperience || 0,
+          linkedin_url: profileData.linkedin || '',
+          github_url: profileData.github || '',
+          portfolio_url: profileData.portfolio || '',
+          profile_photo: profilePhoto || mentorProfile?.details?.profile_photo || null,
+          cv: profileData.cv || null,
+          is_approved: mentorProfile?.details?.is_approved ?? false,
+          total_sessions: mentorProfile?.details?.total_sessions ?? 0,
         }
       };
 
       const response = await API.put(
-        'mentor/profile/update/', // Update this URL to match your Django endpoint
+        'mentor/profile/update/',
         payload,
         {
           headers: {
@@ -104,10 +131,31 @@ const ProfilePage = ({ mentorProfile }) => {
       setSaveSuccess(true);
       setEditMode(false);
       
-      // Hide success message after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      setSaveError(error.response?.data?.message || "Failed to update profile");
+      // Try to extract detailed error messages from the backend
+      let errorMsg = "Failed to update profile";
+      if (error.response && error.response.data) {
+        const data = error.response.data;
+        if (typeof data === 'object') {
+          // Collect all error messages from nested fields
+          errorMsg = Object.entries(data)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return `${field}: ${messages.join(', ')}`;
+              } else if (typeof messages === 'object') {
+                // For nested objects like 'details'
+                return Object.entries(messages)
+                  .map(([subField, subMessages]) => `${subField}: ${Array.isArray(subMessages) ? subMessages.join(', ') : subMessages}`)
+                  .join('; ');
+              } else {
+                return `${field}: ${messages}`;
+              }
+            })
+            .join('; ');
+        }
+      }
+      setSaveError(errorMsg);
     } finally {
       setIsSaving(false);
     }
@@ -618,6 +666,7 @@ const ProfilePage = ({ mentorProfile }) => {
                   value={profileData.dob}
                   onChange={handleInputChange}
                   className="profile-input"
+                  placeholder="YYYY-MM-DD (e.g., 1990-01-15)"
                 />
               ) : (
                 <p>{profileData.dob}</p>
