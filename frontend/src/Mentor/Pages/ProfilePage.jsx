@@ -29,7 +29,7 @@ const validateDateInput = (dateString) => {
   return formatted !== null;
 };
 
-const ProfilePage = ({ mentorProfile }) => {
+const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
   const [editMode, setEditMode] = useState(false);
   const [profileData, setProfileData] = useState({
     name: mentorProfile.name,
@@ -288,7 +288,7 @@ const ProfilePage = ({ mentorProfile }) => {
       formData.append('profile_photo', profilePhoto);
 
       const response = await API.put(
-        'mentor/profile/cv/', // Update this URL
+        'mentor/profile/cv/',
         formData,
         {
           headers: {
@@ -306,8 +306,37 @@ const ProfilePage = ({ mentorProfile }) => {
       if (photoInputRef.current) {
         photoInputRef.current.value = null;
       }
+      
+      // Refresh mentor data to update the profile
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
     } catch (error) {
-      setSaveError(error.response?.data?.message || "Failed to upload photo");
+      // Try to extract detailed error messages from the backend
+      let errorMsg = "Failed to upload photo";
+      if (error.response && error.response.data) {
+        const data = error.response.data;
+        if (typeof data === 'object') {
+          // Collect all error messages from nested fields
+          errorMsg = Object.entries(data)
+            .map(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                return `${field}: ${messages.join(', ')}`;
+              } else if (typeof messages === 'object') {
+                // For nested objects
+                return Object.entries(messages)
+                  .map(([subField, subMessages]) => `${subField}: ${Array.isArray(subMessages) ? subMessages.join(', ') : subMessages}`)
+                  .join('; ');
+              } else {
+                return `${field}: ${messages}`;
+              }
+            })
+            .join('; ');
+        } else if (typeof data === 'string') {
+          errorMsg = data;
+        }
+      }
+      setSaveError(errorMsg);
     } finally {
       setPhotoUploading(false);
     }

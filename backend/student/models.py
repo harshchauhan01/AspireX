@@ -149,7 +149,7 @@ class StudentDetail(models.Model):
     about = models.TextField(default="", blank=True)
     # availability_timings = models.CharField(max_length=50, default="#NA")
     profile_photo = models.URLField(max_length=500, null=True, blank=True, default=None)
-    cv = models.URLField(max_length=500, null=True, blank=True, default=None)
+    cv = models.TextField(max_length=1000, null=True, blank=True, default=None)
 
     is_approved = models.BooleanField()
 
