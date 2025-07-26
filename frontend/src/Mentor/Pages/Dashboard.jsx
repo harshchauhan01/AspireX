@@ -97,23 +97,23 @@ const Dashboard = () => {
   const [attendanceStatus, setAttendanceStatus] = useState('');
   const [attendanceError, setAttendanceError] = useState('');
 
-  useEffect(() => {
-    const fetchMentorProfile = async () => {
-      try {
-        const token = localStorage.getItem('Mentortoken');
-        
-        const response = await API.get('mentor/profile/',{
-          headers: {
-            Authorization: `Token ${token}`,
-          }
-        });
-        
-        setMentor(response.data);
-      } catch (err) {
-        setError('Failed to fetch mentor profile');
-      }
-    };
+  const fetchMentorProfile = async () => {
+    try {
+      const token = localStorage.getItem('Mentortoken');
+      
+      const response = await API.get('mentor/profile/',{
+        headers: {
+          Authorization: `Token ${token}`,
+        }
+      });
+      
+      setMentor(response.data);
+    } catch (err) {
+      setError('Failed to fetch mentor profile');
+    }
+  };
 
+  useEffect(() => {
     fetchMentorProfile();
   }, []);
 
@@ -208,7 +208,7 @@ const Dashboard = () => {
       case 'messages':
         return <Messages />;
       case 'profile':
-        return <ProfilePage mentorProfile={mentor} />;
+        return <ProfilePage mentorProfile={mentor} onProfileUpdate={fetchMentorProfile} />;
       case 'sessions':
         return <SessionsPage sessions={mentor.meetings || []} />;
       case 'feedback':

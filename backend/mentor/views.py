@@ -52,6 +52,7 @@ import os
 from decouple import config
 from supabase import create_client, Client
 import mimetypes
+import time
 SUPABASE_URL = config('SUPABASE_URL')
 SUPABASE_KEY = config('SUPABASE_KEY')
 SUPABASE_BUCKET = config('SUPABASE_BUCKET', default='user-uploads')
@@ -287,6 +288,8 @@ class MentorFileUploadAPIView(APIView):
         cv_file = request.FILES.get('cv')
         profile_photo = request.FILES.get('profile_photo')
         
+        print(f"DEBUG: Files received - cv_file: {cv_file}, profile_photo: {profile_photo}")
+        
         if cv_file:
             valid_extensions = ['.pdf', '.doc', '.docx']
             ext = os.path.splitext(cv_file.name)[1].lower()
@@ -307,6 +310,30 @@ class MentorFileUploadAPIView(APIView):
             supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
             public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+            if public_url:
+                public_url = public_url.strip()
+                # Remove trailing '?' and any whitespace
+                while public_url.endswith('?') or public_url.endswith(' '):
+                    public_url = public_url.rstrip('? ').rstrip()
+                # Ensure it starts with http/https
+                if not public_url.startswith(('http://', 'https://')):
+                    public_url = 'https://' + public_url.lstrip('/')
+            print(f"DEBUG: Final CV URL to save: '{public_url}' (type: {type(public_url)})")
+            print(f"DEBUG: repr(public_url): {repr(public_url)}")
+            # TEST: Hardcode a known-good URL to see if error persists
+            # public_url = "https://www.google.com/"
+            from django.core.validators import URLValidator
+            from django.core.exceptions import ValidationError
+            try:
+                URLValidator()(public_url)
+                print("DEBUG: URL validation passed")
+            except ValidationError as e:
+                print(f"DEBUG: URL validation failed: {e}")
+                return Response(
+                    {"error": f"Invalid URL generated: {public_url}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
             mentor.details.cv = public_url
             mentor.details.save()
             return Response(
@@ -314,6 +341,7 @@ class MentorFileUploadAPIView(APIView):
                 status=status.HTTP_200_OK
             )
         elif profile_photo:
+            print(f"DEBUG: Processing profile photo: {profile_photo.name}")
             valid_extensions = ['.jpg', '.jpeg', '.png', '.gif']
             ext = os.path.splitext(profile_photo.name)[1].lower()
             if ext not in valid_extensions:
@@ -321,24 +349,68 @@ class MentorFileUploadAPIView(APIView):
                     {"error": "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            content_type, _ = mimetypes.guess_type(profile_photo.name)
-            file_options = {"content-type": content_type or "application/octet-stream"}
-            file_path = f"mentors/profile_photos/{profile_photo.name}"
-            # Delete old file if exists (from the URL in the model)
-            if mentor.details.profile_photo:
-                old_path = extract_supabase_path(mentor.details.profile_photo)
-                if old_path:
-                    supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
-            # Always try to delete the file at the target path before uploading
-            supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
-            res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, profile_photo.read(), file_options=file_options)
-            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
-            mentor.details.profile_photo = public_url
-            mentor.details.save()
-            return Response(
-                {"profile_photo_url": public_url},
-                status=status.HTTP_200_OK
-            )
+            
+            try:
+                # Use a unique filename: mentorID_timestamp.ext
+                unique_filename = f"{mentor.mentor_id}_{int(time.time())}{ext}"
+                file_content = profile_photo.read()
+                print(f"DEBUG: File size: {len(file_content)} bytes")
+                
+                content_type, _ = mimetypes.guess_type(profile_photo.name)
+                file_options = {"content-type": content_type or "image/jpeg"}
+                file_path = f"mentors/profile_photos/{unique_filename}"
+                
+                print(f"DEBUG: Uploading to path: {file_path}")
+                
+                # Delete old file if exists (from the URL in the model)
+                if mentor.details.profile_photo:
+                    old_path = extract_supabase_path(mentor.details.profile_photo)
+                    if old_path:
+                        print(f"DEBUG: Removing old file: {old_path}")
+                        supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+                
+                # Upload new file
+                res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, file_content, file_options=file_options)
+                print(f"DEBUG: Upload result: {res}")
+                
+                public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+                if public_url:
+                    public_url = public_url.strip()
+                    # Remove trailing '?' and any whitespace
+                    while public_url.endswith('?') or public_url.endswith(' '):
+                        public_url = public_url.rstrip('? ').rstrip()
+                    # Ensure it starts with http/https
+                    if not public_url.startswith(('http://', 'https://')):
+                        public_url = 'https://' + public_url.lstrip('/')
+                print(f"DEBUG: Final profile photo URL to save: '{public_url}'")
+                
+                # Validate URL before saving
+                from django.core.validators import URLValidator
+                from django.core.exceptions import ValidationError
+                try:
+                    URLValidator()(public_url)
+                    print(f"DEBUG: Profile photo URL validation passed")
+                except ValidationError as e:
+                    print(f"DEBUG: Profile photo URL validation failed: {e}")
+                    return Response(
+                        {"error": f"Invalid URL generated: {public_url}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                mentor.details.profile_photo = public_url
+                mentor.details.save()
+                print(f"DEBUG: Profile photo URL saved to database: {mentor.details.profile_photo}")
+                return Response(
+                    {"profile_photo_url": public_url},
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                print(f"DEBUG: Error uploading profile photo: {str(e)}")
+                return Response(
+                    {"error": f"Failed to upload profile photo: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
         return Response(
             {"error": "No file provided"}, 
             status=status.HTTP_400_BAD_REQUEST
