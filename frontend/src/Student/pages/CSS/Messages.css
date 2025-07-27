@@ -1,6 +1,6 @@
 /* Base styles */
 .messages-page {
-  height: calc(100vh - 80px);
+  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
 }
@@ -159,6 +159,7 @@
 .messages-container {
   display: flex;
   height: 100%;
+  min-height: 600px;
   background-color: var(--white);
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
@@ -416,6 +417,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 400px;
 }
 
 .message {
@@ -1235,8 +1237,13 @@
     padding: 14px 20px;
   }
 
+  .messages-container {
+    min-height: 650px;
+  }
+
   .messages-list {
     padding: 16px 20px;
+    min-height: 450px;
   }
 
   .message-content {
@@ -1245,6 +1252,17 @@
 
   .modal-content {
     max-width: 450px;
+  }
+}
+
+/* Desktop screens */
+@media (min-width: 1025px) and (max-width: 1199px) {
+  .messages-container {
+    min-height: 680px;
+  }
+
+  .messages-list {
+    min-height: 480px;
   }
 }
 
@@ -1265,8 +1283,13 @@
     font-size: 1.1rem;
   }
 
+  .messages-container {
+    min-height: 700px;
+  }
+
   .messages-list {
     padding: 24px 32px;
+    min-height: 500px;
   }
 
   .message-content {
