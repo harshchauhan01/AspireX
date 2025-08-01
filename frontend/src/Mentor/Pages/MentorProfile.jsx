@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './MentorProfile.css';
+import styles from './MentorProfile.module.css';
 
 const MentorProfile = () => {
   const [activeTab, setActiveTab] = useState('about');
@@ -126,71 +126,71 @@ const MentorProfile = () => {
   };
 
   return (
-    <div className="mentor-profile-container">
+    <div className={styles.mentorProfileContainer}>
       {/* Header Section */}
-      <div className="profile-header">
-        <div className="cover-image">
+      <div className={styles.profileHeader}>
+        <div className={styles.coverImage}>
           <img src={mentorData.coverImage} alt="Cover" />
-          <div className="cover-overlay"></div>
+          <div className={styles.coverOverlay}></div>
         </div>
         
-        <div className="profile-main">
-          <div className="profile-info">
-            <div className="profile-image-section">
-              <img src={mentorData.profileImage} alt={mentorData.name} className="profile-image" />
-              <div className="online-status">
-                <div className="status-indicator"></div>
+        <div className={styles.profileMain}>
+          <div className={styles.profileInfo}>
+            <div className={styles.profileImageSection}>
+              <img src={mentorData.profileImage} alt={mentorData.name} className={styles.profileImage} />
+              <div className={styles.onlineStatus}>
+                <div className={styles.statusIndicator}></div>
                 <span>Online now</span>
               </div>
             </div>
             
-            <div className="profile-details">
-              <h1 className="mentor-name">{mentorData.name}</h1>
-              <h2 className="mentor-title">{mentorData.title}</h2>
-              <div className="mentor-location">
-                <span className="icon">📍</span>
+            <div className={styles.profileDetails}>
+              <h1 className={styles.mentorName}>{mentorData.name}</h1>
+              <h2 className={styles.mentorTitle}>{mentorData.title}</h2>
+              <div className={styles.mentorLocation}>
+                <span className={styles.icon}>📍</span>
                 {mentorData.company} • {mentorData.location}
               </div>
               
-              <div className="mentor-stats">
-                <div className="stat">
-                  <div className="stat-value">⭐ {mentorData.rating}</div>
-                  <div className="stat-label">{mentorData.reviewCount} reviews</div>
+              <div className={styles.mentorStats}>
+                <div className={styles.stat}>
+                  <div className={styles.statValue}>⭐ {mentorData.rating}</div>
+                  <div className={styles.statLabel}>{mentorData.reviewCount} reviews</div>
                 </div>
-                <div className="stat">
-                  <div className="stat-value">{mentorData.sessionsCompleted}+</div>
-                  <div className="stat-label">sessions completed</div>
+                <div className={styles.stat}>
+                  <div className={styles.statValue}>{mentorData.sessionsCompleted}+</div>
+                  <div className={styles.statLabel}>sessions completed</div>
                 </div>
-                <div className="stat">
-                  <div className="stat-value">⚡ {mentorData.responseTime}</div>
-                  <div className="stat-label">response time</div>
+                <div className={styles.stat}>
+                  <div className={styles.statValue}>⚡ {mentorData.responseTime}</div>
+                  <div className={styles.statLabel}>response time</div>
                 </div>
               </div>
             </div>
             
-            <div className="profile-actions">
-              <button className="btn btn-primary">
-                <span className="btn-icon">🚀</span>
+            <div className={styles.profileActions}>
+              <button className={`${styles.btn} ${styles.btnPrimary}`}>
+                <span className={styles.btnIcon}>🚀</span>
                 Book Session
               </button>
-              <button className="btn btn-secondary">
-                <span className="btn-icon">💬</span>
+              <button className={`${styles.btn} ${styles.btnSecondary}`}>
+                <span className={styles.btnIcon}>💬</span>
                 Message
               </button>
-              <button className="btn btn-outline">
-                <span className="btn-icon">❤️</span>
+              <button className={`${styles.btn} ${styles.btnOutline}`}>
+                <span className={styles.btnIcon}>❤️</span>
                 Follow
               </button>
             </div>
           </div>
         </div>
         
-        <div className="expertise-section">
-          <div className="expertise-container">
+        <div className={styles.expertiseSection}>
+          <div className={styles.expertiseContainer}>
             <h3>Expertise</h3>
-            <div className="expertise-tags">
+            <div className={styles.expertiseTags}>
               {mentorData.expertise.map((skill, index) => (
-                <span key={index} className="expertise-tag" style={{ animationDelay: `${index * 0.1}s` }}>
+                <span key={index} className={styles.expertiseTag} style={{ animationDelay: `${index * 0.1}s` }}>
                   {skill}
                 </span>
               ))}
@@ -200,8 +200,8 @@ const MentorProfile = () => {
       </div>
 
       {/* Content Section */}
-      <div className="content-section">
-        <div className="content-navigation">
+      <div className={styles.contentSection}>
+        <div className={styles.contentNavigation}>
           {[
             { id: 'about', label: 'About', icon: '👤' },
             { id: 'services', label: 'Services', icon: '💎' },
@@ -210,24 +210,24 @@ const MentorProfile = () => {
           ].map((tab) => (
             <button
               key={tab.id}
-              className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+              className={`${styles.navTab} ${activeTab === tab.id ? styles.active : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
+              <span className={styles.tabIcon}>{tab.icon}</span>
+              <span className={styles.tabLabel}>{tab.label}</span>
             </button>
           ))}
         </div>
 
-        <div className="tab-content">
+        <div className={styles.tabContent}>
           {activeTab === 'about' && (
-            <div className="about-section">
-              <div className="about-grid">
-                <div className="about-main">
+            <div className={styles.aboutSection}>
+              <div className={styles.aboutGrid}>
+                <div className={styles.aboutMain}>
                   <h3>About Me</h3>
-                  <p className="about-text">{mentorData.about}</p>
+                  <p className={styles.aboutText}>{mentorData.about}</p>
                   
-                  <div className="achievements">
+                  <div className={styles.achievements}>
                     <h4>Key Achievements</h4>
                     <ul>
                       <li>🏆 Helped 450+ students land jobs at top tech companies</li>
@@ -238,20 +238,20 @@ const MentorProfile = () => {
                   </div>
                 </div>
                 
-                <div className="about-sidebar">
-                  <div className="info-card">
+                <div className={styles.aboutSidebar}>
+                  <div className={styles.infoCard}>
                     <h4>💼 Experience</h4>
                     <p>{mentorData.experience} in tech</p>
                   </div>
-                  <div className="info-card">
+                  <div className={styles.infoCard}>
                     <h4>🌍 Languages</h4>
                     <p>{mentorData.languages.join(', ')}</p>
                   </div>
-                  <div className="info-card">
+                  <div className={styles.infoCard}>
                     <h4>🕐 Time Zone</h4>
                     <p>{mentorData.timeZone}</p>
                   </div>
-                  <div className="info-card">
+                  <div className={styles.infoCard}>
                     <h4>⚡ Response Time</h4>
                     <p>{mentorData.responseTime}</p>
                   </div>
@@ -261,32 +261,32 @@ const MentorProfile = () => {
           )}
 
           {activeTab === 'services' && (
-            <div className="services-section">
-              <div className="services-header">
+            <div className={styles.servicesSection}>
+              <div className={styles.servicesHeader}>
                 <h3>My Services</h3>
                 <p>Choose the perfect mentorship package for your goals</p>
               </div>
               
-              <div className="services-grid">
+              <div className={styles.servicesGrid}>
                 {mentorData.services.map((service) => (
                   <div 
                     key={service.id} 
-                    className={`service-card ${selectedService === service.id ? 'selected' : ''}`}
+                    className={`${styles.serviceCard} ${selectedService === service.id ? styles.selected : ''}`}
                     onClick={() => setSelectedService(service.id)}
                   >
-                    <div className="service-header">
+                    <div className={styles.serviceHeader}>
                       <h4>{service.title}</h4>
-                      <div className="service-price">${service.price}</div>
+                      <div className={styles.servicePrice}>${service.price}</div>
                     </div>
                     
-                    <div className="service-meta">
-                      <span className="duration">⏱️ {service.duration}</span>
-                      <span className="sessions">{service.sessionCount} sessions completed</span>
+                    <div className={styles.serviceMeta}>
+                      <span className={styles.duration}>⏱️ {service.duration}</span>
+                      <span className={styles.sessions}>{service.sessionCount} sessions completed</span>
                     </div>
                     
-                    <p className="service-description">{service.description}</p>
+                    <p className={styles.serviceDescription}>{service.description}</p>
                     
-                    <div className="service-features">
+                    <div className={styles.serviceFeatures}>
                       <h5>What's included:</h5>
                       <ul>
                         {service.features.map((feature, index) => (
@@ -295,18 +295,18 @@ const MentorProfile = () => {
                       </ul>
                     </div>
                     
-                    <div className="service-popularity">
-                      <div className="popularity-bar">
+                    <div className={styles.servicePopularity}>
+                      <div className={styles.popularityBar}>
                         <div 
-                          className="popularity-fill" 
+                          className={styles.popularityFill} 
                           style={{ width: `${service.popularity}%` }}
                         ></div>
                       </div>
-                      <span className="popularity-text">{service.popularity}% student satisfaction</span>
+                      <span className={styles.popularityText}>{service.popularity}% student satisfaction</span>
                     </div>
                     
-                    <button className="btn btn-primary btn-full">
-                      <span className="btn-icon">📅</span>
+                    <button className={`${styles.btn} ${styles.btnPrimary} ${styles.btnFull}`}>
+                      <span className={styles.btnIcon}>📅</span>
                       Book This Service
                     </button>
                   </div>
@@ -316,29 +316,29 @@ const MentorProfile = () => {
           )}
 
           {activeTab === 'availability' && (
-            <div className="availability-section">
-              <div className="availability-header">
+            <div className={styles.availabilitySection}>
+              <div className={styles.availabilityHeader}>
                 <h3>Available Time Slots</h3>
                 <p>All times shown in {mentorData.timeZone}</p>
               </div>
               
-              <div className="calendar-container">
+              <div className={styles.calendarContainer}>
                 {mentorData.availability.map((day, index) => (
-                  <div key={index} className="day-schedule">
-                    <div className="day-header">
+                  <div key={index} className={styles.daySchedule}>
+                    <div className={styles.dayHeader}>
                       <h4>{day.day}</h4>
-                      <span className="day-date">{day.date}</span>
+                      <span className={styles.dayDate}>{day.date}</span>
                     </div>
                     
-                    <div className="time-slots">
+                    <div className={styles.timeSlots}>
                       {day.slots.map((slot, slotIndex) => (
                         <button 
                           key={slotIndex} 
-                          className={`time-slot ${!slot.available ? 'unavailable' : ''}`}
+                          className={`${styles.timeSlot} ${!slot.available ? styles.unavailable : ''}`}
                           disabled={!slot.available}
                         >
-                          <span className="slot-time">{slot.time}</span>
-                          <span className="slot-status">
+                          <span className={styles.slotTime}>{slot.time}</span>
+                          <span className={styles.slotStatus}>
                             {slot.available ? '✅ Available' : '❌ Booked'}
                           </span>
                         </button>
@@ -351,47 +351,47 @@ const MentorProfile = () => {
           )}
 
           {activeTab === 'reviews' && (
-            <div className="reviews-section">
-              <div className="reviews-header">
-                <div className="reviews-title">
+            <div className={styles.reviewsSection}>
+              <div className={styles.reviewsHeader}>
+                <div className={styles.reviewsTitle}>
                   <h3>Student Reviews</h3>
                   <p>What my mentees say about their experience</p>
                 </div>
                 
-                <div className="rating-summary">
-                  <div className="big-rating">{mentorData.rating}</div>
-                  <div className="rating-details">
-                    <div className="stars">⭐⭐⭐⭐⭐</div>
+                <div className={styles.ratingSummary}>
+                  <div className={styles.bigRating}>{mentorData.rating}</div>
+                  <div className={styles.ratingDetails}>
+                    <div className={styles.stars}>⭐⭐⭐⭐⭐</div>
                     <p>Based on {mentorData.reviewCount} reviews</p>
                   </div>
                 </div>
               </div>
               
-              <div className="reviews-list">
+              <div className={styles.reviewsList}>
                 {mentorData.reviews.map((review) => (
-                  <div key={review.id} className="review-card">
-                    <div className="review-header">
-                      <div className="reviewer-info">
-                        <img src={review.avatar} alt={review.name} className="reviewer-avatar" />
-                        <div className="reviewer-details">
+                  <div key={review.id} className={styles.reviewCard}>
+                    <div className={styles.reviewHeader}>
+                      <div className={styles.reviewerInfo}>
+                        <img src={review.avatar} alt={review.name} className={styles.reviewerAvatar} />
+                        <div className={styles.reviewerDetails}>
                           <h5>{review.name}</h5>
-                          <span className="reviewer-role">{review.role}</span>
-                          <div className="review-rating">
+                          <span className={styles.reviewerRole}>{review.role}</span>
+                          <div className={styles.reviewRating}>
                             {'⭐'.repeat(review.rating)}
                           </div>
                         </div>
                       </div>
-                      <div className="review-meta">
-                        <span className="review-date">{review.date}</span>
-                        <span className="helpful-count">👍 {review.helpful} helpful</span>
+                      <div className={styles.reviewMeta}>
+                        <span className={styles.reviewDate}>{review.date}</span>
+                        <span className={styles.helpfulCount}>👍 {review.helpful} helpful</span>
                       </div>
                     </div>
                     
-                    <p className="review-text">{review.comment}</p>
+                    <p className={styles.reviewText}>{review.comment}</p>
                     
-                    <div className="review-actions">
-                      <button className="helpful-btn">👍 Helpful</button>
-                      <button className="reply-btn">💬 Reply</button>
+                    <div className={styles.reviewActions}>
+                      <button className={styles.helpfulBtn}>👍 Helpful</button>
+                      <button className={styles.replyBtn}>💬 Reply</button>
                     </div>
                   </div>
                 ))}
