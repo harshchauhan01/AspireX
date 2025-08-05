@@ -1,4 +1,16 @@
 import React, { useEffect } from 'react';
+import { 
+  FiTarget, 
+  FiBarChart, 
+  FiUsers, 
+  FiMail, 
+  FiUser, 
+  FiCalendar, 
+  FiHeadphones, 
+  FiLogOut,
+  FiChevronRight,
+  FiChevronLeft
+} from 'react-icons/fi';
 import './CSS/Dashboard.css';
 import { API_BASE_URL } from '../../BackendConn/api'; // Added import for API_BASE_URL
 
@@ -41,13 +53,13 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
           {/* Only show collapse toggle in sidebar on desktop */}
           {!isMobile && (
             <button className="toggle-sidebar" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-              {sidebarCollapsed ? '\u25b6' : '\u25c0'}
+              {sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
             </button>
           )}
           {/* Only show open/close toggle in sidebar on mobile */}
           {isMobile && (
             <button className="toggle-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? '\u25c0' : '\u25b6'}
+              {sidebarOpen ? <FiChevronLeft /> : <FiChevronRight />}
             </button>
           )}
         </div>
@@ -75,7 +87,7 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
               <h3>{mentor?.name || mentorProfile.name}</h3>
               <p>{mentor?.email || mentorProfile.email}</p>
               <div className="mentor-stats">
-                <span>🎯 {totalSessions} sessions</span>
+                <span><FiTarget /> {totalSessions} sessions</span>
               </div>
             </div>
           )}
@@ -84,29 +96,29 @@ const Sidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, mentorP
         <nav>
           <ul>
             <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-              <span>📊</span> {(!sidebarCollapsed && sidebarOpen) && 'Dashboard'}
+              <span><FiBarChart /></span> {(!sidebarCollapsed && sidebarOpen) && 'Dashboard'}
             </li>
             <li className={activeTab === 'mentees' ? 'active' : ''} onClick={() => setActiveTab('mentees')}>
-              <span>👥</span> {(!sidebarCollapsed && sidebarOpen) && 'Mentees'}
+              <span><FiUsers /></span> {(!sidebarCollapsed && sidebarOpen) && 'Mentees'}
             </li>
             <li className={activeTab === 'messages' ? 'active' : ''} onClick={() => setActiveTab('messages')}>
-              <span>✉️</span> {(!sidebarCollapsed && sidebarOpen) && 'Messages'}
+              <span><FiMail /></span> {(!sidebarCollapsed && sidebarOpen) && 'Messages'}
             </li>
             <li className={activeTab === 'profile' ? 'active' : ''} onClick={() => setActiveTab('profile')}>
-              <span>👤</span> {(!sidebarCollapsed && sidebarOpen) && 'Profile'}
+              <span><FiUser /></span> {(!sidebarCollapsed && sidebarOpen) && 'Profile'}
             </li>
             <li className={activeTab === 'sessions' ? 'active' : ''} onClick={() => setActiveTab('sessions')}>
-              <span>🗓️</span> {(!sidebarCollapsed && sidebarOpen) && 'Sessions'}
+              <span><FiCalendar /></span> {(!sidebarCollapsed && sidebarOpen) && 'Sessions'}
             </li>
             <li className={activeTab === 'customerService' ? 'active' : ''} onClick={() => setActiveTab('customerService')}>
-              <span>🎧</span> {(!sidebarCollapsed && sidebarOpen) && 'Customer Service'}
+              <span><FiHeadphones /></span> {(!sidebarCollapsed && sidebarOpen) && 'Customer Service'}
             </li>
           </ul>
         </nav>
         {/* Logout */}
         <div className="logout-section">
           <button className="logout-button" onClick={handleLogout}>
-            <span>🚪</span> {(!sidebarCollapsed && sidebarOpen) && 'Logout'}
+            <span><FiLogOut /></span> {(!sidebarCollapsed && sidebarOpen) && 'Logout'}
           </button>
         </div>
       </div>

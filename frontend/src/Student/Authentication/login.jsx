@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import API from '../../BackendConn/api';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import Modal from '../../components/ui/Modal';
 
 const LICENSE_AGREEMENT = `
-User License Agreement\n\nEffective Date: 2024-07-09\n\nWelcome to AspireX! Please read this User License Agreement (“Agreement”) carefully before using our platform. By accessing or using AspireX, you agree to be bound by the terms of this Agreement.\n\n1. License Grant\nAspireX grants you a limited, non-exclusive, non-transferable, and revocable license to use the platform for your personal, non-commercial educational purposes, subject to the terms of this Agreement.\n\n2. User Roles\n- Student: An individual seeking to learn, book sessions, and interact with mentors on AspireX.\n- Mentor: An individual providing educational sessions, guidance, and support to students via AspireX.\n- Administrator: AspireX staff responsible for managing the platform, resolving disputes, and ensuring compliance.\n\n3. User Obligations\n- You agree to use AspireX in compliance with all applicable laws and regulations.\n- You will not misuse the platform, attempt unauthorized access, or disrupt the service.\n\n4. Session Conduct\n- All users must maintain professionalism and respect during sessions.\n- Harassment, discrimination, or inappropriate behavior is strictly prohibited and may result in suspension or termination of your account.\n- Sessions must be conducted through AspireX’s approved communication channels, including the in-platform chat and video tools. Communication outside these channels is discouraged and AspireX is not responsible for any issues arising from such interactions.\n\n5. Payment and Refund Policy\n- Students are required to pay session fees in advance through approved payment gateways.\n- AspireX is not responsible for any failed or delayed transactions; if a payment fails, it is the user’s responsibility to resolve the issue with their payment provider.\n- If a scheduled meeting/session is cancelled by the mentor or AspireX, the student will receive a full refund within 5-7 business days.\n- No refunds will be issued for completed sessions or for cancellations initiated by the student, except as outlined in AspireX’s refund policy.\n- Mentors will receive payments for completed sessions as per the payout schedule.\n\n6. Age Restriction\n- You must be at least 16 years old to use AspireX. By registering, you confirm that you meet this age requirement.\n\n7. Intellectual Property\nAll content, trademarks, and data on AspireX are the property of AspireX or its licensors. You may not copy, modify, distribute, or create derivative works without express written permission.\n\n8. Privacy\nYour use of AspireX is also governed by our Privacy Policy. Please review it to understand our practices.\n\n9. Termination\nAspireX reserves the right to suspend or terminate your access at any time for violation of this Agreement.\n\n10. Disclaimer\nAspireX is provided “as is” without warranties of any kind. We do not guarantee the accuracy, completeness, or reliability of the platform.\n\n11. Limitation of Liability\nAspireX shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.\n\n12. Arbitration Clause\nAny disputes arising out of or relating to this Agreement or your use of AspireX shall be resolved through binding arbitration in accordance with the Arbitration and Conciliation Act, 1996. The decision of the arbitrator shall be final and binding on both parties.\n\n13. Governing Law and Jurisdiction\nThis Agreement shall be governed by and construed in accordance with the laws of India. Any legal action or proceeding arising under this Agreement shall be subject to the exclusive jurisdiction of the courts located in India.\n\n14. Changes to Agreement\nWe may update this Agreement from time to time. Continued use of AspireX after changes constitutes acceptance of the new terms.\n\nContact Us\nIf you have any questions about this Agreement, please contact us at [support@aspirex.com].
+User License Agreement\n\nEffective Date: 2024-07-09\n\nWelcome to AspireX! Please read this User License Agreement ("Agreement") carefully before using our platform. By accessing or using AspireX, you agree to be bound by the terms of this Agreement.\n\n1. License Grant\nAspireX grants you a limited, non-exclusive, non-transferable, and revocable license to use the platform for your personal, non-commercial educational purposes, subject to the terms of this Agreement.\n\n2. User Roles\n- Student: An individual seeking to learn, book sessions, and interact with mentors on AspireX.\n- Mentor: An individual providing educational sessions, guidance, and support to students via AspireX.\n- Administrator: AspireX staff responsible for managing the platform, resolving disputes, and ensuring compliance.\n\n3. User Obligations\n- You agree to use AspireX in compliance with all applicable laws and regulations.\n- You will not misuse the platform, attempt unauthorized access, or disrupt the service.\n\n4. Session Conduct\n- All users must maintain professionalism and respect during sessions.\n- Harassment, discrimination, or inappropriate behavior is strictly prohibited and may result in suspension or termination of your account.\n- Sessions must be conducted through AspireX's approved communication channels, including the in-platform chat and video tools. Communication outside these channels is discouraged and AspireX is not responsible for any issues arising from such interactions.\n\n5. Payment and Refund Policy\n- Students are required to pay session fees in advance through approved payment gateways.\n- AspireX is not responsible for any failed or delayed transactions; if a payment fails, it is the user's responsibility to resolve the issue with their payment provider.\n- If a scheduled meeting/session is cancelled by the mentor or AspireX, the student will receive a full refund within 5-7 business days.\n- No refunds will be issued for completed sessions or for cancellations initiated by the student, except as outlined in AspireX's refund policy.\n- Mentors will receive payments for completed sessions as per the payout schedule.\n\n6. Age Restriction\n- You must be at least 16 years old to use AspireX. By registering, you confirm that you meet this age requirement.\n\n7. Intellectual Property\nAll content, trademarks, and data on AspireX are the property of AspireX or its licensors. You may not copy, modify, distribute, or create derivative works without express written permission.\n\n8. Privacy\nYour use of AspireX is also governed by our Privacy Policy. Please review it to understand our practices.\n\n9. Termination\nAspireX reserves the right to suspend or terminate your access at any time for violation of this Agreement.\n\n10. Disclaimer\nAspireX is provided "as is" without warranties of any kind. We do not guarantee the accuracy, completeness, or reliability of the platform.\n\n11. Limitation of Liability\nAspireX shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform.\n\n12. Arbitration Clause\nAny disputes arising out of or relating to this Agreement or your use of AspireX shall be resolved through binding arbitration in accordance with the Arbitration and Conciliation Act, 1996. The decision of the arbitrator shall be final and binding on both parties.\n\n13. Governing Law and Jurisdiction\nThis Agreement shall be governed by and construed in accordance with the laws of India. Any legal action or proceeding arising under this Agreement shall be subject to the exclusive jurisdiction of the courts located in India.\n\n14. Changes to Agreement\nWe may update this Agreement from time to time. Continued use of AspireX after changes constitutes acceptance of the new terms.\n\nContact Us\nIf you have any questions about this Agreement, please contact us at [support@aspirex.com].
 `;
 
 const TERMS_AND_CONDITIONS = `\nTerms & Conditions\n\nBy using AspireX, you agree to abide by all platform rules, policies, and applicable laws. You must not use AspireX for any unlawful or prohibited purpose. For full details, please refer to the User License Agreement.\n\nContact support@aspirex.com for any questions.`;
@@ -16,7 +16,74 @@ function SLogin() {
   const [showLicense, setShowLicense] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    // Load Google Sign-In script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || 'your-google-client-id',
+          callback: handleGoogleSignIn,
+        });
+        
+        window.google.accounts.id.renderButton(
+          document.getElementById('google-signin-button'),
+          { 
+            theme: 'outline', 
+            size: 'large',
+            width: '100%',
+            text: 'signin_with'
+          }
+        );
+      }
+    };
+
+    return () => {
+      // Cleanup
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
+
+  const handleGoogleSignIn = async (response) => {
+    if (!acceptedTerms) {
+      setError('You must accept the Terms & Conditions to login.');
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    setError('');
+
+    try {
+      // Send the ID token to our unified auth backend
+      const result = await API.post('auth/google/verify/', {
+        id_token: response.credential,
+        user_type: 'student'
+      });
+
+      // Store the token
+      localStorage.removeItem('Mentortoken');
+      localStorage.setItem('token', result.data.token);
+      
+      alert('Google login successful! Check your email for your credentials.');
+      navigate('/student/dashboard');
+    } catch (err) {
+      console.error('Google sign-in error:', err);
+      setError(err.response?.data?.error || 'Google authentication failed');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -67,7 +134,7 @@ function SLogin() {
             {error && <p className="text-red-500">{error}</p>}
             <form className="form" action onSubmit={handleSubmit}>
               <input placeholder="Student ID" id="text" name="student_id" type="text" className="input" onChange={handleChange} required />
-              <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required />
+              <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required autoComplete="current-password" />
               <span className="forgot-password"><a href="#">Forgot Password ?</a></span>
               <div style={{ marginTop: '12px', fontSize: '11px' }}>
                 <input
@@ -93,11 +160,8 @@ function SLogin() {
             <div className="social-account-container">
               <span className="title">Or Sign in with</span>
               <div className="social-accounts">
-                <button className="social-button google">
-                  <svg viewBox="0 0 488 512" height="1em" xmlns="http://www.w3.org/2000/svg" className="svg">
-                    <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z" />
-                  </svg>
-                </button>
+                <div id="google-signin-button" style={{ width: '100%', marginBottom: '10px' }}></div>
+                {isGoogleLoading && <div style={{ textAlign: 'center', color: '#666' }}>Processing...</div>}
                 <button className="social-button apple">
                   <svg viewBox="0 0 384 512" height="1em" xmlns="http://www.w3.org/2000/svg" className="svg">
                     <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
@@ -113,7 +177,7 @@ function SLogin() {
             <span className="agreement"><a href="#" onClick={e => { e.preventDefault(); setShowLicense(true); }}>Learn user licence agreement</a></span>
             <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px' }}>
               Don't have an account?{' '}
-              <a href="#" style={{ color: '#0099ff', textDecoration: 'underline' }} onClick={e => { e.preventDefault(); navigate('/student/signup'); }}>
+              <a href="#" style={{ color: '#0099ff', textDecoration: 'underline' }} onClick={e => { e.preventDefault(); navigate('/signup'); }}>
                 Sign Up
               </a>
             </div>

@@ -82,10 +82,16 @@ import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
 import Loader from '../../components/ui/loader';
 import Modal from '../../components/ui/Modal';
+import CommunityFeed from '../../components/CommunityFeed';
 
 const Dashboard = () => {
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (window.innerWidth < 992) {
+      return 'profile';
+    }
+    return 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
@@ -106,6 +112,7 @@ const Dashboard = () => {
           Authorization: `Token ${token}`,
         }
       });
+      // console.log(response.data);
       
       setMentor(response.data);
     } catch (err) {
@@ -215,6 +222,8 @@ const Dashboard = () => {
         return <FeedbackPage />;
       case 'customerService':
         return <CustomerServicePage />;
+      case 'community':
+        return <CommunityFeed />;
       default:
         return <DashboardHome mentorProfile={mentorProfile} />;
     }

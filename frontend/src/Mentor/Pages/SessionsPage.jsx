@@ -3,7 +3,9 @@ import './CSS/PageStyles.css';
 import './CSS/Sessions.css';
 import { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
 import Modal from '../../components/ui/Modal';
+import { formatMeetingTime, formatMeetingDate } from '../../lib/utils';
 import { useRef } from 'react';
+import { API_BASE_URL } from '../../BackendConn/api.js';
 
 const SessionsPage = ({ sessions = [] }) => {
   const [activeTab, setActiveTab] = useState('scheduled');
@@ -65,18 +67,8 @@ const SessionsPage = ({ sessions = [] }) => {
   // Format session data for display
   const formatSession = (session) => {
     const dateObj = getMeetingTime(session);
-    const date = dateObj.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC'
-    });
-    const time = dateObj.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC'
-    });
+    const date = formatMeetingDate(dateObj);
+    const time = formatMeetingTime(dateObj);
 
     // Extract avatar initials with null check
     let studentName = '';
@@ -185,7 +177,7 @@ const SessionsPage = ({ sessions = [] }) => {
         setRescheduleError('Mentor not authenticated. Please log in again.');
         return;
       }
-      const response = await fetch(`http://127.0.0.1:8000/api/mentor/meeting/${rescheduleMeeting.meeting_id}/reschedule/`, {
+      const response = await fetch(`${API_BASE_URL}/mentor/meeting/${rescheduleMeeting.meeting_id}/reschedule/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

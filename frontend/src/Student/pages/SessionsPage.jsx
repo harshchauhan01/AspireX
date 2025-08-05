@@ -3,6 +3,7 @@ import './CSS/PageStyles.css';
 import './CSS/Sessions.css';
 import FeedbackModal from '../components/FeedbackModal';
 import API from '../../BackendConn/api';
+import { formatMeetingTime, formatMeetingDate } from '../../lib/utils';
 import { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
 
 const SessionsPage = ({ sessions = [] }) => {
@@ -12,6 +13,8 @@ const SessionsPage = ({ sessions = [] }) => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [feedbackStatus, setFeedbackStatus] = useState({});
   const [attendanceStatus, setAttendanceStatus] = useState({});
+
+
 
   // Check feedback status for completed sessions
   useEffect(() => {
@@ -73,6 +76,8 @@ const SessionsPage = ({ sessions = [] }) => {
     return acc;
   }, { scheduled: [], ongoing: [], pending: [], completed: [], missed: [] });
 
+
+
   // Sort each category by date in descending order
   for (const category in categorizedSessions) {
     categorizedSessions[category].sort((a, b) => new Date(b.scheduled_time) - new Date(a.scheduled_time));
@@ -87,27 +92,18 @@ const SessionsPage = ({ sessions = [] }) => {
 
   // Helper to determine which sessions to show based on activeTab
   const getSessionsForTab = () => {
+    if (activeTab === 'scheduled') return categorizedSessions.scheduled || [];
+    if (activeTab === 'ongoing') return categorizedSessions.ongoing || [];
     if (activeTab === 'pending') return pendingSessions;
     if (activeTab === 'completed') return categorizedSessions.completed || [];
-    // Add more tabs if needed
     return [];
   };
 
   // Format session data for display
   const formatSession = (session) => {
     const dateObj = new Date(session.scheduled_time);
-    const date = dateObj.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC'
-    });
-    const time = dateObj.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC'
-    });
+    const date = formatMeetingDate(dateObj);
+    const time = formatMeetingTime(dateObj);
 
     // Extract avatar initials - for students, show mentor info
     let mentorName = session.mentor_name || 'Unknown Mentor';

@@ -14,12 +14,18 @@ import './CSS/Dashboard.css';
 import API from "../../BackendConn/api";
 import CustomerServicePage from './CustomerServicePage';
 import Modal from '../../components/ui/Modal';
+import CommunityFeed from '../../components/CommunityFeed';
 
 const StuDashboard = () => {
   const { mentorId } = useParams();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (window.innerWidth < 992) {
+      return 'profile';
+    }
+    return 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
@@ -165,9 +171,11 @@ const StuDashboard = () => {
       case 'profile':
         return <ProfilePage mentorProfile={mentor} />;
       case 'sessions':
-        return <SessionsPage sessions={mentor.meetings || []} />;
+        return <SessionsPage sessions={mentor?.meetings || []} />;
       case 'customerService':
         return <CustomerServicePage />;
+      case 'community':
+        return <CommunityFeed />;
       default:
         return <DashboardHome mentorProfile={mentorProfile} />;
     }

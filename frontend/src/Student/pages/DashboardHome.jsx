@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { FiMapPin, FiSettings } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import './CSS/Dashboard.css';
 import './CSS/PageStyles.css';
 import FeedbackModal from '../components/FeedbackModal';
@@ -6,10 +8,12 @@ import API from '../../BackendConn/api';
 import { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
 import Modal from '../../components/ui/Modal';
 import Calendar from "./Calendar";
+import { formatMeetingTime, formatMeetingDate } from '../../lib/utils';
 
 const now = new Date();
 
 const DashboardHome = ({ mentorProfile, mentor }) => {
+  const navigate = useNavigate();
   // State for notes
   const [notes, setNotes] = useState([]);
   const [newNoteTitle, setNewNoteTitle] = useState('');
@@ -165,7 +169,11 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 
   const getMeetingTime = (meeting) => {
     if (!meeting) return new Date();
-    if (meeting.scheduled_time) return new Date(meeting.scheduled_time);
+    if (meeting.scheduled_time) {
+      // Convert UTC time to local time for proper comparison
+      const utcDate = new Date(meeting.scheduled_time);
+      return utcDate;
+    }
     if (meeting.date && meeting.time) {
       // Remove any extra text after the time (e.g., ' (60 mins)')
       const timePart = meeting.time.split(' ')[0];
@@ -176,30 +184,25 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 
   // Update formatUpcomingSessions to include ongoing meetings
   const formatUpcomingSessions = (meetings = []) => {
+    // Get current time in UTC to match backend timezone
+    const now = new Date();
+    const nowUTC = new Date(now.toISOString());
+    
     return meetings
       .filter(meeting => {
         const meetingTime = getMeetingTime(meeting);
         const attendedRoles = attendanceStatus[meeting.meeting_id] || [];
         const studentAttended = attendedRoles.includes('student');
         const oneHourAfter = new Date(meetingTime.getTime() + 60 * 60 * 1000);
-        // Show as upcoming if now < meetingTime + 1hr and status is scheduled or ongoing
-        return (meeting.status === 'scheduled' || meeting.status === 'ongoing') && now < oneHourAfter;
+        const isUpcoming = (meeting.status === 'scheduled' || meeting.status === 'ongoing') && meetingTime > nowUTC;
+        // Show as upcoming if meeting is in the future and status is scheduled or ongoing
+        return isUpcoming;
       })
-      .sort((a, b) => getMeetingTime(b.meetingObj) - getMeetingTime(a.meetingObj)) // Sort by most recent
+      .sort((a, b) => getMeetingTime(a) - getMeetingTime(b)) // Sort by earliest upcoming
       .map(meeting => {
         const dateObj = getMeetingTime(meeting);
-        const date = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'UTC'
-        });
-        const time = dateObj.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'UTC'
-        });
+        const date = formatMeetingDate(dateObj);
+        const time = formatMeetingTime(dateObj);
         const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ')
           ? meeting.student.split(' - ')[1]
           : meeting.student;
@@ -218,6 +221,8 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   };
 
   const formatCompletedSessions = (meetings = []) => {
+    const now = new Date();
+    const nowUTC = new Date(now.toISOString());
     return meetings
       .filter(meeting => {
         const meetingTime = getMeetingTime(meeting);
@@ -227,24 +232,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         // Completed if status is completed, or attended and >1hr past scheduled time
         return (
           meeting.status === 'completed' ||
-          (meeting.status === 'scheduled' && studentAttended && now > oneHourAfter)
+          (meeting.status === 'scheduled' && studentAttended && nowUTC > oneHourAfter)
         );
       })
       .sort((a, b) => getMeetingTime(b) - getMeetingTime(a)) // Most recent first
       .map(meeting => {
         const dateObj = getMeetingTime(meeting);
-        const date = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'UTC'
-        });
-        const time = dateObj.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'UTC'
-        });
+        const date = formatMeetingDate(dateObj);
+        const time = formatMeetingTime(dateObj);
         const mentorName = meeting.mentor_name || 'Unknown Mentor';
         return {
           id: meeting.meeting_id,
@@ -262,6 +257,8 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   };
 
   const formatMissedSessions = (meetings = []) => {
+    const now = new Date();
+    const nowUTC = new Date(now.toISOString());
     return meetings
       .filter(meeting => {
         const meetingTime = getMeetingTime(meeting);
@@ -270,24 +267,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         const oneHourAfter = new Date(meetingTime.getTime() + 60 * 60 * 1000);
         // Missed if status is scheduled, not attended, and now > 1hr after scheduled time
         return (
-          meeting.status === 'scheduled' && !studentAttended && now > oneHourAfter
+          meeting.status === 'scheduled' && !studentAttended && nowUTC > oneHourAfter
         );
       })
       .sort((a, b) => getMeetingTime(b) - getMeetingTime(a))
       .map(meeting => {
         const dateObj = getMeetingTime(meeting);
-        const date = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'UTC'
-        });
-        const time = dateObj.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'UTC'
-        });
+        const date = formatMeetingDate(dateObj);
+        const time = formatMeetingTime(dateObj);
         const studentName = typeof meeting.student === 'string' && meeting.student.includes(' - ')
           ? meeting.student.split(' - ')[1]
           : meeting.student;
@@ -484,17 +471,26 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
 
   return (
     <>
+      {/* Services Button */}
+      <div className="services-button-container">
+        <button 
+          className="services-button"
+          onClick={() => navigate('/services')}
+        >
+          <FiSettings />
+          <span>Services</span>
+        </button>
+      </div>
+
       {/* Upcoming Sessions */}
       <section className="upcoming-sessions">
         <h2>Upcoming Sessions</h2>
         <div className="sessions-list">
           {upcomingSessions.length > 0 ? (
             upcomingSessions.map(session => {
-              const attendedRoles = attendanceStatus[session.id] || [];
-              const studentAttended = attendedRoles.includes('student');
-              const mentorAttended = attendedRoles.includes('mentor');
-              const scheduledTime = getMeetingTime(session);
-              const canJoin = now >= scheduledTime;
+              const studentAttended = attendanceStatus[session.id]?.includes('student');
+              const mentorAttended = attendanceStatus[session.id]?.includes('mentor');
+              
               return (
                 <div key={session.id} className="session-card">
                   <div className="session-info">
@@ -599,7 +595,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
         <section className="missed-sessions">
           <h2>Missed Sessions</h2>
           <div className="sessions-list">
-            {missedSessions.map(session => (
+            {missedSessions.slice(0, 3).map(session => (
               <div key={session.id} className="session-card missed">
                 <div className="session-date">
                   <p className="day">{new Date(session.date).getDate()}</p>
@@ -607,14 +603,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                 </div>
                 <div className="session-details">
                   <h3>{session.topic}</h3>
-                  <p>With {session.mentee}</p>
+                  <p>With {session.mentor}</p>
                   <p className="session-time">{session.time}</p>
                   {session.description && (
                     <p className="session-description">{session.description}</p>
                   )}
                 </div>
                 <div className="session-actions">
-                  <button className="primary-button">View Details</button>
+                  <button className="secondary-button">Reschedule</button>
                 </div>
               </div>
             ))}
@@ -629,53 +625,14 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
           <div className="calendar">
             {/* Calendar implementation would go here */}
             <Calendar meetings={mentor?.meetings || []} />
-            {/* <p>Calendar component will be implemented here</p> */}
           </div>
         </section>
 
         <section className="notifications-section">
-        <h2>Notifications</h2>
-        <div className="notifications-list">
-          {topNotifications.length > 0 ? (
-            topNotifications.map(notification => (
-              <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
-                <p>
-                  <strong>Admin:</strong><br/> {notification.text}
-                </p>
-                <span className="notification-time">{notification.time}</span>
-                {!notification.read && <span className="unread-badge"></span>}
-              </div>
-            ))
-          ) : (
-            <p className="no-notifications">No new notifications</p>
-          )}
-          
-          {hasMoreNotifications && (
-            <button 
-              className="view-all-button"
-              onClick={() => setShowNotificationsSidebar(true)}
-            >
-              View All Messages ({studentNotifications.length})
-            </button>
-          )}
-        </div>
-      </section>
-
-      {/* Notifications Sidebar */}
-      {showNotificationsSidebar && (
-        <div className="notifications-sidebar-overlay">
-          <div className="notifications-sidebar">
-            <div className="sidebar-header">
-              <h3>All Notifications</h3>
-              <button 
-                className="close-sidebar"
-                onClick={() => setShowNotificationsSidebar(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="sidebar-content">
-              {studentNotifications.map(notification => (
+          <h2>Notifications</h2>
+          <div className="notifications-list">
+            {topNotifications.length > 0 ? (
+              topNotifications.map(notification => (
                 <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
                   <p>
                     <strong>Admin:</strong><br/> {notification.text}
@@ -683,113 +640,152 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                   <span className="notification-time">{notification.time}</span>
                   {!notification.read && <span className="unread-badge"></span>}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      </div>
-
-      {/* Pinned Conversations and Notes */}
-      <div className="bottom-section">
-        <section className="pinned-conversations">
-          <h2>Pinned Conversations</h2>
-          <div className="conversations-list">
-            {pinnedConversations.length > 0 ? (
-              pinnedConversations.map(conversation => (
-                <div key={conversation.id} className="conversation-item">
-                  <div className="conversation-avatar">
-                    {conversation.other_person_name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div className="conversation-details">
-                    <h3>{conversation.other_person_name}</h3>
-                    <p>
-                      {conversation.last_message_content 
-                        ? conversation.last_message_content.length > 50 
-                          ? conversation.last_message_content.substring(0, 50) + '...'
-                          : conversation.last_message_content
-                        : 'No message yet'
-                      }
-                    </p>
-                    <span className="conversation-time">
-                      {conversation.last_message_time ? formatTime(conversation.last_message_time) : ''}
-                    </span>
-                  </div>
-                  <div className="conversation-actions">
-                    <button 
-                      onClick={() => togglePinConversation(conversation.id, true)}
-                      className="pin-button pinned"
-                      title="Unpin conversation"
-                    >
-                      📌
-                    </button>
-                  </div>
-                </div>
               ))
             ) : (
-              <p className="no-conversations">No pinned conversations</p>
+              <p className="no-notifications">No new notifications</p>
+            )}
+            
+            {hasMoreNotifications && (
+              <button 
+                className="view-all-button"
+                onClick={() => setShowNotificationsSidebar(true)}
+              >
+                View All Messages ({studentNotifications.length})
+              </button>
             )}
           </div>
         </section>
 
-        <section className="notes-section">
-          <h2>Quick Notes</h2>
-          <div className="notes-list">
-            {showNoteForm && (
-              <div className="note-form">
-                <input
-                  type="text"
-                  placeholder="Note title"
-                  value={newNoteTitle}
-                  onChange={(e) => setNewNoteTitle(e.target.value)}
-                  className="note-input"
-                />
-                <textarea
-                  placeholder="Note content"
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  className="note-textarea"
-                  rows="3"
-                />
-                <div className="note-form-actions">
-                  <button onClick={addNote} className="primary-button small">
-                    Save Note
-                  </button>
-                  <button 
-                    onClick={() => setShowNoteForm(false)} 
-                    className="secondary-button small"
-                  >
-                    Cancel
-                  </button>
-                </div>
+        {/* Notifications Sidebar */}
+        {showNotificationsSidebar && (
+          <div className="notifications-sidebar-overlay" onClick={() => setShowNotificationsSidebar(false)}>
+            <div className="notifications-sidebar" onClick={(e) => e.stopPropagation()}>
+              <div className="sidebar-header">
+                <h3>All Notifications</h3>
+                <button 
+                  className="close-sidebar"
+                  onClick={() => setShowNotificationsSidebar(false)}
+                >
+                  ×
+                </button>
               </div>
-            )}
-
-            {notes.map(note => (
-              <div key={note.id} className="note-item">
-                <div className="note-header">
-                  <h3>{note.title}</h3>
-                  <button 
-                    onClick={() => deleteNote(note.id)} 
-                    className="delete-note-button"
-                  >
-                    ×
-                  </button>
-                </div>
-                <p>{note.content}</p>
-                <span className="note-date">{note.date}</span>
+              <div className="sidebar-content">
+                {studentNotifications.map(notification => (
+                  <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
+                    <p>
+                      <strong>Admin:</strong><br/> {notification.text}
+                    </p>
+                    <span className="notification-time">{notification.time}</span>
+                    {!notification.read && <span className="unread-badge"></span>}
+                  </div>
+                ))}
               </div>
-            ))}
-
-            {!showNoteForm && (
-              <button 
-                onClick={() => setShowNoteForm(true)} 
-                className="add-note-button"
-              >
-                + Add New Note
-              </button>
-            )}
+            </div>
           </div>
+        )}
+
+        {/* Pinned Conversations and Notes */}
+        
+          <section className="pinned-conversations">
+            <h2>Pinned Conversations</h2>
+            <div className="conversations-list">
+              {pinnedConversations.length > 0 ? (
+                pinnedConversations.map(conversation => (
+                  <div key={conversation.id} className="conversation-item">
+                    <div className="conversation-avatar">
+                      {conversation.other_person_name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div className="conversation-details">
+                      <h3>{conversation.other_person_name}</h3>
+                      <p>
+                        {conversation.last_message_content 
+                          ? conversation.last_message_content.length > 50 
+                            ? conversation.last_message_content.substring(0, 50) + '...'
+                            : conversation.last_message_content
+                          : 'No message yet'
+                        }
+                      </p>
+                      <span className="conversation-time">
+                        {conversation.last_message_time ? formatTime(conversation.last_message_time) : ''}
+                      </span>
+                    </div>
+                    <div className="conversation-actions">
+                      <button 
+                        onClick={() => togglePinConversation(conversation.id, true)}
+                        className="pin-button pinned"
+                        title="Unpin conversation"
+                      >
+                        <FiMapPin />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="no-conversations">No pinned conversations</p>
+              )}
+            </div>
+          </section>
+
+          
+        
+        <section className="notes-section">
+            <h2>Quick Notes</h2>
+            <div className="notes-list">
+              {showNoteForm && (
+                <div className="note-form">
+                  <input
+                    type="text"
+                    placeholder="Note title"
+                    value={newNoteTitle}
+                    onChange={(e) => setNewNoteTitle(e.target.value)}
+                    className="note-input"
+                  />
+                  <textarea
+                    placeholder="Note content"
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    className="note-textarea"
+                    rows="3"
+                  />
+                  <div className="note-form-actions">
+                    <button onClick={addNote} className="primary-button small">
+                      Save Note
+                    </button>
+                    <button 
+                      onClick={() => setShowNoteForm(false)} 
+                      className="secondary-button small"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {notes.map(note => (
+                <div key={note.id} className="note-item">
+                  <div className="note-header">
+                    <h3>{note.title}</h3>
+                    <button 
+                      onClick={() => deleteNote(note.id)} 
+                      className="delete-note-button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p>{note.content}</p>
+                  <span className="note-date">{note.date}</span>
+                </div>
+              ))}
+
+              {!showNoteForm && (
+                <button 
+                  onClick={() => setShowNoteForm(true)} 
+                  className="add-note-button"
+                >
+                  + Add New Note
+                </button>
+              )}
+            </div>
         </section>
       </div>
 

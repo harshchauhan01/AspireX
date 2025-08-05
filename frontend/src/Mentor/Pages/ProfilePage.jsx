@@ -1,10 +1,11 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './CSS/PageStyles.css';
 import './CSS/Profile.css';
 import Loader from '../../components/ui/loader';
 import API from '../../BackendConn/api';
 import { API_BASE_URL } from '../../BackendConn/api';
+import { FiTarget, FiStar, FiEdit, FiTrash } from 'react-icons/fi';
 
 // Date validation and formatting functions
 const formatDateForBackend = (dateString) => {
@@ -52,6 +53,11 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
     portfolio: mentorProfile?.details?.portfolio_url || '',
     skills: mentorProfile?.details?.skills?.map(skill => skill.name).join(', ') || '',
     cv: mentorProfile?.details?.cv || null,
+    // New fields - simple arrays and objects
+    keyAchievements: mentorProfile?.details?.key_achievements || [],
+    services: mentorProfile?.details?.services || [],
+    availabilityDayWise: mentorProfile?.details?.availability_day_wise || {},
+    languages: mentorProfile?.details?.languages || [],
   });
 
   const [cvFile, setCvFile] = useState(null);
@@ -62,6 +68,8 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(mentorProfile?.details?.profile_photo || null);
+  const [onlineStatus, setOnlineStatus] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const fileInputRef = React.useRef(null);
   const photoInputRef = useRef(null);
@@ -71,18 +79,324 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
       setPhotoPreview(mentorProfile.details.profile_photo);
     }
   }, [mentorProfile]);
-  
 
+  // Load online status from backend
+  useEffect(() => {
+    const loadOnlineStatus = async () => {
+      try {
+        const token = getAuthToken();
+        const response = await axios.get(`${API_BASE_URL}/mentor/profile/`, {
+          headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.data && response.data.details) {
+          setOnlineStatus(response.data.details.is_online);
+        }
+      } catch (error) {
+        console.error('Error loading online status:', error);
+      }
+    };
 
+    if (mentorProfile) {
+      loadOnlineStatus();
+    }
+  }, [mentorProfile]);
 
+  // Update online status when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        updateOnlineStatus();
+      }
+    };
+
+    const handleFocus = () => {
+      updateOnlineStatus();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  // Periodic online status updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateOnlineStatus();
+    }, 60000); // Update every 1 minute instead of 2 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   const getAuthToken = () => {
     return localStorage.getItem('Mentortoken');
   };
 
+  const updateOnlineStatus = async () => {
+    setUpdatingStatus(true);
+    try {
+      const token = getAuthToken();
+      const response = await axios.post(`${API_BASE_URL}/mentor/online-status/`, {}, {
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data) {
+        setOnlineStatus(response.data.is_online);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error updating online status:', error);
+      setSaveError('Failed to update online status');
+      setTimeout(() => setSaveError(null), 3000);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const setOfflineStatus = async () => {
+    setUpdatingStatus(true);
+    try {
+      const token = getAuthToken();
+      // Set last activity to 10 minutes ago to make mentor offline
+      const response = await axios.post(`${API_BASE_URL}/mentor/online-status/`, {
+        set_offline: true
+      }, {
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data) {
+        setOnlineStatus(response.data.is_online);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error setting offline status:', error);
+      setSaveError('Failed to set offline status');
+      setTimeout(() => setSaveError(null), 3000);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // New handlers for user-friendly inputs
+  const handleAchievementAdd = () => {
+    setProfileData(prev => ({
+      ...prev,
+      keyAchievements: [...prev.keyAchievements, '']
+    }));
+  };
+
+  const handleAchievementChange = (index, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      keyAchievements: prev.keyAchievements.map((achievement, i) => 
+        i === index ? value : achievement
+      )
+    }));
+  };
+
+  const handleAchievementRemove = (index) => {
+    setProfileData(prev => ({
+      ...prev,
+      keyAchievements: prev.keyAchievements.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleServiceAdd = () => {
+    setProfileData(prev => ({
+      ...prev,
+      services: [...prev.services, {
+        title: '',
+        duration: '60 min',
+        price: 80,
+        description: '',
+        features: [''],
+        popularity: 90,
+        sessionCount: 100
+      }]
+    }));
+  };
+
+  const handleServiceChange = (index, field, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      services: prev.services.map((service, i) => 
+        i === index ? { ...service, [field]: value } : service
+      )
+    }));
+  };
+
+  const handleServiceRemove = (index) => {
+    setProfileData(prev => ({
+      ...prev,
+      services: prev.services.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleServiceFeatureAdd = (serviceIndex) => {
+    setProfileData(prev => ({
+      ...prev,
+      services: prev.services.map((service, i) => 
+        i === serviceIndex 
+          ? { ...service, features: [...service.features, ''] }
+          : service
+      )
+    }));
+  };
+
+  const handleServiceFeatureChange = (serviceIndex, featureIndex, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      services: prev.services.map((service, i) => 
+        i === serviceIndex 
+          ? { 
+              ...service, 
+              features: service.features.map((feature, j) => 
+                j === featureIndex ? value : feature
+              )
+            }
+          : service
+      )
+    }));
+  };
+
+  const handleServiceFeatureRemove = (serviceIndex, featureIndex) => {
+    setProfileData(prev => ({
+      ...prev,
+      services: prev.services.map((service, i) => 
+        i === serviceIndex 
+          ? { 
+              ...service, 
+              features: service.features.filter((_, j) => j !== featureIndex)
+            }
+          : service
+      )
+    }));
+  };
+
+  const handleLanguageAdd = () => {
+    setProfileData(prev => ({
+      ...prev,
+      languages: [...prev.languages, '']
+    }));
+  };
+
+  const handleLanguageChange = (index, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      languages: prev.languages.map((language, i) => 
+        i === index ? value : language
+      )
+    }));
+  };
+
+  const handleLanguageRemove = (index) => {
+    setProfileData(prev => ({
+      ...prev,
+      languages: prev.languages.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleAvailabilityDayAdd = () => {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const existingDays = Object.keys(profileData.availabilityDayWise);
+    const availableDays = days.filter(day => !existingDays.includes(day));
+    
+    if (availableDays.length > 0) {
+      setProfileData(prev => ({
+        ...prev,
+        availabilityDayWise: {
+          ...prev.availabilityDayWise,
+          [availableDays[0]]: {
+            slots: [{ time: '', available: true }]
+          }
+        }
+      }));
+    }
+  };
+
+  const handleAvailabilityDayChange = (dayKey, field, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      availabilityDayWise: {
+        ...prev.availabilityDayWise,
+        [dayKey]: {
+          ...prev.availabilityDayWise[dayKey],
+          [field]: value
+        }
+      }
+    }));
+  };
+
+  const handleAvailabilitySlotAdd = (dayKey) => {
+    setProfileData(prev => ({
+      ...prev,
+      availabilityDayWise: {
+        ...prev.availabilityDayWise,
+        [dayKey]: {
+          ...prev.availabilityDayWise[dayKey],
+          slots: [...prev.availabilityDayWise[dayKey].slots, { time: '', available: true }]
+        }
+      }
+    }));
+  };
+
+  const handleAvailabilitySlotChange = (dayKey, slotIndex, field, value) => {
+    setProfileData(prev => ({
+      ...prev,
+      availabilityDayWise: {
+        ...prev.availabilityDayWise,
+        [dayKey]: {
+          ...prev.availabilityDayWise[dayKey],
+          slots: prev.availabilityDayWise[dayKey].slots.map((slot, i) => 
+            i === slotIndex ? { ...slot, [field]: value } : slot
+          )
+        }
+      }
+    }));
+  };
+
+  const handleAvailabilitySlotRemove = (dayKey, slotIndex) => {
+    setProfileData(prev => ({
+      ...prev,
+      availabilityDayWise: {
+        ...prev.availabilityDayWise,
+        [dayKey]: {
+          ...prev.availabilityDayWise[dayKey],
+          slots: prev.availabilityDayWise[dayKey].slots.filter((_, i) => i !== slotIndex)
+        }
+      }
+    }));
+  };
+
+  const handleAvailabilityDayRemove = (dayKey) => {
+    setProfileData(prev => {
+      const newAvailability = { ...prev.availabilityDayWise };
+      delete newAvailability[dayKey];
+      return {
+        ...prev,
+        availabilityDayWise: newAvailability
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -114,6 +428,11 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
           cv: profileData.cv || null,
           is_approved: mentorProfile?.details?.is_approved ?? false,
           total_sessions: mentorProfile?.details?.total_sessions ?? 0,
+          // New fields - simple objects and arrays
+          key_achievements: profileData.keyAchievements,
+          services: profileData.services,
+          availability_day_wise: profileData.availabilityDayWise,
+          languages: profileData.languages,
         }
       };
 
@@ -130,6 +449,9 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
 
       setSaveSuccess(true);
       setEditMode(false);
+      
+      // Also update online status when saving profile
+      await updateOnlineStatus();
       
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
@@ -423,6 +745,32 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
 
       </header>
       
+      {/* Online Status Section */}
+      <div className="online-status-section">
+        <div className="online-status-info">
+          <div className={`status-indicator ${onlineStatus ? 'online' : 'offline'}`}>
+            <div className="status-dot"></div>
+            <span>{onlineStatus ? 'Online' : 'Offline'}</span>
+          </div>
+          <div className="status-buttons">
+            <button 
+              className="update-status-button"
+              onClick={updateOnlineStatus}
+              disabled={updatingStatus}
+            >
+              {updatingStatus ? 'Updating...' : 'Update Status'}
+            </button>
+            {/* <button 
+              className="test-offline-button"
+              onClick={setOfflineStatus}
+              disabled={updatingStatus}
+            >
+              Test Offline
+            </button> */}
+          </div>
+        </div>
+      </div>
+      
       <div className="profile-content">
         <div className="profile-header">
           <div className="profile-avatar-container">
@@ -452,7 +800,7 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
                   className="avatar-edit-button"
                   title="Change photo"
                 >
-                  ✏️
+                  <FiEdit />
                 </label>
                 {photoPreview && (
                   <button 
@@ -461,7 +809,7 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
                     title="Remove photo"
                     disabled={photoUploading}
                   >
-                    🗑️
+                    <FiTrash />
                   </button>
                 )}
                 {profilePhoto && (
@@ -490,8 +838,8 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
             )}
             <p className="profile-email">{profileData.email}</p>
             <div className="profile-stats">
-              <span>⭐ {mentorProfile?.details?.average_rating || 0} Rating</span>
-              <span>🎯 {mentorProfile?.details?.total_sessions || 0} Sessions</span>
+              <span><FiStar /> {mentorProfile?.details?.average_rating || 0} Rating</span>
+              <span><FiTarget /> {mentorProfile?.details?.total_sessions || 0} Sessions</span>
               <span>⏳ {profileData.yearsOfExperience} years experience</span>
             </div>
           </div>
@@ -848,6 +1196,337 @@ const ProfilePage = ({ mentorProfile, onProfileUpdate }) => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* New Sections */}
+        <div className="detail-section">
+          <h3>Key Achievements</h3>
+          {editMode ? (
+            <div className="achievements-edit">
+              {profileData.keyAchievements.map((achievement, index) => (
+                <div key={index} className="achievement-input-row">
+                  <input
+                    type="text"
+                    value={achievement}
+                    onChange={(e) => handleAchievementChange(index, e.target.value)}
+                    className="profile-input"
+                    placeholder="Enter your achievement"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAchievementRemove(index)}
+                    className="remove-button"
+                    title="Remove achievement"
+                  >
+                    ❌
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleAchievementAdd}
+                className="add-button"
+              >
+                ➕ Add Achievement
+              </button>
+            </div>
+          ) : (
+            <div className="achievements-display">
+              {profileData.keyAchievements.length > 0 ? (
+                profileData.keyAchievements.map((achievement, index) => (
+                  <div key={index} className="achievement-item">
+                    <span className="achievement-bullet">🏆</span>
+                    <span>{achievement}</span>
+                  </div>
+                ))
+              ) : (
+                <p>No achievements added yet</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="detail-section">
+          <h3>Services Offered</h3>
+          {editMode ? (
+            <div className="services-edit">
+              {profileData.services.map((service, index) => (
+                <div key={index} className="service-edit-card">
+                  <div className="service-edit-header">
+                    <h4>Service {index + 1}</h4>
+                    <button
+                      type="button"
+                      onClick={() => handleServiceRemove(index)}
+                      className="remove-button"
+                      title="Remove service"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                  <div className="service-edit-fields">
+                    <input
+                      type="text"
+                      value={service.title}
+                      onChange={(e) => handleServiceChange(index, 'title', e.target.value)}
+                      className="profile-input"
+                      placeholder="Service title"
+                    />
+                    <div className="service-edit-row">
+                      <input
+                        type="text"
+                        value={service.duration}
+                        onChange={(e) => handleServiceChange(index, 'duration', e.target.value)}
+                        className="profile-input"
+                        placeholder="Duration (e.g., 60 min)"
+                      />
+                      <input
+                        type="number"
+                        value={service.price}
+                        onChange={(e) => handleServiceChange(index, 'price', Number(e.target.value))}
+                        className="profile-input"
+                        placeholder="Price"
+                      />
+                    </div>
+                    <textarea
+                      value={service.description}
+                      onChange={(e) => handleServiceChange(index, 'description', e.target.value)}
+                      className="profile-textarea"
+                      rows="3"
+                      placeholder="Service description"
+                    />
+                    <div className="service-features-edit">
+                      <label>Features:</label>
+                      {service.features.map((feature, featureIndex) => (
+                        <div key={featureIndex} className="feature-input-row">
+                          <input
+                            type="text"
+                            value={feature}
+                            onChange={(e) => handleServiceFeatureChange(index, featureIndex, e.target.value)}
+                            className="profile-input"
+                            placeholder="Feature"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleServiceFeatureRemove(index, featureIndex)}
+                            className="remove-button small"
+                          >
+                            ❌
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => handleServiceFeatureAdd(index)}
+                        className="add-button small"
+                      >
+                        ➕ Add Feature
+                      </button>
+                    </div>
+                    <div className="service-edit-row">
+                      <input
+                        type="number"
+                        value={service.popularity}
+                        onChange={(e) => handleServiceChange(index, 'popularity', Number(e.target.value))}
+                        className="profile-input"
+                        placeholder="Popularity %"
+                        min="0"
+                        max="100"
+                      />
+                      <input
+                        type="number"
+                        value={service.sessionCount}
+                        onChange={(e) => handleServiceChange(index, 'sessionCount', Number(e.target.value))}
+                        className="profile-input"
+                        placeholder="Sessions completed"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleServiceAdd}
+                className="add-button"
+              >
+                ➕ Add Service
+              </button>
+            </div>
+          ) : (
+            <div className="services-display">
+              {profileData.services.length > 0 ? (
+                profileData.services.map((service, index) => (
+                  <div key={index} className="service-item">
+                    <h4>{service.title}</h4>
+                    <p className="service-price">₹{service.price} • {service.duration}</p>
+                    <p className="service-description">{service.description}</p>
+                    <div className="service-features">
+                      {service.features?.map((feature, fIndex) => (
+                        <span key={fIndex} className="feature-tag">✅ {feature}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p>No services added yet</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="detail-section">
+          <h3>Availability Schedule</h3>
+          {editMode ? (
+            <div className="availability-edit">
+              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                const dayData = profileData.availabilityDayWise[day];
+                const isAvailable = dayData && dayData.slots && dayData.slots.length > 0;
+                
+                return (
+                  <div key={day} className="availability-day-edit">
+                    <div className="availability-day-header">
+                      <h4 className="day-name">{day.charAt(0).toUpperCase() + day.slice(1)}</h4>
+                      <div className="day-availability-toggle">
+                        <label className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={isAvailable}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                // Add the day with a default slot
+                                setProfileData(prev => ({
+                                  ...prev,
+                                  availabilityDayWise: {
+                                    ...prev.availabilityDayWise,
+                                    [day]: {
+                                      slots: [{ time: '', available: true }]
+                                    }
+                                  }
+                                }));
+                              } else {
+                                // Remove the day
+                                handleAvailabilityDayRemove(day);
+                              }
+                            }}
+                          />
+                          Available
+                        </label>
+                      </div>
+                    </div>
+                    {isAvailable && (
+                      <div className="availability-slots-edit">
+                        <label>Time Slots:</label>
+                        {dayData.slots.map((slot, slotIndex) => (
+                          <div key={slotIndex} className="slot-input-row">
+                            <input
+                              type="text"
+                              value={slot.time}
+                              onChange={(e) => handleAvailabilitySlotChange(day, slotIndex, 'time', e.target.value)}
+                              className="profile-input"
+                              placeholder="Time (e.g., 9:00 AM)"
+                            />
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={slot.available}
+                                onChange={(e) => handleAvailabilitySlotChange(day, slotIndex, 'available', e.target.checked)}
+                              />
+                              Available
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleAvailabilitySlotRemove(day, slotIndex)}
+                              className="remove-button small"
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleAvailabilitySlotAdd(day)}
+                          className="add-button small"
+                        >
+                          ➕ Add Time Slot
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="availability-display">
+              {Object.keys(profileData.availabilityDayWise).length > 0 ? (
+                ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                  const dayData = profileData.availabilityDayWise[day];
+                  const isAvailable = dayData && dayData.slots && dayData.slots.length > 0;
+                  
+                  return (
+                    <div key={day} className="day-schedule">
+                      <h4 className="day-title">{day.charAt(0).toUpperCase() + day.slice(1)}</h4>
+                      {isAvailable ? (
+                        <div className="time-slots">
+                          {dayData.slots.map((slot, sIndex) => (
+                            <span key={sIndex} className={`time-slot ${slot.available ? 'available' : 'unavailable'}`}>
+                              {slot.time} {slot.available ? '✅' : '❌'}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="not-available">Not available</p>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p>No availability schedule added yet</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="detail-section">
+          <h3>Languages Spoken</h3>
+          {editMode ? (
+            <div className="languages-edit">
+              {profileData.languages.map((language, index) => (
+                <div key={index} className="language-input-row">
+                  <input
+                    type="text"
+                    value={language}
+                    onChange={(e) => handleLanguageChange(index, e.target.value)}
+                    className="profile-input"
+                    placeholder="Enter language"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageRemove(index)}
+                    className="remove-button"
+                    title="Remove language"
+                  >
+                    ❌
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleLanguageAdd}
+                className="add-button"
+              >
+                ➕ Add Language
+              </button>
+            </div>
+          ) : (
+            <div className="languages-display">
+              {profileData.languages.length > 0 ? (
+                profileData.languages.map((language, index) => (
+                  <span key={index} className="language-tag">🌍 {language}</span>
+                ))
+              ) : (
+                <p>No languages added yet</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
       {isSaving && <Loader />}

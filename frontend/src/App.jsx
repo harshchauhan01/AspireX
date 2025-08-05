@@ -2,18 +2,19 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { fetchSiteStatus } from './BackendConn/api';
 import './App.css';
-import Login from './Mentor/Authentication/Login';
-import Register from './Mentor/Authentication/Register';
+import { AuthProvider } from './components/AuthContext';
+import UnifiedLogin from './components/UnifiedLogin';
+import UnifiedSignup from './components/UnifiedSignup';
 import Dashboard from './Mentor/Pages/Dashboard';
 import DashboardLayout from './components/DashboardLayout';
 import Home from './components/Home';
-import SLogin from './Student/Authentication/login';
-import SRegister from './Student/Authentication/register';
 import StuDashboard from './Student/pages/Dashboard';
 import MentorProfile from './Student/pages/MentorProfile';
 import ContactPage from './components/ContactPage';
 import PrivateRoute from './components/PrivateRoute';
-
+import CommunityFeed from './components/CommunityFeed';
+import ServicesPage from './components/ServicesPage';
+import ScrollToTopButton from './components/ScrollToTopButton';
 
 function App() {
   const [maintenance, setMaintenance] = useState(false);
@@ -47,24 +48,32 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="" element={<Home />} />
-        <Route path="/student/login" element={<SLogin />} />
-        <Route path="/student/signup" element={<SRegister />} />
-        <Route path="/mentor/login" element={<Login />} />
-        <Route path="/mentor/signup" element={<Register />} />
-        <Route path="/contact" element={<ContactPage />} />
-        {/* Protected Student Routes */}
-        <Route path="/student/dashboard" element={<PrivateRoute role="student"><StuDashboard /></PrivateRoute>} />
-        <Route path="/student/dashboard/mentor/:mentorId" element={<PrivateRoute role="student"><StuDashboard /></PrivateRoute>} />
-        {/* Protected Mentor Routes */}
-        <Route path="/mentor/dashboard" element={<PrivateRoute role="mentor"><Dashboard /></PrivateRoute>} />
-        <Route path="/mentor/dashboardLayout" element={<PrivateRoute role="mentor"><DashboardLayout /></PrivateRoute>} />
-        {/* Mentor profile is public, do not protect: */}
-        <Route path="/mentor/:id" element={<MentorProfile />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="" element={<Home />} />
+          <Route path="/login" element={<UnifiedLogin />} />
+          <Route path="/signup" element={<UnifiedSignup />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/student/community" element={<CommunityFeed />} />
+          <Route path="/mentor/community" element={<CommunityFeed />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/services/share" element={<PrivateRoute><CommunityFeed /></PrivateRoute>} />
+          <Route path="/services/problems" element={<PrivateRoute><div>Problems Page (Coming Soon)</div></PrivateRoute>} />
+          <Route path="/services/hackathons" element={<PrivateRoute><div>Hackathons Page (Coming Soon)</div></PrivateRoute>} />
+          <Route path="/services/events" element={<PrivateRoute><div>Events Page (Coming Soon)</div></PrivateRoute>} />
+          {/* Protected Student Routes */}
+          <Route path="/student/dashboard" element={<PrivateRoute role="student"><StuDashboard /></PrivateRoute>} />
+          <Route path="/student/dashboard/mentor/:mentorId" element={<PrivateRoute role="student"><StuDashboard /></PrivateRoute>} />
+          {/* Protected Mentor Routes */}
+          <Route path="/mentor/dashboard" element={<PrivateRoute role="mentor"><Dashboard /></PrivateRoute>} />
+          <Route path="/mentor/dashboardLayout" element={<PrivateRoute role="mentor"><DashboardLayout /></PrivateRoute>} />
+          {/* Mentor profile is public, do not protect: */}
+          <Route path="/mentor/:id" element={<MentorProfile />} />
+        </Routes>
+        <ScrollToTopButton />
+      </Router>
+    </AuthProvider>
   );
 }
 

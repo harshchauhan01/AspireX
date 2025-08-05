@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { FiMapPin, FiSettings } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import './CSS/Dashboard.css';
 import './CSS/PageStyles.css';
 import Modal from '../../components/ui/Modal';
 import API, { postMeetingAttendance, fetchMeetingAttendance } from '../../BackendConn/api';
 import { useRef } from 'react';
 import Calendar from './Calendar';
+import { formatMeetingTime, formatMeetingDate } from '../../lib/utils';
 
 const DashboardHome = ({ mentorProfile, mentor }) => {
+  const navigate = useNavigate();
+  
   // State for notes
   const [notes, setNotes] = useState([]);
   const [newNoteTitle, setNewNoteTitle] = useState('');
@@ -31,6 +36,9 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
   const [rescheduleDateTime, setRescheduleDateTime] = useState('');
   const [rescheduleError, setRescheduleError] = useState('');
   const rescheduleInputRef = useRef();
+
+  // State for notifications sidebar
+  const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
 
   // Load notes from localStorage on component mount
   useEffect(() => {
@@ -97,17 +105,11 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     if (!timestamp) return '';
     const now = new Date();
     const messageDate = new Date(timestamp);
-    const diffInHours = (now - messageDate) / (1000 * 60 * 60);
     
-    if (diffInHours < 24) {
-      if (diffInHours < 1) {
-        const minutes = Math.floor(diffInHours * 60);
-        return minutes === 0 ? 'Just now' : `${minutes}m ago`;
-      }
-      return `${Math.floor(diffInHours)}h ago`;
+    if (now.toDateString() === messageDate.toDateString()) {
+      return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else {
-      const days = Math.floor(diffInHours / 24);
-      return `${days}d ago`;
+      return messageDate.toLocaleDateString();
     }
   };
 
@@ -119,45 +121,46 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
       time: formatTimeAgo(message.sent_at),
       read: message.is_read,
       sender: "Admin"
-      // sender: message.admin_sender
     }));
   };
 
-  // Format upcoming sessions from mentor meetings
+  // Format upcoming sessions
   const formatUpcomingSessions = (meetings = []) => {
+    // Get current time in UTC to match backend timezone
+    const now = new Date();
+    const nowUTC = new Date(now.toISOString());
+    
     return meetings
-      .filter(meeting => meeting.status === 'scheduled' || meeting.status === 'ongoing')
+      .filter(meeting => {
+        if (!meeting.scheduled_time) {
+          return false; // Skip meetings without scheduled_time
+        }
+        const meetingTime = new Date(meeting.scheduled_time);
+        return meetingTime > nowUTC && meeting.status !== 'cancelled';
+      })
       .map(meeting => {
-        const dateObj = new Date(meeting.scheduled_time);
-        const date = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'UTC'
-        });
-        const time = dateObj.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: 'UTC'
-        });
+        const meetingTime = new Date(meeting.scheduled_time);
+        const date = formatMeetingDate(meetingTime);
+        const time = formatMeetingTime(meetingTime);
         
-        const studentName = meeting.student.includes(' - ') 
-          ? meeting.student.split(' - ')[1] 
-          : meeting.student;
-
         return {
-          id: meeting.meeting_id,
-          mentee: studentName,
+          id: meeting.meeting_id || meeting.id || `meeting-${Date.now()}-${Math.random()}`,
+          topic: meeting.title,
+          mentee: meeting.student_name || meeting.student?.name || 'Unknown Student',
           date: date,
           time: `${time} (${meeting.duration} mins)`,
-          topic: meeting.title,
+          status: meeting.status,
           description: meeting.description,
           meeting_link: meeting.meeting_link,
-          status: meeting.status
+          meetingObj: meeting
         };
       })
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      .sort((a, b) => {
+        // Sort by earliest upcoming
+        const aTime = new Date(a.meetingObj.scheduled_time);
+        const bTime = new Date(b.meetingObj.scheduled_time);
+        return aTime - bTime;
+      });
   };
 
   // Helper function to format time ago
@@ -182,156 +185,160 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
       }
     }
     
-    return 'Just now';
+    return 'just now';
   };
 
   // Format current date
   const formatCurrentDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
     });
   };
 
+  // Fetch notes and attendance data
   useEffect(() => {
-      const fetchNotes = async () => {
-        try {
-          const res = await API.get('mentor/notes/');
-          setNotes(res.data);
-        } catch (err) {
-          console.error('Error fetching notes:', err);
-        }
-      };
-  
-      fetchNotes();
-    }, []);
-
-  // Add a new note
-  const addNote = async () => {
-    if (newNoteTitle.trim() && newNoteContent.trim()) {
+    const fetchNotes = async () => {
       try {
-        const res = await API.post('mentor/notes/', {
-          title: newNoteTitle,
-          content: newNoteContent
-        });
-
-        const newNote = res.data;
-        setNotes([newNote, ...notes]);
-        setNewNoteTitle('');
-        setNewNoteContent('');
-        setShowNoteForm(false);
-      } catch (err) {
-        console.error('Error adding note:', err);
+        const response = await API.get('mentor/notes/');
+        setNotes(response.data);
+      } catch (error) {
+        console.error('Error fetching notes:', error);
       }
+    };
+
+    const fetchAllAttendance = async () => {
+      try {
+        const response = await fetchMeetingAttendance();
+        setAttendanceStatus(response.data);
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
+      }
+    };
+
+    fetchNotes();
+    fetchAllAttendance();
+  }, []);
+
+  // Add note
+  const addNote = async () => {
+    if (!newNoteTitle.trim() || !newNoteContent.trim()) return;
+
+    const newNote = {
+      id: Date.now(),
+      title: newNoteTitle,
+      content: newNoteContent,
+      date: new Date().toLocaleDateString()
+    };
+
+    try {
+      await API.post('mentor/notes/', newNote);
+      setNotes(prev => [...prev, newNote]);
+      setNewNoteTitle('');
+      setNewNoteContent('');
+      setShowNoteForm(false);
+    } catch (error) {
+      console.error('Error adding note:', error);
     }
   };
 
-
-  // Delete a note
+  // Delete note
   const deleteNote = async (id) => {
     try {
       await API.delete(`mentor/notes/${id}/`);
-      setNotes(notes.filter(note => note.id !== id));
-    } catch (err) {
-      console.error('Error deleting note:', err);
+      setNotes(prev => prev.filter(note => note.id !== id));
+    } catch (error) {
+      console.error('Error deleting note:', error);
     }
   };
 
-  // Get data from mentor
-  const notifications = formatNotifications(mentor?.messages || []);
-  const upcomingSessions = formatUpcomingSessions(mentor?.meetings || []);
-
-  const [showNotificationsSidebar, setShowNotificationsSidebar] = useState(false);
-    const topNotifications = notifications.slice(0, 3);
-    const hasMoreNotifications = notifications.length > 3;
-
+  // Open attendance modal
   const openAttendanceModal = (meeting) => {
     setAttendanceMeeting(meeting);
-    setAttendanceKey('');
-    setAttendanceStatusMsg('');
-    setAttendanceError('');
     setShowAttendanceModal(true);
+    setAttendanceKey('');
+    setAttendanceError('');
+    setAttendanceStatusMsg('');
   };
+
+  // Submit attendance key
   const submitAttendanceKey = async () => {
-    if (!attendanceMeeting || !attendanceMeeting.meeting_id) {
-      setAttendanceError('Meeting ID is missing. Please refresh and try again.');
+    if (!attendanceKey.trim()) {
+      setAttendanceError('Please enter an attendance key.');
       return;
     }
-    if (!attendanceKey) {
-      setAttendanceError('Please enter the student\'s attendance key.');
-      return;
-    }
+
     try {
-      const token = localStorage.getItem('Mentortoken');
-      const res = await postMeetingAttendance({
-        meeting_id: attendanceMeeting.meeting_id,
+      const response = await postMeetingAttendance({
+        meeting_id: attendanceMeeting.meeting_id || attendanceMeeting.id,
         role: 'mentor',
         attendance_key: attendanceKey
-      }, token);
-      if (res.success) {
-        setAttendanceStatusMsg('Attendance marked successfully!');
-        setAttendanceError('');
-        setShowAttendanceModal(false);
-        // Refresh attendance status for this meeting
-        const attRes = await fetchMeetingAttendance(attendanceMeeting.meeting_id);
+      });
+      setAttendanceStatusMsg('Attendance marked successfully!');
+      setAttendanceKey('');
+      
+      // Refresh attendance status for this specific meeting
+      try {
+        const attendanceResponse = await fetchMeetingAttendance(attendanceMeeting.meeting_id || attendanceMeeting.id);
         setAttendanceStatus(prev => ({
           ...prev,
-          [attendanceMeeting.meeting_id]: attRes.attended_roles || []
+          [attendanceMeeting.meeting_id || attendanceMeeting.id]: attendanceResponse.attended_roles || []
         }));
-      } else if (res.message) {
-        setAttendanceStatusMsg(res.message);
-        setAttendanceError('');
-      } else {
-        setAttendanceError(res.error || 'Failed to mark attendance.');
+      } catch (error) {
+        console.error('Error refreshing attendance status:', error);
       }
+      
+      setTimeout(() => {
+        setShowAttendanceModal(false);
+        setAttendanceStatusMsg('');
+      }, 1500);
     } catch (err) {
-      setAttendanceError('Failed to mark attendance.');
+      setAttendanceError(err.response?.data?.error || 'Failed to mark attendance.');
     }
   };
 
-  // Fetch attendance status for all meetings on mount or when mentor.meetings changes
+  // Fetch attendance data
   useEffect(() => {
     const fetchAllAttendance = async () => {
-      const status = {};
-      if (mentor?.meetings) {
-        for (const meeting of mentor.meetings) {
-          try {
-            const res = await fetchMeetingAttendance(meeting.meeting_id);
-            status[meeting.meeting_id] = res.attended_roles || [];
-          } catch {
-            status[meeting.meeting_id] = [];
+      try {
+        if (mentor?.meetings && mentor.meetings.length > 0) {
+          const attendanceData = {};
+          for (const meeting of mentor.meetings) {
+            try {
+              const response = await fetchMeetingAttendance(meeting.meeting_id);
+              attendanceData[meeting.meeting_id] = response.attended_roles || [];
+            } catch (error) {
+              console.error(`Error fetching attendance for meeting ${meeting.meeting_id}:`, error);
+              attendanceData[meeting.meeting_id] = [];
+            }
           }
+          setAttendanceStatus(attendanceData);
         }
+      } catch (error) {
+        console.error('Error fetching attendance:', error);
       }
-      setAttendanceStatus(status);
     };
-    if (mentor?.meetings && mentor.meetings.length > 0) fetchAllAttendance();
-  }, [mentor]);
 
+    fetchAllAttendance();
+  }, [mentor?.meetings]);
+
+  // Open reschedule modal
   const openRescheduleModal = (meeting) => {
     setRescheduleMeeting(meeting);
+    setShowRescheduleModal(true);
     setRescheduleDateTime('');
     setRescheduleError('');
-    setShowRescheduleModal(true);
   };
 
+  // Handle reschedule submit
   const handleRescheduleSubmit = async () => {
-    if (!rescheduleMeeting || !rescheduleDateTime) {
+    if (!rescheduleDateTime) {
       setRescheduleError('Please select a new date and time.');
       return;
     }
-    const now = new Date();
-    const newTime = new Date(rescheduleDateTime);
-    const oldTime = new Date(rescheduleMeeting.scheduled_time || rescheduleMeeting.date + 'T' + rescheduleMeeting.time.split(' ')[0]);
-    if ((oldTime - now) / (1000 * 60 * 60) < 2) {
-      setRescheduleError('Cannot reschedule less than 2 hours before the meeting.');
-      return;
-    }
-    if ((newTime - now) / (1000 * 60 * 60) < 2) {
-      setRescheduleError('New meeting time must be at least 2 hours from now.');
-      return;
-    }
+
     try {
       await API.post(`mentor/meeting/${rescheduleMeeting.meeting_id || rescheduleMeeting.id}/reschedule/`, { new_time: rescheduleDateTime });
       setShowRescheduleModal(false);
@@ -341,8 +348,43 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
     }
   };
 
+  // Get upcoming sessions
+  const upcomingSessions = formatUpcomingSessions(mentor?.meetings || []);
+
+  // Get notifications data
+  const notifications = formatNotifications(mentor?.messages || []);
+  const topNotifications = notifications.slice(0, 3);
+  const hasMoreNotifications = notifications.length > 3;
+
+  // Check if can mark attendance
+  const canMarkAttendance = (meeting) => {
+    if (!meeting || !meeting.date || !meeting.time) return false;
+    const meetingTime = new Date(meeting.date + 'T' + meeting.time.split(' ')[0]);
+    const now = new Date();
+    const timeDiff = meetingTime - now;
+    return timeDiff >= -30 * 60 * 1000 && timeDiff <= 30 * 60 * 1000; // 30 minutes before and after
+  };
+
+  // Handle join meeting
+  const handleJoinMeeting = (meeting) => {
+    if (meeting.meeting_link) {
+      window.open(meeting.meeting_link, '_blank');
+    }
+  };
+
   return (
     <>
+      {/* Services Button */}
+      <div className="services-button-container">
+        <button 
+          className="services-button"
+          onClick={() => navigate('/services')}
+        >
+          <FiSettings />
+          <span>Services</span>
+        </button>
+      </div>
+
       {/* Upcoming Sessions */}
       <section className="upcoming-sessions">
         <h2>Upcoming Sessions</h2>
@@ -362,11 +404,11 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                     <p className="session-description">{session.description}</p>
                   )}
                   <div className="attendance-status-bar">
-                    <span className={attendanceStatus[session.id]?.includes('mentor') ? 'attended-badge' : 'not-attended-badge'}>
-                      Mentor {attendanceStatus[session.id]?.includes('mentor') ? '✓ Attended' : 'Not Attended'}
+                    <span className={attendanceStatus && session.id && attendanceStatus[session.id]?.includes('mentor') ? 'attended-badge' : 'not-attended-badge'}>
+                      Mentor {attendanceStatus && session.id && attendanceStatus[session.id]?.includes('mentor') ? '✓ Attended' : 'Not Attended'}
                     </span>
-                    <span className={attendanceStatus[session.id]?.includes('student') ? 'attended-badge' : 'not-attended-badge'}>
-                      Student {attendanceStatus[session.id]?.includes('student') ? '✓ Attended' : 'Not Attended'}
+                    <span className={attendanceStatus && session.id && attendanceStatus[session.id]?.includes('student') ? 'attended-badge' : 'not-attended-badge'}>
+                      Student {attendanceStatus && session.id && attendanceStatus[session.id]?.includes('student') ? '✓ Attended' : 'Not Attended'}
                     </span>
                   </div>
                 </div>
@@ -379,7 +421,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                   >
                     {session.status === 'ongoing' ? 'Join Now' : 'Prepare'}
                   </a>
-                  {session.status === 'scheduled' && (new Date(session.date + 'T' + session.time.split(' ')[0]) - new Date()) / (1000 * 60 * 60) > 2 && (
+                  {session.status === 'scheduled' && session.date && session.time && (new Date(session.date + 'T' + session.time.split(' ')[0]) - new Date()) / (1000 * 60 * 60) > 2 && (
                     <button className="secondary-button" onClick={() => {
                       const meetingObj = (mentor.meetings || []).find(m => m.meeting_id === session.id) || session.meetingObj || session;
                       openRescheduleModal(meetingObj);
@@ -387,7 +429,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
                       Reschedule
                     </button>
                   )}
-                  {(session.status === 'scheduled' || session.status === 'ongoing' || session.status === 'completed') && !attendanceStatus[session.id]?.includes('mentor') && (
+                  {(session.status === 'scheduled' || session.status === 'ongoing' || session.status === 'completed') && !(attendanceStatus && session.id && attendanceStatus[session.id]?.includes('mentor')) && (
                     <button className="secondary-button small" onClick={() => {
                       const meetingObj = (mentor.meetings || []).find(m => m.meeting_id === session.id) || session.meetingObj || session;
                       openAttendanceModal(meetingObj);
@@ -421,7 +463,7 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
               topNotifications.map(notification => (
                 <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
                   <p>
-                    <strong>{notification.sender}:</strong> {notification.text}
+                    <strong>Admin:</strong><br/> {notification.text}
                   </p>
                   <span className="notification-time">{notification.time}</span>
                   {!notification.read && <span className="unread-badge"></span>}
@@ -441,136 +483,135 @@ const DashboardHome = ({ mentorProfile, mentor }) => {
             )}
           </div>
         </section>
-      </div>
 
-      {showNotificationsSidebar && (
-        <div className="notifications-sidebar-overlay" onClick={() => setShowNotificationsSidebar(false)}>
-          <div className="notifications-sidebar" onClick={(e) => e.stopPropagation()}>
-            <div className="sidebar-header">
-              <h3>All Notifications</h3>
-              <button 
-                className="close-sidebar"
-                onClick={() => setShowNotificationsSidebar(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="sidebar-content">
-              {notifications.map(notification => (
-                <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
-                  <p>
-                    <strong>{notification.sender}:</strong> {notification.text}
-                  </p>
-                  <span className="notification-time">{notification.time}</span>
-                  {!notification.read && <span className="unread-badge"></span>}
-                </div>
-              ))}
+        {/* Notifications Sidebar */}
+        {showNotificationsSidebar && (
+          <div className="notifications-sidebar-overlay" onClick={() => setShowNotificationsSidebar(false)}>
+            <div className="notifications-sidebar" onClick={(e) => e.stopPropagation()}>
+              <div className="sidebar-header">
+                <h3>All Notifications</h3>
+                <button 
+                  className="close-sidebar"
+                  onClick={() => setShowNotificationsSidebar(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="sidebar-content">
+                {notifications.map(notification => (
+                  <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
+                    <p>
+                      <strong>Admin:</strong><br/> {notification.text}
+                    </p>
+                    <span className="notification-time">{notification.time}</span>
+                    {!notification.read && <span className="unread-badge"></span>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Pinned Conversations and Notes */}
-      <div className="bottom-section">
-        <section className="pinned-conversations">
-          <h2>Pinned Conversations</h2>
-          <div className="conversations-list">
-            {pinnedConversations.length > 0 ? (
-              pinnedConversations.map(conversation => (
-                <div key={conversation.id} className="conversation-item">
-                  <div className="conversation-avatar">
-                    {conversation.other_person_name.split(' ').map(n => n[0]).join('')}
+        {/* Pinned Conversations and Notes */}
+        
+          <section className="pinned-conversations">
+            <h2>Pinned Conversations</h2>
+            <div className="conversations-list">
+              {pinnedConversations.length > 0 ? (
+                pinnedConversations.map(conversation => (
+                  <div key={conversation.id} className="conversation-item">
+                    <div className="conversation-avatar">
+                      {conversation.other_person_name ? conversation.other_person_name.split(' ').map(n => n[0]).join('') : 'U'}
+                    </div>
+                    <div className="conversation-details">
+                      <h3>{conversation.other_person_name || 'Unknown User'}</h3>
+                      <p>
+                        {conversation.last_message_content 
+                          ? conversation.last_message_content.length > 50 
+                            ? conversation.last_message_content.substring(0, 50) + '...'
+                            : conversation.last_message_content
+                          : 'No message yet'
+                        }
+                      </p>
+                      <span className="conversation-time">
+                        {conversation.last_message_time ? formatTime(conversation.last_message_time) : ''}
+                      </span>
+                    </div>
+                    <div className="conversation-actions">
+                      <button 
+                        onClick={() => togglePinConversation(conversation.id, true)}
+                        className="pin-button pinned"
+                        title="Unpin conversation"
+                      >
+                        <FiMapPin />
+                      </button>
+                    </div>
                   </div>
-                  <div className="conversation-details">
-                    <h3>{conversation.other_person_name}</h3>
-                    <p>
-                      {conversation.last_message_content 
-                        ? conversation.last_message_content.length > 50 
-                          ? conversation.last_message_content.substring(0, 50) + '...'
-                          : conversation.last_message_content
-                        : 'No message yet'
-                      }
-                    </p>
-                    <span className="conversation-time">
-                      {conversation.last_message_time ? formatTime(conversation.last_message_time) : ''}
-                    </span>
-                  </div>
-                  <div className="conversation-actions">
+                ))
+              ) : (
+                <p className="no-conversations">No pinned conversations</p>
+              )}
+            </div>
+          </section>
+          <section className="notes-section">
+            <h2>Quick Notes</h2>
+            <div className="notes-list">
+              {showNoteForm && (
+                <div className="note-form">
+                  <input
+                    type="text"
+                    placeholder="Note title"
+                    value={newNoteTitle}
+                    onChange={(e) => setNewNoteTitle(e.target.value)}
+                    className="note-input"
+                  />
+                  <textarea
+                    placeholder="Note content"
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    className="note-textarea"
+                    rows="3"
+                  />
+                  <div className="note-form-actions">
+                    <button onClick={addNote} className="primary-button small">
+                      Save Note
+                    </button>
                     <button 
-                      onClick={() => togglePinConversation(conversation.id, true)}
-                      className="pin-button pinned"
-                      title="Unpin conversation"
+                      onClick={() => setShowNoteForm(false)} 
+                      className="secondary-button small"
                     >
-                      📌
+                      Cancel
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="no-conversations">No pinned conversations</p>
-            )}
-          </div>
-        </section>
+              )}
 
-        <section className="notes-section">
-          <h2>Quick Notes</h2>
-          <div className="notes-list">
-            {showNoteForm && (
-              <div className="note-form">
-                <input
-                  type="text"
-                  placeholder="Note title"
-                  value={newNoteTitle}
-                  onChange={(e) => setNewNoteTitle(e.target.value)}
-                  className="note-input"
-                />
-                <textarea
-                  placeholder="Note content"
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  className="note-textarea"
-                  rows="3"
-                />
-                <div className="note-form-actions">
-                  <button onClick={addNote} className="primary-button small">
-                    Save Note
-                  </button>
-                  <button 
-                    onClick={() => setShowNoteForm(false)} 
-                    className="secondary-button small"
-                  >
-                    Cancel
-                  </button>
+              {notes.map(note => (
+                <div key={note.id} className="note-item">
+                  <div className="note-header">
+                    <h3>{note.title}</h3>
+                    <button 
+                      onClick={() => deleteNote(note.id)} 
+                      className="delete-note-button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p>{note.content}</p>
+                  <span className="note-date">{note.date}</span>
                 </div>
-              </div>
-            )}
+              ))}
 
-            {notes.map(note => (
-              <div key={note.id} className="note-item">
-                <div className="note-header">
-                  <h3>{note.title}</h3>
-                  <button 
-                    onClick={() => deleteNote(note.id)} 
-                    className="delete-note-button"
-                  >
-                    ×
-                  </button>
-                </div>
-                <p>{note.content}</p>
-                <span className="note-date">{note.date}</span>
-              </div>
-            ))}
-
-            {!showNoteForm && (
-              <button 
-                onClick={() => setShowNoteForm(true)} 
-                className="add-note-button"
-              >
-                + Add New Note
-              </button>
-            )}
-          </div>
-        </section>
+              {!showNoteForm && (
+                <button 
+                  onClick={() => setShowNoteForm(true)} 
+                  className="add-note-button"
+                >
+                  + Add New Note
+                </button>
+              )}
+            </div>
+          </section>
       </div>
 
       <Modal isOpen={showAttendanceModal} onClose={() => setShowAttendanceModal(false)} title="Mark Attendance">

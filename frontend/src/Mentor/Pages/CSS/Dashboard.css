@@ -28,6 +28,52 @@ body {
   color: var(--text-color);
 }
 
+/* Services Button Container */
+.services-button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.services-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: var(--white);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(94, 114, 228, 0.3);
+}
+
+.services-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(94, 114, 228, 0.4);
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+}
+
+.services-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Responsive styles for services button */
+@media (max-width: 768px) {
+  .services-button-container {
+    justify-content: center;
+  }
+  
+  .services-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Dashboard Layout */
 .mentor-dashboard {
   display: flex;
@@ -196,6 +242,8 @@ nav li:hover {
   background-color: var(--light-gray);
   padding: 25px;
   overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
 }
 
 header {
@@ -420,6 +468,9 @@ header {
   grid-template-columns: 1fr 1fr;
   gap: 30px;
   margin-bottom: 30px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .calendar-section, .notifications-section {
@@ -427,6 +478,11 @@ header {
   border-radius: var(--border-radius);
   padding: 20px;
   box-shadow: var(--box-shadow);
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .calendar-section h2, .notifications-section h2 {
@@ -506,6 +562,8 @@ header {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  flex: 1;
+  width: 100%;
 }
 
 .notification-item {
@@ -543,6 +601,9 @@ header {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pinned-conversations, .notes-section {
@@ -550,6 +611,11 @@ header {
   border-radius: var(--border-radius);
   padding: 20px;
   box-shadow: var(--box-shadow);
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .pinned-conversations h2, .notes-section h2 {
@@ -562,6 +628,8 @@ header {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  flex: 1;
+  width: 100%;
 }
 
 .conversation-item {
@@ -611,6 +679,8 @@ header {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  flex: 1;
+  width: 100%;
 }
 
 .note-item {
@@ -699,8 +769,13 @@ header {
 
 /* Responsive Styles */
 @media (max-width: 1200px) {
-  .middle-section, .bottom-section {
+  .middle-section {
     grid-template-columns: 1fr;
+  }
+  
+  .bottom-section {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
   }
 }
 
@@ -766,6 +841,11 @@ header {
     margin-left: 0;
     margin-top: 10px;
     justify-content: flex-end;
+  }
+  
+  .bottom-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 
@@ -1054,6 +1134,8 @@ header {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .view-all-button:hover {
@@ -1103,6 +1185,7 @@ header {
   background: rgba(0,0,0,0.3);
   z-index: 99;
   display: block;
+  pointer-events: auto;
 }
 
 .sidebar.sidebar-mobile {
@@ -1117,10 +1200,120 @@ header {
   z-index: 100;
   transform: translateX(-100%);
   transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sidebar.sidebar-mobile.sidebar-open {
   transform: translateX(0);
+}
+
+/* Mobile sidebar content layout */
+.sidebar.sidebar-mobile .sidebar-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: var(--white);
+  z-index: 2;
+}
+
+.sidebar.sidebar-mobile .profile-section {
+  flex-shrink: 0;
+}
+
+.sidebar.sidebar-mobile nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--medium-gray) transparent;
+}
+
+.sidebar.sidebar-mobile nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar.sidebar-mobile nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar.sidebar-mobile nav::-webkit-scrollbar-thumb {
+  background: var(--medium-gray);
+  border-radius: 2px;
+}
+
+.sidebar.sidebar-mobile nav::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-gray);
+}
+
+.sidebar.sidebar-mobile nav ul {
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar.sidebar-mobile nav li {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--light-gray);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.sidebar.sidebar-mobile nav li:hover {
+  background-color: var(--light-gray);
+}
+
+.sidebar.sidebar-mobile nav li.active {
+  background-color: rgba(94, 114, 228, 0.1);
+  color: var(--primary-color);
+  border-left: 3px solid var(--primary-color);
+}
+
+.sidebar.sidebar-mobile nav li span {
+  font-size: 1.2rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.sidebar.sidebar-mobile .logout-section {
+  flex-shrink: 0;
+  padding: 20px;
+  border-top: 1px solid var(--medium-gray);
+  background: var(--white);
+  position: sticky;
+  bottom: 0;
+}
+
+.sidebar.sidebar-mobile .logout-button {
+  width: 100%;
+  padding: 12px 20px;
+  background: var(--accent-color);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sidebar.sidebar-mobile .logout-button:hover {
+  background: #e55555;
+  transform: translateY(-1px);
+}
+
+.sidebar.sidebar-mobile .logout-button span {
+  font-size: 1.1rem;
 }
 
 @media (max-width: 992px) {
@@ -1134,6 +1327,7 @@ header {
     width: var(--sidebar-width);
     max-width: 90vw;
     transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    touch-action: pan-y;
   }
   .sidebar.sidebar-open {
     transform: translateX(0);

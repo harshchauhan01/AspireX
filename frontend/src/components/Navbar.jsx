@@ -1,42 +1,22 @@
-import React from 'react'
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import './CSS/NavbarCommunity.css';
+import logo from '../assets/logo.png';
 
-const Navone = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const navigate = useNavigate();
-    const toggleNav = () => {
-      setIsOpen(!isOpen);
-    };
-    const handleNavigation = (path) => {
-      // alert("clicked");
-        navigate(path);
-      };
-    
+const Navbar = ({ setActiveTab, setShowProfile }) => {
   return (
-    <>
-         <div className="land-nav">
-        <div className="land-nav-logo"><a onClick={() => handleNavigation("/")}>Aspire X</a></div>
-        <ul className="land-nav-ul">
-            <li className='land-nav-li'><a onClick={() => handleNavigation("/student/login")}>Log in</a></li>
-            <li className='land-nav-li'><a onClick={() => handleNavigation("/student/signup")}>Sign up</a></li>
-            <li className='land-nav-li'><a onClick={() => handleNavigation("/mentor/signup")}>Become a mentor</a></li>
-            <li className='land-nav-li'><a onClick={() => handleNavigation("/contact")}>Contact</a></li>
-        </ul>
-          <div className="hamburger" onClick={toggleNav}>☰</div>
+    <nav className="navbar-community">
+      <div className="navbar-logo"> 
+        <img src={logo} alt="AspireX Logo" />
       </div>
-      <div className="land-nav-sprtor"></div>
-      <div className={`side-nav ${isOpen ? "open" : ""}`}>
-        <button className="close-btn" onClick={toggleNav}>×</button>
-        <ul>
-            <li><a onClick={() => handleNavigation("/student/login")}>Log in</a></li>
-            <li><a onClick={() => handleNavigation("/student/signup")}>Sign up</a></li>
-            <li><a onClick={() => handleNavigation("/mentor/signup")}>Become a mentor</a></li>
-            <li><a onClick={() => handleNavigation("/contact")}>Contact</a></li>
-        </ul>
+      <div className="navbar-center">
+        <button onClick={() => setActiveTab('all')} className="navbar-link">All Posts</button>
       </div>
-    </>
-  )
-}
+      <div className="navbar-profile" onClick={() => setShowProfile(true)}>
+        <span className="navbar-profile-icon">👤</span>
+      </div>
+    </nav>
+  );
+};
 
-export default Navone
+export default Navbar;

@@ -1,20 +1,57 @@
 import { Navigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 
 export default function PrivateRoute({ children, role }) {
-  let token = null;
-  let loginPath = '/login';
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  if (role === 'mentor') {
-    token = localStorage.getItem('Mentortoken');
-    loginPath = '/mentor/login';
-  } else if (role === 'student') {
-    token = localStorage.getItem('token');
-    loginPath = '/student/login';
-  } else {
-    // fallback: check for either token, default to student login
-    token = localStorage.getItem('token') || localStorage.getItem('Mentortoken');
-    loginPath = '/login';
+  useEffect(() => {
+    const checkAuth = () => {
+      let token = null;
+      
+      if (role === 'mentor') {
+        token = localStorage.getItem('Mentortoken');
+      } else if (role === 'student') {
+        token = localStorage.getItem('token');
+      } else {
+        // fallback: check for either token
+        token = localStorage.getItem('token') || localStorage.getItem('Mentortoken');
+      }
+
+      if (!token) {
+        setIsAuthenticated(false);
+        // Show a more user-friendly message
+        console.warn('Authentication required. Please log in to access this page.');
+      } else {
+        setIsAuthenticated(true);
+      }
+      
+      setIsChecking(false);
+    };
+
+    checkAuth();
+  }, [role]);
+
+  if (isChecking) {
+    // Show loading state while checking authentication
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontSize: '18px',
+        color: '#666'
+      }}>
+        Checking authentication...
+      </div>
+    );
   }
 
-  return token ? children : <Navigate to={loginPath} />;
+  if (!isAuthenticated) {
+    // Redirect to home page with a message
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 }

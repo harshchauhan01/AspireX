@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatMeetingTime } from '../../lib/utils';
 
 const Calendar = ({ meetings }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -110,10 +111,7 @@ const Calendar = ({ meetings }) => {
               {getMeetingsForDate(selectedDate).map((meeting, index) => (
                 <li key={index}>
                   <strong>{meeting.title}</strong> with {meeting.mentor_name || 'Mentor'}<br/>
-                  {new Date(meeting.scheduled_time).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  {formatMeetingTime(meeting.scheduled_time)}
                 </li>
               ))}
             </ul>

@@ -1,4 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  FiMessageCircle, 
+  FiCalendar, 
+  FiStar, 
+  FiSearch, 
+  FiMapPin, 
+  FiSend,
+  FiUser,
+  FiBookOpen
+} from 'react-icons/fi';
 import API from '../../BackendConn/api';
 import './CSS/PageStyles.css';
 import './CSS/Messages.css';
@@ -17,12 +27,30 @@ const Messages = () => {
   const [currentUserType, setCurrentUserType] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+  
+  // Mobile-specific states
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showConversationList, setShowConversationList] = useState(true);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowConversationList(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
         const token = localStorage.getItem('Mentortoken');
-        // Token retrieved
         
         const res = await API.get('chat/get-user-info/', {
           headers: {
@@ -57,7 +85,6 @@ const Messages = () => {
 
       setConversations(
         (response.data || []).sort((a, b) => {
-          // Sort by pinned first, then by last message time
           if (a.pinned && !b.pinned) return -1;
           if (!a.pinned && b.pinned) return 1;
           return new Date(b.last_message_time || b.created_at || 0) - new Date(a.last_message_time || a.created_at || 0);
@@ -73,7 +100,7 @@ const Messages = () => {
 
   // Pin/Unpin conversation
   const togglePinConversation = async (conversationId, isPinned, event) => {
-    event.stopPropagation(); // Prevent conversation selection
+    event.stopPropagation();
     
     const token = localStorage.getItem('Mentortoken');
     if (!token) return;
@@ -87,7 +114,6 @@ const Messages = () => {
       });
 
       if (response.status === 200) {
-        // Refresh conversations to get updated order
         await fetchConversations();
       }
     } catch (error) {
@@ -98,9 +124,9 @@ const Messages = () => {
   // Fetch messages for a conversation
   const fetchMessages = async (conversationId) => {
     if (!conversationId) {
-      console.warn("⚠️ Tried to fetch messages for undefined conversationId");
+      console.warn("Tried to fetch messages for undefined conversationId");
       return;
-    } 
+    }
 
     try {
       const token = localStorage.getItem('Mentortoken');
@@ -157,17 +183,12 @@ const Messages = () => {
       });
 
       setMessageInput('');
-      // Only fetch messages after sending - no automatic refresh
       await fetchMessages(conversationId);
-      // Only refresh conversation list after sending to update last message
       await fetchConversations();
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
-
-  // Removed automatic polling - no more auto-refresh
-  // Messages will only be fetched when manually triggered
 
   // Initial data fetch
   useEffect(() => {
@@ -176,16 +197,11 @@ const Messages = () => {
     }
   }, [currentUserType]);
 
-  // Removed the automatic conversation list refresh interval
-  // Only refresh conversation list when manually triggered (like after sending a message)
-
   // Handle conversation selection
   const handleSelectConversation = (conversation) => {
-    // Extract other user info from conversation
     let otherUserId = conversation.other_user_id;
     let otherUserType = conversation.other_user_type;
     
-    // Fallback: if backend doesn't provide these fields, calculate them
     if (!otherUserId || !otherUserType) {
       if (currentUserType === 'mentor') {
         otherUserId = conversation.student;
@@ -204,7 +220,13 @@ const Messages = () => {
       otherUserId: otherUserId,
       otherUserType: otherUserType
     });
+    
     fetchMessages(conversation.id);
+    
+    // On mobile, hide conversation list when selecting a conversation
+    if (isMobile) {
+      setShowConversationList(false);
+    }
   };
 
   // Get initials for avatar
@@ -233,12 +255,20 @@ const Messages = () => {
     }
   };
 
+  // Handle back navigation on mobile
+  const handleBackToConversations = () => {
+    if (isMobile) {
+      setShowConversationList(true);
+      setActiveConversation(null);
+    }
+  };
+
   // Profile Modal Component
   const ProfileModal = () => {
     if (!showProfileModal || !selectedUserProfile) return null;
 
     const profile = selectedUserProfile;
-    const isMentor = profile?.mentor_id;
+    const isMentorProfile = profile?.mentor_id;
     
     return (
       <div className="modal-overlay" onClick={() => setShowProfileModal(false)}>
@@ -273,32 +303,31 @@ const Messages = () => {
                   <h2>{profile?.name || 'Unknown User'}</h2>
                   <p className="profile-email">{profile?.email || 'No email available'}</p>
                   <p className="profile-type">
-                    {isMentor ? 'Mentor' : 'Student'}
+                    {isMentorProfile ? 'Mentor' : 'Student'}
                   </p>
                 </div>
               </div>
               
-              {/* Stats Section */}
               <div className="profile-stats">
-                {isMentor && profile?.details?.total_students && (
+                {isMentorProfile && profile?.details?.total_students && (
                   <div className="stat-item">
                     <div className="stat-value">{profile.details.total_students}</div>
                     <div className="stat-label">Students</div>
                   </div>
                 )}
-                {isMentor && profile?.details?.total_sessions && (
+                {isMentorProfile && profile?.details?.total_sessions && (
                   <div className="stat-item">
                     <div className="stat-value">{profile.details.total_sessions}</div>
                     <div className="stat-label">Sessions</div>
                   </div>
                 )}
-                {isMentor && profile?.details?.average_rating && (
+                {isMentorProfile && profile?.details?.average_rating && (
                   <div className="stat-item">
                     <div className="stat-value">{profile.details.average_rating.toFixed(1)}</div>
                     <div className="stat-label">Rating</div>
                   </div>
                 )}
-                {!isMentor && profile?.details?.total_sessions && (
+                {!isMentorProfile && profile?.details?.total_sessions && (
                   <div className="stat-item">
                     <div className="stat-value">{profile.details.total_sessions}</div>
                     <div className="stat-label">Sessions</div>
@@ -344,14 +373,14 @@ const Messages = () => {
                   </div>
                 )}
                 
-                {isMentor && profile?.details?.fees && (
+                {isMentorProfile && profile?.details?.fees && (
                   <div className="detail-section">
                     <h4>Hourly Rate</h4>
                     <p>${profile.details.fees}/hour</p>
                   </div>
                 )}
                 
-                {isMentor && profile?.details?.years_of_experience && (
+                {isMentorProfile && profile?.details?.years_of_experience && (
                   <div className="detail-section">
                     <h4>Experience</h4>
                     <p>{profile.details.years_of_experience} years of professional experience</p>
@@ -373,26 +402,23 @@ const Messages = () => {
                 )}
               </div>
 
-              {/* Contact Section */}
               <div className="contact-section">
-                <h4>🚀 Ready to Connect?</h4>
+                <h4><FiUser /> Ready to Connect?</h4>
                 <div className="contact-buttons">
                   <button className="contact-btn" onClick={() => {
                     setShowProfileModal(false);
-                    // You can add logic here to start a conversation
                   }}>
-                    💬 Start Chat
+                    <FiMessageCircle /> Start Chat
                   </button>
-                  {isMentor && (
+                  {isMentorProfile && (
                     <button className="contact-btn" onClick={() => {
                       setShowProfileModal(false);
-                      // You can add logic here to book a session
                     }}>
-                      📅 Book Session
+                      <FiCalendar /> Book Session
                     </button>
                   )}
                   <button className="contact-btn" onClick={() => setShowProfileModal(false)}>
-                    ✨ View More
+                    <FiStar /> View More
                   </button>
                 </div>
               </div>
@@ -457,26 +483,30 @@ const Messages = () => {
   };
 
   // Start new conversation
-  const startNewConversation = async (userId, isMentor) => {
+  const startNewConversation = async (userId, isMentorUser) => {
     try {
       let payload = {};
       
-      if (currentUserType === 'student' && isMentor) {
+      if (currentUserType === 'student' && isMentorUser) {
         payload = {
           student_id: currentUserId,
           mentor_id: userId
         };
-      } else if (currentUserType === 'mentor' && !isMentor) {
+      } else if (currentUserType === 'mentor' && !isMentorUser) {
         payload = {
           mentor_id: currentUserId,
           student_id: userId
         };
       } else {
-        console.error("❌ Invalid user role or payload mismatch");
+        console.error("Invalid user role or payload mismatch");
         return;
       }
 
-      const response = await API.post('chat/conversations/', payload);
+      const response = await API.post('chat/conversations/', payload, {
+        headers: {
+          Authorization: `Token ${localStorage.getItem('Mentortoken')}`
+        }
+      });
 
       const newConversation = {
         ...response.data,
@@ -491,12 +521,12 @@ const Messages = () => {
         otherPersonName: newConversation.other_person_name,
         avatar: getInitials(newConversation.other_person_name),
         messages: [],
-        otherUserId: userId, // Store the other user's ID
-        otherUserType: isMentor ? 'mentor' : 'student' // Store the other user's type
+        otherUserId: userId,
+        otherUserType: isMentorUser ? 'mentor' : 'student'
       });
 
       if (!newConversation.id) {
-        console.error("❌ Failed to get conversation ID from response");
+        console.error("Failed to get conversation ID from response");
         return;
       }
 
@@ -506,61 +536,163 @@ const Messages = () => {
       setSearchQuery('');
       setSearchResults([]);
       setShowSearchResults(false);
+      setShowSearch(false);
+      
+      // On mobile, show the conversation
+      if (isMobile) {
+        setShowConversationList(false);
+      }
     } catch (error) {
-      console.error('❌ Error starting conversation:', error.response?.data || error.message);
+      console.error('Error starting conversation:', error.response?.data || error.message);
     }
   };
 
-  const searchBar = (
-    <form className="search-bar" onSubmit={handleSearch}>
-      <input 
-        type="text" 
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search users to start chat..."
-      />
-      <button type="submit">🔍</button>
-    </form>
-  );
-
-  const searchResultsDropdown = showSearchResults && (
-    <div className="search-results-dropdown">
-      {searchResults.length > 0 ? (
-        searchResults.map(user => (
-          <div 
-            key={user.id} 
-            className="search-result-item"
-            onClick={() => startNewConversation(user.id, user.is_mentor)}
-          >
-            <div className="search-result-avatar">
-              {getInitials(user.full_name)}
-            </div>
-            <div className="search-result-details">
-              <h4>{user.full_name}</h4>
-              <p>{user.is_mentor ? 'Mentor' : 'Student'}</p>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="no-search-results">
-          <p>No users found</p>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="page-container messages-page">
-      <header className="page-header">
-        <h1>Messages</h1>
-        <div style={{ position: 'relative', width: '100%' }}>
-          {searchBar}
-          {searchResultsDropdown}
+      {/* Mobile Header */}
+      {isMobile && (
+        <div className="mobile-header">
+          {!showConversationList && activeConversation ? (
+            // Message view header
+            <div className="mobile-message-header">
+              <button 
+                className="back-button"
+                onClick={handleBackToConversations}
+              >
+                ← 
+              </button>
+              <div className="mobile-contact-info">
+                <div className="mobile-avatar">
+                  {getInitials(activeConversation.otherPersonName)}
+                </div>
+                <div className="mobile-contact-details">
+                  <h3>{activeConversation.otherPersonName}</h3>
+                  
+                </div>
+              </div>
+              <div className="mobile-header-actions">
+                <button 
+                  className="header-action-btn"
+                  onClick={() => handleViewProfile(
+                    activeConversation.otherUserId, 
+                    activeConversation.otherUserType === 'mentor'
+                  )}
+                >
+                  👤
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Conversation list header
+            <div className="mobile-conversations-header">
+              <h1>Messages</h1>
+              <div className="mobile-header-actions">
+                <button 
+                  className={`header-action-btn ${showSearch ? 'active' : ''}`}
+                  onClick={() => {
+                    setShowSearch(!showSearch);
+                    if (showSearch) {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                      setShowSearchResults(false);
+                    }
+                  }}
+                >
+                  <FiSearch />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      </header>
+      )}
+
+      {/* Desktop Header */}
+      {!isMobile && (
+        <header className="page-header">
+          <h1>Messages</h1>
+          <div className="search-container">
+            <form className="search-bar" onSubmit={handleSearch}>
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search users to start chat..."
+              />
+              <button type="submit"><FiSearch /></button>
+            </form>
+            {showSearchResults && (
+              <div className="search-results-dropdown">
+                {searchResults.length > 0 ? (
+                  searchResults.map(user => (
+                    <div 
+                      key={user.id} 
+                      className="search-result-item"
+                      onClick={() => startNewConversation(user.id, user.is_mentor)}
+                    >
+                      <div className="search-result-avatar">
+                        {getInitials(user.full_name)}
+                      </div>
+                      <div className="search-result-details">
+                        <h4>{user.full_name}</h4>
+                        <p>{user.is_mentor ? 'Mentor' : 'Student'}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-search-results">
+                    <p>No users found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </header>
+      )}
+
+      {/* Mobile Search Bar */}
+      {isMobile && showSearch && (
+        <div className="mobile-search-container">
+          <form className="mobile-search-bar" onSubmit={handleSearch}>
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search users to start chat..."
+              autoFocus
+            />
+            <button type="submit"><FiSearch /></button>
+          </form>
+          {showSearchResults && (
+            <div className="mobile-search-results">
+              {searchResults.length > 0 ? (
+                searchResults.map(user => (
+                  <div 
+                    key={user.id} 
+                    className="search-result-item"
+                    onClick={() => startNewConversation(user.id, user.is_mentor)}
+                  >
+                    <div className="search-result-avatar">
+                      {getInitials(user.full_name)}
+                    </div>
+                    <div className="search-result-details">
+                      <h4>{user.full_name}</h4>
+                      <p>{user.is_mentor ? 'Mentor' : 'Student'}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-search-results">
+                  <p>No users found</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="messages-container">
-        <div className="conversation-list">
+        {/* Conversation List */}
+        <div className={`conversation-list ${isMobile ? (showConversationList ? 'show' : 'hide') : ''}`}>
           {conversations.length > 0 ? (
             conversations.map(conversation => (
               <div 
@@ -573,11 +705,14 @@ const Messages = () => {
                   {conversation.unread && <span className="unread-badge"></span>}
                 </div>
                 <div className="conversation-details">
-                  <h3>
-                    {conversation.other_person_name || 'Unknown User'}
-                    {conversation.pinned && <span className="pin-indicator">📌</span>}
-                  </h3>
-                  <p>
+                  <div className="conversation-header">
+                    <h3>
+                      {conversation.other_person_name || 'Unknown User'}
+                      {conversation.pinned && <span className="pin-indicator"><FiMapPin /></span>}
+                    </h3>
+                    <span className="conversation-time">{formatTime(conversation.last_message_time || conversation.created_at)}</span>
+                  </div>
+                  <p className="last-message">
                     {conversation.last_message_content 
                       ? conversation.last_message_content.length > 50 
                         ? conversation.last_message_content.substring(0, 50) + '...'
@@ -585,7 +720,6 @@ const Messages = () => {
                       : 'No messages yet'
                     }
                   </p>
-                  <span className="conversation-time">{formatTime(conversation.last_message_time || conversation.created_at)}</span>
                 </div>
                 <div className="conversation-actions">
                   <button 
@@ -593,33 +727,48 @@ const Messages = () => {
                     className={`pin-button ${conversation.pinned ? 'pinned' : ''}`}
                     title={conversation.pinned ? 'Unpin conversation' : 'Pin conversation'}
                   >
-                    📌
+                    <span className="pin-icon"><FiMapPin /></span>
                   </button>
                 </div>
               </div>
             ))
           ) : (
             <div className="no-conversations">
-              <p>No conversations found</p>
+              <div className="empty-state">
+                <div className="empty-icon"><FiMessageCircle /></div>
+                <h3>No conversations yet</h3>
+                <p>Search for users to start chatting</p>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="message-view">
+        {/* Message View */}
+        <div className={`message-view ${isMobile ? (showConversationList ? 'hide' : 'show') : ''}`}>
           {activeConversation ? (
             <>
-              <div className="message-header">
-                <h2>{activeConversation.otherPersonName}</h2>
-                <button 
-                  className="secondary-button"
-                  onClick={() => handleViewProfile(
-                    activeConversation.otherUserId, 
-                    activeConversation.otherUserType === 'mentor'
-                  )}
-                >
-                  View Profile
-                </button>
-              </div>
+              {/* Desktop Message Header */}
+              {!isMobile && (
+                <div className="message-header">
+                  <div className="contact-info">
+                    <div className="contact-avatar">
+                      {getInitials(activeConversation.otherPersonName)}
+                    </div>
+                    <div className="contact-details">
+                      <h2>{activeConversation.otherPersonName}</h2>
+                    </div>
+                  </div>
+                  <button 
+                    className="profile-button"
+                    onClick={() => handleViewProfile(
+                      activeConversation.otherUserId, 
+                      activeConversation.otherUserType === 'mentor'
+                    )}
+                  >
+                    View Profile
+                  </button>
+                </div>
+              )}
               
               <div className="messages-list">
                 {activeConversation.messages?.length > 0 ? (
@@ -636,7 +785,11 @@ const Messages = () => {
                   ))
                 ) : (
                   <div className="no-messages">
-                    <p>No messages in this conversation yet</p>
+                    <div className="empty-state">
+                      <div className="empty-icon"><FiMessageCircle /></div>
+                      <h3>No messages yet</h3>
+                      <p>Start the conversation!</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -646,21 +799,25 @@ const Messages = () => {
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder="Type a message..."
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
                 <button 
-                  className="primary-button"
+                  className="send-button"
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim()}
                 >
-                  Send
+                  <span className="send-icon">➤</span>
                 </button>
               </div>
             </>
           ) : (
             <div className="no-conversation">
-              <p>Select a conversation to start messaging</p>
+              <div className="empty-state">
+                <div className="empty-icon"><FiMessageCircle /></div>
+                <h3>Welcome to Messages</h3>
+                <p>Select a conversation to start messaging</p>
+              </div>
             </div>
           )}
         </div>

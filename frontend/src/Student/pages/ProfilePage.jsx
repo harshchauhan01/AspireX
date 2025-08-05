@@ -1,10 +1,11 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './CSS/PageStyles.css';
 import './CSS/Profile.css';
 import Loader from '../../components/ui/loader';
 import API from '../../BackendConn/api';
 import { API_BASE_URL } from '../../BackendConn/api';
+import { FiTarget, FiStar, FiEdit, FiTrash } from 'react-icons/fi';
 
 const ProfilePage = ({ mentorProfile }) => {
   const [editMode, setEditMode] = useState(false);
@@ -393,7 +394,7 @@ const ProfilePage = ({ mentorProfile }) => {
                   className="avatar-edit-button"
                   title="Change photo"
                 >
-                  ✏️
+                  <FiEdit />
                 </label>
                 {photoPreview && (
                   <button 
@@ -402,7 +403,7 @@ const ProfilePage = ({ mentorProfile }) => {
                     title="Remove photo"
                     disabled={photoUploading}
                   >
-                    🗑️
+                    <FiTrash />
                   </button>
                 )}
                 {profilePhoto && (
@@ -431,7 +432,7 @@ const ProfilePage = ({ mentorProfile }) => {
             )}
             <p className="profile-email">{profileData.email}</p>
             <div className="profile-stats">
-              <span>🎯 {mentorProfile?.details?.total_sessions || 0} Sessions</span>
+              <span><FiTarget /> {mentorProfile?.details?.total_sessions || 0} Sessions</span>
             </div>
           </div>
         </div>

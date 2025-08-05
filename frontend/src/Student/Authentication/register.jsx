@@ -43,7 +43,7 @@ function SRegister() {
       const res = await API.post('student/register/', { ...form, accepted_terms: true });
       localStorage.setItem('token', res.data.token);
       alert('Registration successful! \nYour Student ID : ' + res.data.student.student_id);
-      navigate('/student/login');
+      navigate('/login');
     } catch (err) {
       setError(err.response?.data?.detail || 'Error during registration');
     }
@@ -59,7 +59,7 @@ function SRegister() {
           <form className="form" onSubmit={handleSubmit}>
             <input placeholder="Name" id="text" name="name" type="text" className="input" onChange={handleChange} required />
             <input placeholder="Email" id="email" name="email" type="email" className="input" onChange={handleChange} required />
-            <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required />
+            <input placeholder="Password" id="password" name="password" type="password" className="input" onChange={handleChange} required autoComplete="new-password" />
             <span className="forgot-password"><a href="#">Forgot Password?</a></span>
             <div style={{ marginTop: '12px', fontSize: '11px' }}>
               <input

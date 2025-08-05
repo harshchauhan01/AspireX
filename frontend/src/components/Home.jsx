@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FaQuoteLeft, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { FiAward, FiUsers, FiClock } from "react-icons/fi";
+import { FaQuoteLeft, FaChevronLeft, FaChevronRight, FaEnvelope } from "react-icons/fa";
+import { FiAward, FiUsers, FiClock, FiMapPin } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { useNavigate } from "react-router-dom";
@@ -9,9 +9,9 @@ import ContactPage from "./ContactPage";
 import logo from "../../public/logoBlack.png";
 import { fetchPlatformStats, fetchSiteStatus } from "../BackendConn/api";
 import { subscribeNewsletter } from "../BackendConn/api";
+import API from "../BackendConn/api";
 
 function Home() {
-  const [isOpen, setIsOpen] = useState(false);
   const [counts, setCounts] = useState({
     students: null,
     sessions: null,
@@ -21,15 +21,6 @@ function Home() {
   // const toggleNav = () => {
   //   setIsOpen(!isOpen);
   // };
-const toggleNav = () => {
-  setIsOpen(!isOpen);
-  // Prevent background scrolling
-  if (!isOpen) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = 'auto';
-  }
-};
 
 
   const navigate = useNavigate();
@@ -172,67 +163,180 @@ const toggleNav = () => {
   const [newsletterStatus, setNewsletterStatus] = useState("");
   const [newsletterLoading, setNewsletterLoading] = useState(false);
 
+  // Auth state for showing/hiding login/signup/profile
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null); // 'student' or 'mentor'
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    // Check for tokens in localStorage
+    const studentToken = localStorage.getItem('token');
+    const mentorToken = localStorage.getItem('Mentortoken');
+    if (mentorToken) {
+      setIsAuthenticated(true);
+      setUserRole('mentor');
+    } else if (studentToken) {
+      setIsAuthenticated(true);
+      setUserRole('student');
+    } else {
+      setIsAuthenticated(false);
+      setUserRole(null);
+    }
+  }, []);
+
+  // Fetch user profile (photo, name) if authenticated
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        if (userRole === 'mentor') {
+          const res = await API.get('mentor/profile/');
+          setUserProfile(res.data);
+        } else if (userRole === 'student') {
+          const res = await API.get('student/profile/');
+          setUserProfile(res.data);
+        } else {
+          setUserProfile(null);
+        }
+      } catch {
+        setUserProfile(null);
+      }
+    };
+    if (isAuthenticated && userRole) fetchProfile();
+  }, [isAuthenticated, userRole]);
+
+  // Helper to get initials from name
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Profile dropdown state
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('Mentortoken');
+    setIsAuthenticated(false);
+    setUserRole(null);
+    setProfileDropdownOpen(false);
+    navigate('/');
+  };
+
+  // Remove mobile-menu-overlay and related state
+  // Refactor navbar to be unified and responsive
+  // Hamburger toggles nav-links on mobile
+  const [navOpen, setNavOpen] = useState(false);
+  const handleNavToggle = () => setNavOpen((open) => !open);
+  const closeNav = () => setNavOpen(false);
+
+  // Track window width for responsive rendering
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <>
       {/* Navigation */}
-      {/* new nav done for fixing the responsive issue */}
-<nav className="navbar">
-  <div className="nav-logo">AspireX</div>
-  
-  {/* Desktop Navigation */}
-  <ul className="nav-links">
-    <li><a href="#home">Home</a></li>
-    <li><a href="#about">About</a></li>
-    <li><a href="#mentors">Mentors</a></li>
-    <li><a href="#testimonials">Testimonials</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ul>
-  
-  <div className="nav-buttons">
-    <button className="btn-login" onClick={() => navigate("/student/login")}>Login</button>
-    <button className="btn-signup" onClick={() => navigate("/student/signup")}>Sign Up</button>
-  </div>
-  
-  <div className="hamburger" onClick={toggleNav}>
-    {isOpen ? <IoMdClose /> : <GiHamburgerMenu />}
-  </div>
-</nav>
-
-{/* Premium Mobile Menu Overlay */}
-<div className={`mobile-menu-overlay ${isOpen ? "active" : ""}`}>
-  <div className="mobile-menu-brand">
-    <h3>AspireX</h3>
-  </div>
-  
-  <div className="mobile-menu-links">
-    <a href="#home" onClick={toggleNav}>Home</a>
-    <a href="#about" onClick={toggleNav}>About</a>
-    <a href="#mentors" onClick={toggleNav}>Mentors</a>
-    <a href="#testimonials" onClick={toggleNav}>Testimonials</a>
-    <a href="#contact" onClick={toggleNav}>Contact</a>
-  </div>
-  
-  <div className="mobile-menu-buttons">
-    <button 
-      className="mobile-btn-login" 
-      onClick={() => {
-        toggleNav();
-        navigate("/student/login");
-      }}
-    >
-      Login
-    </button>
-    <button 
-      className="mobile-btn-signup"
-      onClick={() => {
-        toggleNav();
-        navigate("/student/signup");
-      }}
-    >
-      Sign Up
-    </button>
-  </div>
-</div>
+      <nav className={`navbar${navOpen ? ' mobile-open' : ''}`}> 
+        <div className="nav-logo" onClick={() => { navigate('/'); closeNav(); }}>AspireX</div>
+        <ul className={`nav-links${navOpen ? ' mobile-open' : ''}`}> 
+          {/* Mobile-only login/signup or profile dropdown AT THE TOP */}
+          {isMobile && (
+            <li className="mobile-nav-auth">
+              {!isAuthenticated ? (
+                <>
+                  <button className="btn-login" onClick={() => { navigate("/login"); closeNav(); }}>Login</button>
+                  <button className="btn-signup" onClick={() => { navigate("/signup"); closeNav(); }}>Sign Up</button>
+                </>
+              ) : (
+                <div className="profile-dropdown">
+                  <span
+                    tabIndex={0}
+                    onClick={() => setProfileDropdownOpen((open) => !open)}
+                    onBlur={() => setTimeout(() => setProfileDropdownOpen(false), 150)}
+                  >
+                    {userProfile?.profile_photo ? (
+                      <img src={userProfile.profile_photo} alt="Profile" className="profile-photo-navbar" />
+                    ) : (
+                      <span className="profile-initials-navbar">{getInitials(userProfile?.name)}</span>
+                    )}
+                  </span>
+                  {profileDropdownOpen && (
+                    <div className="dropdown-menu" style={{zIndex: 2000}}>
+                      <button onClick={() => {
+                        setProfileDropdownOpen(false);
+                        closeNav();
+                        if (userRole === 'mentor') navigate('/mentor/dashboard');
+                        else navigate('/student/dashboard');
+                      }}>Dashboard</button>
+                      <button onClick={() => { handleLogout(); closeNav(); }}>Logout</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </li>
+          )}
+          <li><a href="#home" onClick={closeNav}>Home</a></li>
+          <li><a href="#about" onClick={closeNav}>About</a></li>
+          <li><a href="#mentors" onClick={closeNav}>Mentors</a></li>
+          <li><a href="#testimonials" onClick={closeNav}>Testimonials</a></li>
+          <li><a href="/services" onClick={e => { e.preventDefault(); navigate('/services'); closeNav(); }}>Services</a></li>
+        </ul>
+        <div className="nav-buttons">
+          {/* Desktop-only login/signup or profile dropdown */}
+          {!isAuthenticated ? (
+            <>
+              <button className="btn-login" onClick={() => { navigate("/login"); closeNav(); }}>Login</button>
+              <button className="btn-signup" onClick={() => { navigate("/signup"); closeNav(); }}>Sign Up</button>
+            </>
+          ) : (
+            <div className="profile-dropdown">
+              <span
+                tabIndex={0}
+                onClick={() => setProfileDropdownOpen((open) => !open)}
+                onBlur={() => setTimeout(() => setProfileDropdownOpen(false), 150)}
+              >
+                {userProfile?.profile_photo ? (
+                  <img src={userProfile.profile_photo} alt="Profile" className="profile-photo-navbar" />
+                ) : (
+                  <span className="profile-initials-navbar">{getInitials(userProfile?.name)}</span>
+                )}
+              </span>
+              {profileDropdownOpen && (
+                <div className="dropdown-menu" style={{zIndex: 2000}}>
+                  <button onClick={() => {
+                    setProfileDropdownOpen(false);
+                    closeNav();
+                    if (userRole === 'mentor') navigate('/mentor/dashboard');
+                    else navigate('/student/dashboard');
+                  }}>Dashboard</button>
+                  <button onClick={() => { handleLogout(); closeNav(); }}>Logout</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="hamburger" onClick={handleNavToggle}>
+          {navOpen ? <IoMdClose /> : <GiHamburgerMenu />}
+        </div>
+      </nav>
+      {/* Mobile overlay for closing menu */}
+      {isMobile && navOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: '80vw',
+            width: '20vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.18)',
+            zIndex: 10500,
+          }}
+          onClick={closeNav}
+        />
+      )}
 
 
       {/* Hero Section */}
@@ -250,8 +354,8 @@ const toggleNav = () => {
               personalized guidance and meaningful connections.
             </p>
             <div className="hero-buttons">
-              <button className="btn-primary" onClick={() => navigate("/student/login")}>Find a Mentor</button>
-              <button className="btn-secondary" onClick={() => navigate("/mentor/login")}>Become a Mentor</button>
+              <button className="btn-primary" onClick={() => navigate("/login")}>Find a Mentor</button>
+              <button className="btn-secondary" onClick={() => navigate("/signup")}>Become a Mentor</button>
             </div>
           </div>
           <div className="hero-image">
@@ -409,9 +513,9 @@ const toggleNav = () => {
             <h2>Contact Our Team</h2>
             <p>Have questions, suggestions, or need help? Reach out and we'll respond promptly!</p>
             <ul className="home-contact-info">
-              <li><span role="img" aria-label="location">📍</span> India</li>
+              <li><FiMapPin /> India</li>
               {/* <li><span role="img" aria-label="phone">📞</span> +1 (234) 567-8900</li> */}
-              <li><span role="img" aria-label="email">✉️</span> contactaspirexdigital@gmail.com</li>
+              <li><FaEnvelope /> contactaspirexdigital@gmail.com</li>
             </ul>
             <div className="home-contact-illustration">
               <img src={logo} alt="Contact Illustration" style={{maxWidth: '180px', marginTop: '4px'}} />
@@ -432,8 +536,8 @@ const toggleNav = () => {
             AspireX is the platform for meaningful mentorship connections.
           </p>
           <div className="cta-buttons">
-            <button className="btn-primary" onClick={() => navigate("/student/login")}>Find Your Mentor</button>
-            <button className="btn-secondary" onClick={() => navigate("/mentor/login")}>Become a Mentor</button>
+            <button className="btn-primary" onClick={() => navigate("/login")}>Find Your Mentor</button>
+            <button className="btn-secondary" onClick={() => navigate("/signup")}>Become a Mentor</button>
           </div>
         </div>
       </section>
@@ -469,9 +573,9 @@ const toggleNav = () => {
           <div className="footer-contact" id="contact">
             <h4>Contact Us</h4>
             <ul>
-              <li><i className="fas fa-map-marker-alt"></i> India</li>
+              <li><FiMapPin /> India</li>
               {/* <li><i className="fas fa-phone"></i> +1 (234) 567-8900</li> */}
-              <li><i className="fas fa-envelope"></i> contactaspirexdigital@gmail.com</li>
+              <li><FaEnvelope /> contactaspirexdigital@gmail.com</li>
             </ul>
           </div>
           
