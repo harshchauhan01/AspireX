@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './css/Services.css';
+import './CSS/Services.css';
 
 const Services = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
