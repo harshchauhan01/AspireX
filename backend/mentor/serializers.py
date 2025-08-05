@@ -97,16 +97,20 @@ class ProfessionSerializer(serializers.ModelSerializer):
 class MentorDetailSerializer(serializers.ModelSerializer):
     skills = SkillSerializer(many=True)
     professions = ProfessionSerializer(many=True)
+    is_online = serializers.SerializerMethodField()
 
     class Meta:
         model = MentorDetail
         fields = (
             'first_name', 'last_name', 'dob', 'age', 'gender', 'email', 'phone_number',
             'college', 'cgpa', 'batch', 'professions', 'skills', 'fees', 'about',
-            'availability_timings', 'profile_photo', 'cv', 'is_approved',
-            'total_students', 'average_rating', 'years_of_experience',
-            'linkedin_url', 'github_url', 'portfolio_url','total_students','total_sessions'
+            'availability_timings', 'profile_photo', 'cv', 'is_approved', 'total_students',
+            'total_sessions', 'average_rating', 'years_of_experience', 'linkedin_url',
+            'github_url', 'portfolio_url', 'key_achievements', 'services', 'availability_day_wise', 'languages', 'is_online'
         )
+
+    def get_is_online(self, obj):
+        return obj.mentor.is_currently_online()
 
 # Serializer for MentorToken
 class MentorTokenSerializer(serializers.ModelSerializer):
@@ -163,7 +167,7 @@ class MentorSerializer(serializers.ModelSerializer):
     
     def get_feedback_count(self, obj):
         from student.models import Feedback
-        return Feedback.objects.filter(mentor=obj).count()
+        return Feedback.objects.filter(mentor=obj, is_approved=True).count()
 
     def update(self, instance, validated_data):
         details_data = validated_data.pop('details', {})
@@ -250,13 +254,29 @@ class WithdrawalSerializer(serializers.ModelSerializer):
 class PublicMentorSerializer(serializers.ModelSerializer):
     details = MentorDetailSerializer()
     feedback_count = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
 
     class Meta:
         model = Mentor
         fields = (
-            'mentor_id', 'email', 'name', 'details', 'feedback_count'
+            'mentor_id', 'email', 'name', 'details', 'feedback_count', 'reviews'
         )
 
     def get_feedback_count(self, obj):
         from student.models import Feedback
-        return Feedback.objects.filter(mentor=obj).count()
+        return Feedback.objects.filter(mentor=obj, is_approved=True).count()
+
+    def get_reviews(self, obj):
+        from student.models import Feedback
+        feedbacks = Feedback.objects.filter(mentor=obj, is_approved=True).order_by('-created_at')[:10]
+        return [
+            {
+                'id': feedback.id,
+                'student_name': feedback.student.name,
+                'student_role': feedback.student.details.college if hasattr(feedback.student, 'details') and feedback.student.details else 'Student',
+                'rating': feedback.rating,
+                'feedback_text': feedback.feedback_text,
+                'created_at': feedback.created_at.isoformat() if feedback.created_at else None
+            }
+            for feedback in feedbacks
+        ]

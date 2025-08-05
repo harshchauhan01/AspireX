@@ -198,7 +198,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['mentor_id', 'subject', 'time_slot', 'transaction_id', 'is_paid']
+        fields = ['mentor_id', 'subject', 'service', 'service_price', 'service_duration', 'time_slot', 'day', 'date', 'transaction_id', 'is_paid']
 
     def validate(self, data):
         request = self.context.get('request')
@@ -225,10 +225,17 @@ class BookingSerializer(serializers.ModelSerializer):
         from mentor.models import Mentor
         mentor = Mentor.objects.get(mentor_id=mentor_id)
 
-        return Booking.objects.create(student=student, mentor=mentor, **validated_data)
+        booking = Booking.objects.create(student=student, mentor=mentor, **validated_data)
+        return booking
 
 
-
+class BookingListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing bookings (with day/date fields)
+    """
+    class Meta:
+        model = Booking
+        fields = ['id', 'subject', 'service', 'service_price', 'service_duration', 'time_slot', 'day', 'date', 'transaction_id', 'is_paid', 'created_at']
 
 
 class StudentNoteSerializer(serializers.ModelSerializer):

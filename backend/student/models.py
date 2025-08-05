@@ -125,8 +125,8 @@ class StudentDetail(models.Model):
     )
     
     # Add Details     
-    first_name = models.CharField(max_length=100, default="", blank=True)
-    last_name = models.CharField(max_length=100, default="", blank=True)
+    first_name = models.CharField(max_length=200, default="", blank=True)
+    last_name = models.CharField(max_length=200, default="", blank=True)
     dob = models.DateField(null=True, blank=True, default=None)
     age = models.PositiveIntegerField()
     GENDER_CHOICES = (
@@ -138,7 +138,7 @@ class StudentDetail(models.Model):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, unique=False, default="", blank=True)
 
-    college = models.CharField(max_length=200, default="", blank=True)
+    college = models.CharField(max_length=500, default="", blank=True)
     cgpa = models.FloatField(blank=True)
     batch = models.PositiveIntegerField()
     
@@ -148,7 +148,7 @@ class StudentDetail(models.Model):
     # fees = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     about = models.TextField(default="", blank=True)
     # availability_timings = models.CharField(max_length=50, default="#NA")
-    profile_photo = models.URLField(max_length=500, null=True, blank=True, default=None)
+    profile_photo = models.URLField(max_length=900, null=True, blank=True, default=None)
     cv = models.TextField(max_length=1000, null=True, blank=True, default=None)
 
     is_approved = models.BooleanField()
@@ -158,9 +158,9 @@ class StudentDetail(models.Model):
     # average_rating = models.FloatField(default=0.0)
     # years_of_experience = models.PositiveIntegerField(default=0)
 
-    linkedin_url = models.URLField(blank=True, null=True)
-    github_url = models.URLField(blank=True, null=True)
-    portfolio_url = models.URLField(blank=True, null=True)
+    linkedin_url = models.CharField(max_length=250,blank=True, null=True)
+    github_url = models.CharField(max_length=250,blank=True, null=True)
+    portfolio_url = models.CharField(max_length=250,blank=True, null=True)
 
     def __str__(self):
         return f"{self.student.student_id} - {self.first_name} {self.last_name}"
@@ -171,7 +171,12 @@ class Booking(models.Model):
     student = models.ForeignKey('student.Student', on_delete=models.CASCADE, related_name="bookings")
     mentor = models.ForeignKey('mentor.Mentor', on_delete=models.CASCADE, related_name="bookings")
     subject = models.CharField(max_length=255)
+    service = models.CharField(max_length=200, blank=True, null=True)  # Selected service title
+    service_price = models.DecimalField(max_digits=10, decimal_places=2, default=80.00)  # Service price
+    service_duration = models.CharField(max_length=50, default='60 min')  # Service duration
     time_slot = models.CharField(max_length=100)
+    day = models.CharField(max_length=20, blank=True, null=True)  # Day of week (Monday, Tuesday, etc.)
+    date = models.DateField(blank=True, null=True)  # Actual date of the booking
     transaction_id = models.CharField(max_length=100, blank=True, null=True)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -211,7 +216,7 @@ class StudentMessage(models.Model):
         related_name='sent_student_messages'  # Ensure uniqueness here
     )
 
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=400)
     message = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -232,7 +237,7 @@ class StudentMessage(models.Model):
 
 class StudentNote(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="notes")
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=555)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

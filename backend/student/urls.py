@@ -10,6 +10,7 @@ urlpatterns = [
     path('profile/update/', views.StudentProfileUpdateAPIView.as_view(), name='student-profile-update'),
     path('profile/file/', views.StudentFileUploadAPIView.as_view(), name='student-cv-update'),
     path('booking/', views.BookingCreateAPIView.as_view(), name='booking-create'),
+    path('bookings/', views.BookingListAPIView.as_view(), name='booking-list'),
     path('public/', views.PublicStudentListView.as_view(), name='public-student-list'),
     path('public/<str:student_id>/', views.PublicStudentDetailView.as_view(), name='public-student-detail'),
     path('notes/', views.StudentNoteListCreateView.as_view(), name='student-notes'),

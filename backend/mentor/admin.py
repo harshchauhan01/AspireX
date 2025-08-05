@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import *
 from django.utils import timezone
+from .forms import MentorDetailAdminForm
 
 @admin.register(MentorDetail)
 class MentorDetailAdmin(admin.ModelAdmin):
+    form = MentorDetailAdminForm
     list_display = ('mentor', 'first_name', 'last_name', 'email', 'is_approved')
     list_filter = ('is_approved', 'gender', 'batch')
     search_fields = ('first_name', 'last_name', 'email', 'mentor__mentor_id')
@@ -26,6 +28,22 @@ class MentorDetailAdmin(admin.ModelAdmin):
         }),
         ('Mentorship Details', {
             'fields': ('fees', 'about', 'availability_timings')
+        }),
+        ('Key Achievements', {
+            'fields': ('key_achievements',),
+            'description': 'Enter key achievements as a JSON array. Example: ["Achievement 1", "Achievement 2"]'
+        }),
+        ('Services Offered', {
+            'fields': ('services',),
+            'description': 'Enter services as a JSON array. Each service should have: title, duration, price, description, features, popularity, sessionCount'
+        }),
+        ('Availability Schedule', {
+            'fields': ('availability_day_wise',),
+            'description': 'Enter availability as a JSON object with days as keys. Each day should have: date, slots (array of objects with time and available)'
+        }),
+        ('Languages Spoken', {
+            'fields': ('languages',),
+            'description': 'Enter languages as a JSON array. Example: ["English", "Spanish", "French"]'
         }),
         ('Media Files', {
             'fields': ('profile_photo', 'cv'),

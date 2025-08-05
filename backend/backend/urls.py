@@ -82,9 +82,11 @@ def site_status(request):
 urlpatterns = [
     path('', aspirex_world, name='aspirex-world'),
     path('admin/', admin.site.urls),
+    path('api/auth/', include('unified_auth.urls')),
     path('api/student/', include('student.urls')),
     path('api/mentor/', include('mentor.urls')),
     path('api/chat/', include('chat.urls')),
+    path('api/community/', include('community.urls')),
     path('api/test-cors/', test_cors, name='test-cors'),
     path('api/platform-stats/', platform_stats, name='platform-stats'),
     path('api/newsletter/', newsletter_subscribe, name='newsletter-subscribe'),

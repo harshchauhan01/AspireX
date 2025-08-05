@@ -19,8 +19,23 @@ class StudentAdmin(UserAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    list_display = ('student', 'mentor', 'time_slot', 'is_paid', 'transaction_id')
-    list_filter = ('is_paid',)
+    list_display = ('student', 'mentor', 'time_slot', 'day', 'date', 'is_paid', 'transaction_id')
+    list_filter = ('is_paid', 'day', 'date')
+    search_fields = ('student__name', 'mentor__name', 'subject', 'time_slot')
+    readonly_fields = ('created_at',)
+    
+    fieldsets = (
+        ('Booking Information', {
+            'fields': ('student', 'mentor', 'subject', 'time_slot', 'day', 'date')
+        }),
+        ('Payment Information', {
+            'fields': ('transaction_id', 'is_paid')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at',),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(StudentDetail)

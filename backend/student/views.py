@@ -221,11 +221,129 @@ class BookingCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        # Extract day and date from time_slot
+        time_slot = request.data.get('time_slot', '')
+        day = None
+        date = None
+        
+        if time_slot:
+            # Handle different time_slot formats
+            if ',' in time_slot:
+                # Format: "Monday, Mon 12 - 9:00 AM"
+                parts = time_slot.split(', ')
+                
+                if parts and len(parts) >= 2:
+                    day = parts[0]  # "Monday"
+                    # Extract date from "Mon 12" format
+                    date_part = parts[1].split(' - ')[0]  # "Mon 12"
+                    
+                    if date_part:
+                        # Parse the actual date from "Mon 12" format
+                        from django.utils import timezone
+                        from datetime import datetime, timedelta
+                        
+                        # Extract day number from "Mon 12" (12 is the day of month)
+                        try:
+                            # Split "Mon 12" to get the day number
+                            date_parts = date_part.split()
+                            if len(date_parts) >= 2:
+                                day_number = int(date_parts[1])  # "12"
+                                current_year = timezone.now().year
+                                current_month = timezone.now().month
+                                
+                                # Create the actual date
+                                booking_date = datetime(current_year, current_month, day_number).date()
+                                
+                                # If the date is in the past, move to next month
+                                if booking_date < timezone.now().date():
+                                    if current_month == 12:
+                                        booking_date = datetime(current_year + 1, 1, day_number).date()
+                                    else:
+                                        booking_date = datetime(current_year, current_month + 1, day_number).date()
+                                
+                                date = booking_date
+                                print(f"Parsed date: {date} from time_slot: {time_slot}")
+                            else:
+                                print(f"Could not parse day number from: {date_part}")
+                                date = None
+                        except (ValueError, IndexError) as e:
+                            print(f"Error parsing date from {date_part}: {e}")
+                            date = None
+                            
+            elif 'T' in time_slot:
+                # Format: "2025-07-25T23:35" (ISO format)
+                try:
+                    from django.utils import timezone
+                    from datetime import datetime
+                    
+                    # Parse ISO format
+                    parsed_datetime = datetime.fromisoformat(time_slot.replace('Z', '+00:00'))
+                    date = parsed_datetime.date()
+                    day = parsed_datetime.strftime('%A')  # Get day name
+                    print(f"Parsed ISO format - date: {date}, day: {day}")
+                except Exception as e:
+                    print(f"Error parsing ISO format: {e}")
+                    date = None
+                    day = None
+                    
+            elif ' ' in time_slot and not ',' in time_slot:
+                # Format: "Tuesday 5 Tue 5:00 PM"
+                try:
+                    from django.utils import timezone
+                    from datetime import datetime
+                    
+                    parts = time_slot.split(' ')
+                    if len(parts) >= 4:
+                        day = parts[0]  # "Tuesday"
+                        day_number = int(parts[1])  # "5"
+                        current_year = timezone.now().year
+                        current_month = timezone.now().month
+                        
+                        # Create the actual date
+                        booking_date = datetime(current_year, current_month, day_number).date()
+                        
+                        # If the date is in the past, move to next month
+                        if booking_date < timezone.now().date():
+                            if current_month == 12:
+                                booking_date = datetime(current_year + 1, 1, day_number).date()
+                            else:
+                                booking_date = datetime(current_year, current_month + 1, day_number).date()
+                        
+                        date = booking_date
+                        print(f"Parsed alternative format - date: {date}, day: {day}")
+                    else:
+                        print(f"Could not parse alternative format parts")
+                        date = None
+                        day = None
+                except Exception as e:
+                    print(f"Error parsing alternative format: {e}")
+                    date = None
+                    day = None
+        
+        # Add day and date to request data
+        request.data['day'] = day
+        request.data['date'] = date
+        
         serializer = BookingSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            booking = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BookingListAPIView(generics.ListAPIView):
+    """
+    List all bookings for a specific mentor (public view)
+    """
+    authentication_classes = []
+    serializer_class = BookingListSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        mentor_id = self.request.query_params.get('mentor_id')
+        if mentor_id:
+            return Booking.objects.filter(mentor__mentor_id=mentor_id)
+        return Booking.objects.none()
 
 
 from rest_framework.permissions import AllowAny

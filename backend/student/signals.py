@@ -87,14 +87,20 @@ def handle_booking_payment(sender, instance, created, **kwargs):
         print(f"[SIGNAL] Booking created and not paid: id={instance.id}")
         # Get admin user as sender
         admin_user = Student.objects.filter(is_superuser=True).first()
-        # Compose message
-        amount = getattr(instance.mentor.details, 'fees', None)
-        amount_str = f"{amount}" if amount is not None else "the required"
+        # Compose message using service price if available
+        if instance.service_price:
+            amount_str = f"₹{instance.service_price}"
+            service_info = f" for {instance.service} ({instance.service_duration})"
+        else:
+            amount = getattr(instance.mentor.details, 'fees', None)
+            amount_str = f"₹{amount}" if amount is not None else "the required"
+            service_info = ""
+            
         StudentMessage.objects.create(
             student=instance.student,
             subject="Booking Payment Initiated",
             message=(
-                f"You paid {amount_str} amount of money with transaction ID {instance.transaction_id} to book mentor {instance.mentor.name}. "
+                f"You paid {amount_str}{service_info} with transaction ID {instance.transaction_id} to book mentor {instance.mentor.name}. "
                 f"We will first confirm the payment and schedule the meeting for you."
             ),
             sender=admin_user,
@@ -104,28 +110,151 @@ def handle_booking_payment(sender, instance, created, **kwargs):
     if instance.is_paid:
         print(f"[SIGNAL] Booking is paid: id={instance.id}")
         try:
-            # Parse the time_slot as IST and convert to UTC
+            # Use the actual booking date and time from the booking instance
             from django.utils import timezone
             import datetime
             import pytz
             IST = pytz.timezone('Asia/Kolkata')
             scheduled_time = None
-            try:
-                # Try ISO format first
-                scheduled_time = datetime.datetime.fromisoformat(instance.time_slot)
-                if scheduled_time.tzinfo is None:
-                    scheduled_time = IST.localize(scheduled_time)
-                scheduled_time = scheduled_time.astimezone(pytz.UTC)
-            except Exception:
+            
+            # Parse different time_slot formats
+            time_slot = instance.time_slot
+            print(f"[SIGNAL] Parsing time_slot: {time_slot}")
+            
+            # Use the actual booking date from the instance
+            booking_date = instance.date
+            scheduled_time = None
+            
+            # Handle different time_slot formats
+            if time_slot and ',' in time_slot:
+                # Format: "Monday, Mon 12 - 9:00 AM"
+                parts = time_slot.split(', ')
+                if len(parts) >= 2:
+                    time_part = parts[1].split(' - ')[1] if ' - ' in parts[1] else parts[1]  # "9:00 AM"
+                    
+                    print(f"[SIGNAL] Parsed time: {time_part}")
+                    
+                    if not booking_date:
+                        print(f"[SIGNAL] No booking date found, parsing from time_slot")
+                        # Parse date from time_slot as fallback
+                        date_part = parts[1].split(' - ')[0]  # "Mon 12"
+                        try:
+                            date_parts = date_part.split()
+                            if len(date_parts) >= 2:
+                                day_number = int(date_parts[1])  # "12"
+                                current_year = timezone.now().year
+                                current_month = timezone.now().month
+                                
+                                # Create the actual date
+                                booking_date = datetime.datetime(current_year, current_month, day_number).date()
+                                
+                                # If the date is in the past, move to next month
+                                if booking_date < timezone.now().date():
+                                    if current_month == 12:
+                                        booking_date = datetime.datetime(current_year + 1, 1, day_number).date()
+                                    else:
+                                        booking_date = datetime.datetime(current_year, current_month + 1, day_number).date()
+                                
+                                print(f"[SIGNAL] Parsed booking date from time_slot: {booking_date}")
+                            else:
+                                print(f"[SIGNAL] Could not parse day number from: {date_part}")
+                                booking_date = timezone.now().date()
+                        except (ValueError, IndexError) as e:
+                            print(f"[SIGNAL] Error parsing date from {date_part}: {e}")
+                            booking_date = timezone.now().date()
+                    else:
+                        print(f"[SIGNAL] Using booking date from instance: {booking_date}")
+                    
+                    # Parse time (e.g., "9:00 AM" or "2:00 PM")
+                    try:
+                        if 'AM' in time_part or 'PM' in time_part:
+                            # Parse 12-hour format
+                            time_obj = datetime.datetime.strptime(time_part, "%I:%M %p")
+                            hour = time_obj.hour
+                            minute = time_obj.minute
+                        else:
+                            # Parse 24-hour format
+                            time_obj = datetime.datetime.strptime(time_part, "%H:%M")
+                            hour = time_obj.hour
+                            minute = time_obj.minute
+                        
+                        # Create datetime object using the actual booking date
+                        scheduled_time = datetime.datetime.combine(booking_date, datetime.time(hour, minute))
+                        scheduled_time = IST.localize(scheduled_time)
+                        scheduled_time = scheduled_time.astimezone(pytz.UTC)
+                        
+                        print(f"[SIGNAL] Calculated scheduled_time: {scheduled_time}")
+                        
+                    except Exception as time_error:
+                        print(f"[SIGNAL] Error parsing time: {time_error}")
+                        scheduled_time = timezone.now() + datetime.timedelta(days=1)
+                else:
+                    print(f"[SIGNAL] Could not parse time_slot parts")
+                    scheduled_time = timezone.now() + datetime.timedelta(days=1)
+                    
+            elif time_slot and 'T' in time_slot:
+                # Format: "2025-07-25T23:35" (ISO format)
                 try:
-                    # Try common string format
-                    scheduled_time = datetime.datetime.strptime(instance.time_slot, "%Y-%m-%d %H:%M")
-                    if scheduled_time.tzinfo is None:
+                    scheduled_time = datetime.datetime.fromisoformat(time_slot.replace('Z', '+00:00'))
+                    if timezone.is_naive(scheduled_time):
                         scheduled_time = IST.localize(scheduled_time)
                     scheduled_time = scheduled_time.astimezone(pytz.UTC)
-                except Exception:
-                    # Fallback to now + 1 day (in UTC)
+                    print(f"[SIGNAL] Parsed ISO format scheduled_time: {scheduled_time}")
+                except Exception as e:
+                    print(f"[SIGNAL] Error parsing ISO format: {e}")
                     scheduled_time = timezone.now() + datetime.timedelta(days=1)
+                    
+            elif time_slot and ' ' in time_slot and not ',' in time_slot:
+                # Format: "Tuesday 5 Tue 5:00 PM"
+                try:
+                    parts = time_slot.split(' ')
+                    if len(parts) >= 4:
+                        # Extract time part (last two parts)
+                        time_part = f"{parts[-2]} {parts[-1]}"  # "5:00 PM"
+                        
+                        # Extract day number (second part)
+                        day_number = int(parts[1])  # "5"
+                        current_year = timezone.now().year
+                        current_month = timezone.now().month
+                        
+                        # Create the actual date
+                        booking_date = datetime.datetime(current_year, current_month, day_number).date()
+                        
+                        # If the date is in the past, move to next month
+                        if booking_date < timezone.now().date():
+                            if current_month == 12:
+                                booking_date = datetime.datetime(current_year + 1, 1, day_number).date()
+                            else:
+                                booking_date = datetime.datetime(current_year, current_month + 1, day_number).date()
+                        
+                        print(f"[SIGNAL] Parsed booking date from alternative format: {booking_date}")
+                        
+                        # Parse time
+                        if 'AM' in time_part or 'PM' in time_part:
+                            time_obj = datetime.datetime.strptime(time_part, "%I:%M %p")
+                            hour = time_obj.hour
+                            minute = time_obj.minute
+                        else:
+                            time_obj = datetime.datetime.strptime(time_part, "%H:%M")
+                            hour = time_obj.hour
+                            minute = time_obj.minute
+                        
+                        # Create datetime object
+                        scheduled_time = datetime.datetime.combine(booking_date, datetime.time(hour, minute))
+                        scheduled_time = IST.localize(scheduled_time)
+                        scheduled_time = scheduled_time.astimezone(pytz.UTC)
+                        
+                        print(f"[SIGNAL] Calculated scheduled_time from alternative format: {scheduled_time}")
+                    else:
+                        print(f"[SIGNAL] Could not parse alternative format parts")
+                        scheduled_time = timezone.now() + datetime.timedelta(days=1)
+                except Exception as e:
+                    print(f"[SIGNAL] Error parsing alternative format: {e}")
+                    scheduled_time = timezone.now() + datetime.timedelta(days=1)
+            else:
+                print(f"[SIGNAL] Invalid time_slot format: {time_slot}")
+                scheduled_time = timezone.now() + datetime.timedelta(days=1)
+            
             # Ensure we don't create duplicate meetings/messages
             if not Meeting.objects.filter(student=instance.student, mentor=instance.mentor, scheduled_time=scheduled_time).exists():
                 print(f"[SIGNAL] No existing meeting found, creating new meeting for booking id={instance.id}")
@@ -141,13 +270,18 @@ def handle_booking_payment(sender, instance, created, **kwargs):
                 )
                 print(f"[SIGNAL] Meeting created: id={meeting.id}, meeting_id={meeting.meeting_id}")
                 # Create message for mentor
+                # Convert UTC time to IST for display
+                meeting_time_ist = meeting.scheduled_time.astimezone(IST)
                 msg = MentorMessage.objects.create(
                     mentor=instance.mentor,
                     subject="New Booking Confirmed",
                     message=(
                         f"You have a new booking with {instance.student.name}.\n\n"
                         f"Subject: {instance.subject}\n"
-                        f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
+                        f"Service: {instance.service}\n"
+                        f"Amount: ₹{instance.service_price}\n"
+                        f"Duration: {instance.service_duration}\n"
+                        f"Scheduled at: {meeting_time_ist.strftime('%Y-%m-%d %I:%M %p')} IST\n"
                         f"Meeting ID: {meeting.meeting_id}\n"
                         f"Meeting Link: {meeting.meeting_link}\n"
                         f"Your attendance key: {meeting.mentor_attendance_key}\n"
@@ -165,7 +299,10 @@ def handle_booking_payment(sender, instance, created, **kwargs):
                     message=(
                         f"Your booking with {instance.mentor.name} is confirmed.\n\n"
                         f"Subject: {instance.subject}\n"
-                        f"Scheduled at: {meeting.scheduled_time.strftime('%Y-%m-%d %H:%M')} UTC\n"
+                        f"Service: {instance.service}\n"
+                        f"Amount Paid: ₹{instance.service_price}\n"
+                        f"Duration: {instance.service_duration}\n"
+                        f"Scheduled at: {meeting_time_ist.strftime('%Y-%m-%d %I:%M %p')} IST\n"
                         f"Meeting ID: {meeting.meeting_id}\n"
                         f"Meeting Link: {meeting.meeting_link}\n"
                         f"Your attendance key: {meeting.student_attendance_key}\n"

@@ -5,7 +5,7 @@ from django.utils.html import strip_tags
 import base64
 import os
 
-def send_credentials_email(email, username, password, name=None):
+def send_credentials_email(email, username, password, name=None, user_type=None):
     subject = "Welcome to AspireX! 🚀 Your Journey Begins Here"
     
     # Try to read and encode the logo
@@ -199,6 +199,10 @@ def send_credentials_email(email, username, password, name=None):
             <div class="credentials-section">
                 <h2 class="credentials-title">🔐 Your Login Credentials</h2>
                 <div class="credential-row">
+                    <span class="credential-label">Account Type:</span>
+                    <span class="credential-value">{user_type.title() if user_type else 'User'}</span>
+                </div>
+                <div class="credential-row">
                     <span class="credential-label">Username:</span>
                     <span class="credential-value">{username}</span>
                 </div>
@@ -243,6 +247,7 @@ def send_credentials_email(email, username, password, name=None):
     Welcome to the future of learning and mentorship! You've just taken the first step towards unlocking your full potential.
     
     Your Login Credentials:
+    Account Type: {user_type.title() if user_type else 'User'}
     Username: {username}
     Password: {password}
     

@@ -47,6 +47,11 @@ class Mentor(AbstractUser):
     mentor_id = models.CharField(max_length=10, unique=True, blank=True)
     name = models.CharField(max_length=100)
     accepted_terms = models.BooleanField(default=False)
+    
+    # Online status fields
+    is_online = models.BooleanField(default=False)
+    last_seen = models.DateTimeField(auto_now=True)
+    last_activity = models.DateTimeField(auto_now=True)
 
     username = None
 
@@ -72,6 +77,31 @@ class Mentor(AbstractUser):
     
     def __str__(self):
         return f"{self.mentor_id} - {self.name}"
+
+    def is_currently_online(self):
+        """Check if mentor is currently online based on last activity"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Consider online if last activity was within 5 minutes
+        five_minutes_ago = timezone.now() - timedelta(minutes=5)
+        
+        # Update the is_online field based on current activity
+        is_online = self.last_activity >= five_minutes_ago
+        if self.is_online != is_online:
+            self.is_online = is_online
+            self.save(update_fields=['is_online'])
+        
+        return is_online
+
+    def update_online_status(self):
+        """Update the online status based on current activity"""
+        from django.utils import timezone
+        
+        self.last_activity = timezone.now()
+        self.last_seen = timezone.now()
+        self.is_online = True
+        self.save(update_fields=['last_activity', 'last_seen', 'is_online'])
 
     def save(self, *args, **kwargs):
         if not self.mentor_id and not kwargs.get('update_fields') == ['mentor_id']:
@@ -151,8 +181,8 @@ class MentorDetail(models.Model):
     )
     
     # Add Details     
-    first_name = models.CharField(max_length=100, default="", blank=True)
-    last_name = models.CharField(max_length=100, default="", blank=True)
+    first_name = models.CharField(max_length=200, default="", blank=True)
+    last_name = models.CharField(max_length=200, default="", blank=True)
     dob = models.DateField(null=True, blank=True)
     age = models.PositiveIntegerField(default=0)
     GENDER_CHOICES = (
@@ -164,9 +194,9 @@ class MentorDetail(models.Model):
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, unique=False, default="", blank=True)
 
-    college = models.CharField(max_length=200, default="", blank=True)
+    college = models.CharField(max_length=400, default="", blank=True)
     cgpa = models.FloatField(default=0.0)
-    batch = models.PositiveIntegerField(default=2024)
+    batch = models.PositiveIntegerField(default=2000)
     
     professions = models.ManyToManyField(Profession, related_name='mentors', blank=True)
     skills = models.ManyToManyField(Skill, related_name='mentors', blank=True)
@@ -184,9 +214,15 @@ class MentorDetail(models.Model):
     average_rating = models.FloatField(default=0.0)
     years_of_experience = models.PositiveIntegerField(default=0)
 
-    linkedin_url = models.URLField(blank=True, null=True)
-    github_url = models.URLField(blank=True, null=True)
-    portfolio_url = models.URLField(blank=True, null=True)
+    linkedin_url = models.CharField(max_length=250,blank=True, null=True)
+    github_url = models.CharField(max_length=250,blank=True, null=True)
+    portfolio_url = models.CharField(max_length=250,blank=True, null=True)
+
+    # New fields for key achievements, services, availability, languages
+    key_achievements = models.JSONField(default=list, blank=True, help_text="List of key achievements")
+    services = models.JSONField(default=list, blank=True, help_text="List of services offered")
+    availability_day_wise = models.JSONField(default=dict, blank=True, help_text="Availability schedule by day")
+    languages = models.JSONField(default=list, blank=True, help_text="List of languages spoken")
 
     def __str__(self):
         return f"{self.mentor.mentor_id} - {self.first_name} {self.last_name}"
@@ -266,7 +302,7 @@ class MentorMessage(models.Model):
         on_delete=models.CASCADE,
         related_name='messages'
     )
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=400)
     message = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -327,7 +363,7 @@ class Meeting(models.Model):
         blank=True,
         related_name='mentor_meetings'
     )
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=400)
     description = models.TextField(blank=True)
     scheduled_time = models.DateTimeField()
     duration = models.PositiveIntegerField(help_text="Duration in minutes", default=60)

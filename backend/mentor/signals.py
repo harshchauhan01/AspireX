@@ -84,15 +84,62 @@ P.S. Don't forget to check your dashboard regularly for new opportunities!""",
 def handle_meeting_completed(sender, instance, created, **kwargs):
     # Only act if meeting is completed and wasn't just created
     if instance.status == 'completed' and not created:
+        print(f"[MENTOR SIGNAL] Meeting completed: {instance.meeting_id}, title: {instance.title}")
+        print(f"[MENTOR SIGNAL] Student: {instance.student.name}, Mentor: {instance.mentor.name}")
+        print(f"[MENTOR SIGNAL] Scheduled time: {instance.scheduled_time}")
         # Check if an earning already exists for this meeting
         if not Earning.objects.filter(mentor=instance.mentor, source__icontains=instance.meeting_id).exists():
-            # Find the booking for this meeting
+            # Find the booking for this meeting - try multiple ways to match
+            booking = None
+            
+            # First try to find by exact time_slot match
             booking = Booking.objects.filter(
                 student=instance.student,
                 mentor=instance.mentor,
                 time_slot=str(instance.scheduled_time)
             ).first()
-            amount = instance.mentor.details.fees if hasattr(instance.mentor, 'details') else 0
+            
+            # If not found, try to find by meeting title and student/mentor
+            if not booking:
+                booking = Booking.objects.filter(
+                    student=instance.student,
+                    mentor=instance.mentor,
+                    subject=instance.title
+                ).first()
+            
+            # If still not found, try to find by date range
+            if not booking:
+                from django.utils import timezone
+                from datetime import timedelta
+                meeting_date = instance.scheduled_time.date()
+                booking = Booking.objects.filter(
+                    student=instance.student,
+                    mentor=instance.mentor,
+                    date=meeting_date
+                ).first()
+            
+            # If still not found, try to find any booking for this student/mentor pair
+            if not booking:
+                booking = Booking.objects.filter(
+                    student=instance.student,
+                    mentor=instance.mentor,
+                    is_paid=True
+                ).order_by('-created_at').first()
+            
+            print(f"[MENTOR SIGNAL] Found booking: {booking}")
+            if booking:
+                print(f"[MENTOR SIGNAL] Booking service: {booking.service}")
+                print(f"[MENTOR SIGNAL] Booking service_price: {booking.service_price}")
+                print(f"[MENTOR SIGNAL] Booking service_duration: {booking.service_duration}")
+            
+            # Use service price from booking if available, otherwise fall back to mentor fees
+            if booking and booking.service_price:
+                amount = booking.service_price
+                print(f"[MENTOR SIGNAL] Using service price: ₹{amount}")
+            else:
+                amount = instance.mentor.details.fees if hasattr(instance.mentor, 'details') else 0
+                print(f"[MENTOR SIGNAL] Using mentor fees: ₹{amount}")
+                
             transaction_id = booking.transaction_id if booking else None
 
             # Create earning
@@ -103,12 +150,13 @@ def handle_meeting_completed(sender, instance, created, **kwargs):
                 transaction_id=transaction_id,
                 status='completed'
             )
+            print(f"[MENTOR SIGNAL] Created earning: ₹{earning.amount} for {earning.source}")
 
             # Send mentor message
             MentorMessage.objects.create(
                 mentor=instance.mentor,
                 subject="💰 Payment Received for Completed Meeting",
-                message=f"You received a payment of ₹{amount} from {instance.student.name} for meeting '{instance.title}'.",
+                message=f"You received a payment of ₹{amount} from {instance.student.name} for meeting '{instance.title}'.\n\nService: {booking.service if booking else 'N/A'}\nDuration: {booking.service_duration if booking else 'N/A'}",
                 is_read=False
             )
 

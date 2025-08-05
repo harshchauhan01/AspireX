@@ -113,11 +113,15 @@ class MentorMeetingRescheduleAPIView(APIView):
         meeting.save(update_fields=['scheduled_time', 'status'])
         # Notify student
         if meeting.student:
+            # Convert UTC time to IST for display
+            import pytz
+            IST = pytz.timezone('Asia/Kolkata')
+            new_time_ist = new_time.astimezone(IST)
             StudentMessage.objects.create(
                 student=meeting.student,
                 sender=None,  # Sender must be a Student instance; None for system/mentor
                 subject="Your meeting has been rescheduled",
-                message=f"Your meeting '{meeting.title}' with {mentor.name} has been rescheduled to {new_time.strftime('%Y-%m-%d %H:%M')}. If you have any problem, please contact customer support.",
+                                    message=f"Your meeting '{meeting.title}' with {mentor.name} has been rescheduled to {new_time_ist.strftime('%Y-%m-%d %I:%M %p')} IST. If you have any problem, please contact customer support.",
             )
         return Response({'success': True, 'new_time': new_time}, status=200)
 
@@ -134,6 +138,8 @@ class MentorProfileAPIView(APIView):
     
     def get(self, request):
         mentor = request.user
+        # Update online status when mentor accesses profile
+        mentor.update_online_status()
         # print("User:", request.user)
         serializer = MentorSerializer(mentor)
         # print(serializer.data)
@@ -223,6 +229,8 @@ class MentorProfileUpdateAPIView(APIView):
     
     def put(self, request):
         mentor = request.user
+        # Update online status when mentor updates profile
+        mentor.update_online_status()
         serializer = MentorSerializer(mentor, data=request.data, partial=True)
         
         if serializer.is_valid():
@@ -285,59 +293,61 @@ class MentorFileUploadAPIView(APIView):
     
     def put(self, request):
         mentor = request.user
+        # Update online status when mentor uploads files
+        mentor.update_online_status()
         cv_file = request.FILES.get('cv')
         profile_photo = request.FILES.get('profile_photo')
         
         print(f"DEBUG: Files received - cv_file: {cv_file}, profile_photo: {profile_photo}")
         
         if cv_file:
-            valid_extensions = ['.pdf', '.doc', '.docx']
-            ext = os.path.splitext(cv_file.name)[1].lower()
-            if ext not in valid_extensions:
-                return Response(
-                    {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            content_type, _ = mimetypes.guess_type(cv_file.name)
-            file_options = {"content-type": content_type or "application/octet-stream"}
-            file_path = f"mentors/cvs/{cv_file.name}"
-            # Delete old file if exists (from the URL in the model)
-            if mentor.details.cv:
-                old_path = extract_supabase_path(mentor.details.cv)
-                if old_path:
-                    supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
-            # Always try to delete the file at the target path before uploading
-            supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
-            res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
-            public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
-            if public_url:
-                public_url = public_url.strip()
-                # Remove trailing '?' and any whitespace
-                while public_url.endswith('?') or public_url.endswith(' '):
-                    public_url = public_url.rstrip('? ').rstrip()
-                # Ensure it starts with http/https
-                if not public_url.startswith(('http://', 'https://')):
-                    public_url = 'https://' + public_url.lstrip('/')
-            print(f"DEBUG: Final CV URL to save: '{public_url}' (type: {type(public_url)})")
-            print(f"DEBUG: repr(public_url): {repr(public_url)}")
-            # TEST: Hardcode a known-good URL to see if error persists
-            # public_url = "https://www.google.com/"
-            from django.core.validators import URLValidator
-            from django.core.exceptions import ValidationError
-            try:
-                URLValidator()(public_url)
-                print("DEBUG: URL validation passed")
-            except ValidationError as e:
-                print(f"DEBUG: URL validation failed: {e}")
-                return Response(
-                    {"error": f"Invalid URL generated: {public_url}"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            mentor.details.cv = public_url
+            if getattr(settings, 'USE_SUPABASE', False):
+                # Supabase upload logic
+                valid_extensions = ['.pdf', '.doc', '.docx']
+                ext = os.path.splitext(cv_file.name)[1].lower()
+                if ext not in valid_extensions:
+                    return Response(
+                        {"error": "Invalid file type. Only PDF, DOC, and DOCX are allowed."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                content_type, _ = mimetypes.guess_type(cv_file.name)
+                file_options = {"content-type": content_type or "application/octet-stream"}
+                file_path = f"mentors/cvs/{cv_file.name}"
+                if mentor.details.cv:
+                    old_path = extract_supabase_path(mentor.details.cv)
+                    if old_path:
+                        supabase.storage.from_(SUPABASE_BUCKET).remove([old_path])
+                supabase.storage.from_(SUPABASE_BUCKET).remove([file_path])
+                res = supabase.storage.from_(SUPABASE_BUCKET).upload(file_path, cv_file.read(), file_options=file_options)
+                public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
+                if public_url:
+                    public_url = public_url.strip()
+                    while public_url.endswith('?') or public_url.endswith(' '):
+                        public_url = public_url.rstrip('? ').rstrip()
+                    if not public_url.startswith(('http://', 'https://')):
+                        public_url = 'https://' + public_url.lstrip('/')
+                print(f"DEBUG: Final CV URL to save: '{public_url}' (type: {type(public_url)})")
+                print(f"DEBUG: repr(public_url): {repr(public_url)}")
+                from django.core.validators import URLValidator
+                from django.core.exceptions import ValidationError
+                try:
+                    URLValidator()(public_url)
+                    print("DEBUG: URL validation passed")
+                except ValidationError as e:
+                    print(f"DEBUG: URL validation failed: {e}")
+                    return Response(
+                        {"error": f"Invalid URL generated: {public_url}"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                mentor.details.cv = public_url
+            else:
+                # Local storage
+                file_path = default_storage.save(f"cvs/{cv_file.name}", cv_file)
+                public_url = settings.MEDIA_URL + file_path
+                mentor.details.cv = public_url
             mentor.details.save()
             return Response(
-                {"cv_url": public_url},
+                {"cv_url": mentor.details.cv},
                 status=status.HTTP_200_OK
             )
         elif profile_photo:
@@ -737,17 +747,25 @@ class DualTokenAuthentication(BaseAuthentication):
         if not auth or auth[0].lower() != b'token':
             return None
         token_key = auth[1].decode() if len(auth) > 1 else None
-        # Try MentorTokenAuthentication
+        if not token_key:
+            return None
+            
+        # Try MentorTokenAuthentication first
         from mentor.models import MentorToken
         try:
             mentor_token = MentorToken.objects.get(key=token_key)
             return (mentor_token.user, None)
         except MentorToken.DoesNotExist:
             pass
+            
         # Try DRF TokenAuthentication (for students)
-        user_auth_tuple = DRFTokenAuthentication().authenticate(request)
-        if user_auth_tuple:
-            return user_auth_tuple
+        try:
+            from rest_framework.authtoken.models import Token
+            student_token = Token.objects.get(key=token_key)
+            return (student_token.user, None)
+        except Token.DoesNotExist:
+            pass
+            
         return None
 
 @api_view(['GET', 'POST'])
@@ -758,6 +776,7 @@ def record_meeting_attendance(request):
         meeting_id = request.data.get('meeting_id')
         role = request.data.get('role')  # 'mentor' or 'student'
         entered_key = request.data.get('attendance_key')
+        
         if not meeting_id or role not in ['mentor', 'student'] or not entered_key:
             return Response({'error': 'meeting_id, role, and attendance_key are required.'}, status=400)
         try:
@@ -770,6 +789,13 @@ def record_meeting_attendance(request):
             return Response({'error': 'Only mentors can record mentor attendance.'}, status=403)
         if role == 'student' and not isinstance(user, Student):
             return Response({'error': 'Only students can record student attendance.'}, status=403)
+        
+        # Validate that the user is associated with this meeting
+        if role == 'mentor' and meeting.mentor != user:
+            return Response({'error': 'You can only mark attendance for your own meetings.'}, status=403)
+        if role == 'student' and meeting.student != user:
+            return Response({'error': 'You can only mark attendance for your own meetings.'}, status=403)
+        
         # Cross-verification: mentor must enter student's key, student must enter mentor's key
         if role == 'mentor':
             if entered_key != meeting.student_attendance_key:
@@ -884,16 +910,66 @@ class VerifyPaymentAPIView(APIView):
                 booking.is_paid = True
                 booking.transaction_id = order_id
                 booking.save()
+                
                 # Create Earning for mentor if not already exists
                 from mentor.models import Earning
                 if not Earning.objects.filter(transaction_id=order_id).exists():
+                    # Use service price from booking if available, otherwise fall back to mentor fees
+                    if booking.service_price:
+                        amount = booking.service_price
+                    else:
+                        amount = booking.mentor.details.fees if hasattr(booking.mentor, 'details') else 0
+                        
                     Earning.objects.create(
                         mentor=booking.mentor,
-                        amount=booking.mentor.details.fees if hasattr(booking.mentor, 'details') else 0,
-                        source=f"Session with {booking.student.name} (Booking {booking.id})",
+                        amount=amount,
+                        source=f"Session with {booking.student.name} (Booking {booking.id}) - {booking.service if booking.service else 'Service'}",
                         transaction_id=order_id,
                         status='completed'
                     )
+                
+                # Send payment confirmation notifications
+                from mentor.models import MentorMessage
+                from student.models import StudentMessage
+                from django.utils import timezone
+                import pytz
+                
+                IST = pytz.timezone('Asia/Kolkata')
+                current_time = timezone.now().astimezone(IST)
+                
+                # Send mentor notification about payment received
+                MentorMessage.objects.create(
+                    mentor=booking.mentor,
+                    subject="💰 Payment Received for Booking",
+                    message=(
+                        f"Payment received for your booking with {booking.student.name}.\n\n"
+                        f"Subject: {booking.subject}\n"
+                        f"Service: {booking.service}\n"
+                        f"Amount: ₹{booking.service_price}\n"
+                        f"Duration: {booking.service_duration}\n"
+                        f"Payment Time: {current_time.strftime('%Y-%m-%d %I:%M %p')} IST\n"
+                        f"Transaction ID: {order_id}\n\n"
+                        f"Your meeting will be scheduled automatically. You will receive meeting details shortly."
+                    ),
+                    admin_sender=None
+                )
+                
+                # Send student notification about payment confirmation
+                StudentMessage.objects.create(
+                    student=booking.student,
+                    subject="Payment Confirmed",
+                    message=(
+                        f"Your payment has been confirmed for the booking with {booking.mentor.name}.\n\n"
+                        f"Subject: {booking.subject}\n"
+                        f"Service: {booking.service}\n"
+                        f"Amount Paid: ₹{booking.service_price}\n"
+                        f"Duration: {booking.service_duration}\n"
+                        f"Payment Time: {current_time.strftime('%Y-%m-%d %I:%M %p')} IST\n"
+                        f"Transaction ID: {order_id}\n\n"
+                        f"Your meeting will be scheduled automatically. You will receive meeting details shortly."
+                    ),
+                    sender=None
+                )
             except Booking.DoesNotExist:
                 return Response({'error': 'Invalid booking or order'}, status=400)
             return Response({'status': 'Payment verified'})
@@ -918,6 +994,45 @@ class RazorpayWebhookAPIView(APIView):
         # Handle events: payment.captured, payment.failed, refund.processed, etc.
         # Update Earning/Booking as needed
         return JsonResponse({'status': 'ok'})
+
+
+
+
+
+# Add this new view for updating online status
+@api_view(['POST'])
+@authentication_classes([MentorTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_online_status(request):
+    """Update mentor's online status"""
+    try:
+        mentor = request.user
+        print(f"Updating online status for mentor: {mentor.name} ({mentor.mentor_id})")
+        
+        # Check if we should set offline status
+        set_offline = request.data.get('set_offline', False)
+        
+        if set_offline:
+            # Set last activity to 10 minutes ago to make mentor offline
+            from datetime import timedelta
+            mentor.last_activity = timezone.now() - timedelta(minutes=10)
+            mentor.is_online = False
+            mentor.save(update_fields=['last_activity', 'is_online'])
+            print(f"Set {mentor.name} as offline")
+        else:
+            # Normal online status update
+            mentor.update_online_status()
+            print(f"Updated {mentor.name} online status")
+        
+        return Response({
+            'is_online': mentor.is_currently_online(),
+            'last_activity': mentor.last_activity.isoformat() if mentor.last_activity else None
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Error in update_online_status: {e}")
+        return Response({
+            'error': 'Failed to update online status'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

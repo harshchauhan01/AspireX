@@ -8,9 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ✅ SECURITY
 SECRET_KEY = config('SECRET_KEY', default='your-dev-secret-key')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com,127.0.0.1,localhost').split(',')
+# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com,127.0.0.1,localhost').split(',')
 # ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='aspirexbackend.onrender.com').split(',')
-# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']
 # Allow Render external hostname dynamically
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'chat',
     'mentor',
     'student.apps.StudentConfig',
+    'community',
+    'unified_auth',
 
     'corsheaders',
     'rest_framework',
@@ -134,6 +136,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 CORS_ALLOWED_ORIGINS = [
     "https://aspire-x.vercel.app",
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "https://aspire-n8cn506nk-harsh-chauhans-projects-9fc7d68c.vercel.app",
     "http://127.0.0.1",
 ]
@@ -160,6 +163,17 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+# Google OAuth Settings
+GOOGLE_OAUTH2_CLIENT_ID = config('GOOGLE_OAUTH2_CLIENT_ID', default='')
+GOOGLE_OAUTH2_CLIENT_SECRET = config('GOOGLE_OAUTH2_CLIENT_SECRET', default='')
+GOOGLE_OAUTH2_REDIRECT_URI = config('GOOGLE_OAUTH2_REDIRECT_URI', default='http://127.0.0.1:8000/api/auth/google/callback/')
+
+# Google OAuth Scopes
+GOOGLE_OAUTH2_SCOPES = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+]
+
 # ✅ REST FRAMEWORK
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
@@ -171,17 +185,12 @@ REST_FRAMEWORK = {
     ]
 }
 
+USE_SUPABASE = config('USE_SUPABASE', default=False, cast=bool)
 
-
-
-
-
-
-
-
-
-
-# Boring Code
+if not USE_SUPABASE:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
     # """
