@@ -1,37 +1,37 @@
-# Core Django dependencies
-Django==5.2
-djangorestframework==3.16.0
-django-cors-headers==4.7.0
-python-decouple==3.5
-
-# Database
-dj-database-url==3.0.1
-psycopg2-binary==2.9.10
-
-# Supabase and related
-supabase==2.17.0
-gotrue==2.12.3
-httpx==0.28.1
-storage3==0.12.0
-
-# Channels for WebSocket
+asgiref==3.8.1
+boto3==1.34.109
+certifi==2025.7.14
 channels==4.2.2
 channels_redis==4.2.1
-websockets==11.0.3
-
-# File handling
-pillow==11.2.1
+charset-normalizer==3.4.2
+cloudinary==1.38.0
+django-cloudinary-storage==0.3.0
+django-cors-headers==4.7.0
 django-storages==1.14.2
-
-# Payment
-razorpay==1.4.2
-
-# Google OAuth
+Django==5.2
+dj-database-url==3.0.1
+djangorestframework==3.16.0
 google-auth==2.28.1
-google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
-
-# Other utilities
+google-auth-oauthlib==1.2.0
+gotrue==2.12.3
 gunicorn==23.0.0
-whitenoise==6.9.0
+httpx==0.28.1
+idna==3.10
+msgpack==1.1.1
+packaging==25.0
+pillow==11.2.1
+psycopg2-binary==2.9.10
+python-decouple==3.5
+pytz==2023.3
+razorpay==1.4.2
 redis==6.2.0
+requests==2.32.4
+setuptools==68.2.2
+sqlparse==0.5.3
+storage3==0.12.0
+supabase==2.17.0
+tzdata==2025.2
+urllib3==2.5.0
+websockets>=11.0
+whitenoise==6.9.0
