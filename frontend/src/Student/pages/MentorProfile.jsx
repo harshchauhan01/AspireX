@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import './CSS/MentorProfile.module.css';
+import styles from './CSS/MentorProfile.module.css';
 import API from '../../BackendConn/api';
 import upiQr from '../../assets/qrcode.jpeg';
 import coverImg from '../../assets/mentoring.webp';

@@ -6,7 +6,6 @@ import { GiHamburgerMenu } from "react-icons/gi";
 import { useNavigate } from "react-router-dom";
 import "./CSS/Home.css";
 import ContactPage from "./ContactPage";
-import logo from "../../public/logoBlack.png";
 import { fetchPlatformStats, fetchSiteStatus } from "../BackendConn/api";
 import { subscribeNewsletter } from "../BackendConn/api";
 import API from "../BackendConn/api";
@@ -518,7 +517,7 @@ function Home() {
               <li><FaEnvelope /> contactaspirexdigital@gmail.com</li>
             </ul>
             <div className="home-contact-illustration">
-              <img src={logo} alt="Contact Illustration" style={{maxWidth: '180px', marginTop: '4px'}} />
+              <img src="/logoBlack.png" alt="Contact Illustration" style={{maxWidth: '180px', marginTop: '4px'}} />
             </div>
           </div>
           <div className="home-contact-right">

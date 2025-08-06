@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '541565981208-1hjfu01g6pdlqagd3rrn3k04ka1diolb.apps.googleusercontent.com';
+// Debug: Log environment variables
+// console.log('Environment variables:', {
+//   API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+//   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+//   allEnv: import.meta.env
+// });
+
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const API = axios.create({
   baseURL: API_BASE_URL,
