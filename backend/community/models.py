@@ -10,6 +10,7 @@ class Post(models.Model):
     text = models.TextField(max_length=2500)
     created_at = models.DateTimeField(auto_now_add=True)
     views = models.PositiveIntegerField(default=0)  # New field
+    is_admin_post = models.BooleanField(default=False, help_text="Mark this post as an official AspireX admin post.")
 
     def __str__(self):
         return f"Post by {self.user} at {self.created_at}"  

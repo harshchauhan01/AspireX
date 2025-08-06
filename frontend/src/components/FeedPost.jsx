@@ -6,6 +6,8 @@ import './CSS/FeedPost.css';
 import CommentBox from './CommentBox';
 import CommentList from './CommentList';
 import { formatTime } from './CommunityFeed';
+import logo from '../assets/logoD.jpeg';
+import { FaCheckCircle } from 'react-icons/fa';
 
 const FeedPost = ({ post, onUpdate, isOwnPost = false }) => {
   const [showComments, setShowComments] = useState(false);
@@ -17,6 +19,7 @@ const FeedPost = ({ post, onUpdate, isOwnPost = false }) => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [viewCount, setViewCount] = useState(post.views ?? 0);
+  const [expanded, setExpanded] = useState(false); // <-- add this line
 
   // Only increment view once per user per post
   useEffect(() => {
@@ -85,26 +88,29 @@ const FeedPost = ({ post, onUpdate, isOwnPost = false }) => {
   };
 
   return (
-    <div className={`feed-post${isTrending ? ' trending' : ''}`}>
+    <div className={`feed-post${isTrending ? ' trending' : ''}${post.is_admin_post ? ' admin-post' : ''}`}>
       <div className="feed-post-header">
         <div className="feed-post-user">
           <div className="feed-post-avatar">
-            {post.profile_photo ? (
+            {post.is_admin_post ? (
+              <img src={logo} alt="AspireX Logo" style={{borderRadius: '50%'}} />
+            ) : post.profile_photo ? (
               <img src={post.profile_photo} alt="Profile" />
             ) : (
               getInitials(post.username)
             )}
           </div>
           <div className="feed-post-user-info">
-            <span className="feed-post-username">{post.username}</span>
-            <span className={`feed-post-role ${post.role}`}>
-              {post.role === 'mentor' ? <FiUser /> : <FiUser />} {post.role === 'mentor' ? 'Mentor' : 'Student'}
+            <span className="feed-post-username">
+              {post.is_admin_post ? 'AspireX' : post.username}
+              {post.is_admin_post && <FaCheckCircle style={{color: '#2196f3', marginLeft: 6}} title="Verified" />}
             </span>
+            <span className={`feed-post-role ${post.role}`}>{post.is_admin_post ? 'Official Update' : (post.role === 'mentor' ? <><FiUser /> Mentor</> : <><FiUser /> Student</>)}</span>
           </div>
         </div>
         <div className="feed-post-header-actions">
           <span className="feed-post-time">{formatTime(post.createdAt || post.created_at || post.timestamp)}</span>
-          {isOwnPost && (
+          {isOwnPost && !post.is_admin_post && (
             <button 
               className="feed-post-delete" 
               onClick={() => handleDelete(post.id)}
@@ -118,10 +124,15 @@ const FeedPost = ({ post, onUpdate, isOwnPost = false }) => {
       
       <div className="feed-post-text">
         {post.text.length > 200 ? (
-          <span>
-            {post.text.slice(0, 200)}... 
-            <span className="feed-post-readmore">read more</span>
-          </span>
+          expanded ? (
+            <span>
+              {post.text} <span className="feed-post-readmore" style={{cursor: 'pointer', color: '#2196f3'}} onClick={() => setExpanded(false)}>show less</span>
+            </span>
+          ) : (
+            <span>
+              {post.text.slice(0, 200)}... <span className="feed-post-readmore" style={{cursor: 'pointer', color: '#2196f3'}} onClick={() => setExpanded(true)}>read more</span>
+            </span>
+          )
         ) : post.text}
       </div>
       
