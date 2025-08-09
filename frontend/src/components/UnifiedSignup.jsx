@@ -75,6 +75,33 @@ function UnifiedSignup() {
       setIsLoading(false);
     }
   };
+  const handleGoogleSignIn = useCallback(async (response) => {
+    if (!acceptedTerms) {
+      setError('You must accept the Terms & Conditions to register.');
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    setError('');
+
+    try {
+      // Send the ID token to our unified auth backend
+      const result = await API.post('auth/google/verify/', {
+        id_token: response.credential,
+        user_type: form.role
+      });
+
+      // Use the auth context to login
+      login(result.data.user, result.data.token, result.data.user_type);
+      
+      alert('Google registration successful! Check your email for your credentials.');
+      navigate(`/${form.role}/dashboard`);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Google authentication failed');
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }, [acceptedTerms, form.role, login, navigate]);
 
   // Initialize Google Sign-In
   useEffect(() => {
@@ -119,33 +146,7 @@ function UnifiedSignup() {
     };
   }, [handleGoogleSignIn]);
 
-  const handleGoogleSignIn = useCallback(async (response) => {
-    if (!acceptedTerms) {
-      setError('You must accept the Terms & Conditions to register.');
-      return;
-    }
-
-    setIsGoogleLoading(true);
-    setError('');
-
-    try {
-      // Send the ID token to our unified auth backend
-      const result = await API.post('auth/google/verify/', {
-        id_token: response.credential,
-        user_type: form.role
-      });
-
-      // Use the auth context to login
-      login(result.data.user, result.data.token, result.data.user_type);
-      
-      alert('Google registration successful! Check your email for your credentials.');
-      navigate(`/${form.role}/dashboard`);
-    } catch (err) {
-      setError(err.response?.data?.error || 'Google authentication failed');
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  }, [acceptedTerms, form.role, login, navigate]);
+  
 
   return (
     <StyledPageWrapper>
