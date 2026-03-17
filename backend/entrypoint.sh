@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+echo ">>> Applying database migrations..."
+python manage.py migrate --noinput
+
+echo ">>> Starting Daphne ASGI server (HTTP + WebSocket)..."
+exec daphne \
+  -b 0.0.0.0 \
+  -p 8000 \
+  --access-log - \
+  --proxy-headers \
+  backend.asgi:application
